@@ -14,7 +14,7 @@ mkdir build && cd build
 ```bash
 ccmake ..
 ```
-ans you will see a GUI where you can explicitly provide directories. <br \>
+ans you will see a GUI where you can explicitly provide directories. <br />
 (3) For CCV users, manually add Eigen libraries cmake file to ``Eigen3_DIR`` then press ``q`` to exit the GUI:
 ```bash
 /gpfs/runtime/opt/eigen/3.3.2/share/eigen3/cmake/
