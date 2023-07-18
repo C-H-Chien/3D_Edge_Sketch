@@ -1,4 +1,4 @@
-# GPU-HC: Homotopy Continuation Path Tracking in GPU
+# Edge-Based Reconstruction
 ### Research @ LEMS, Brown University (CVPR 2022)
 
 ## Dependencies:
