@@ -1,5 +1,5 @@
 # Edge-Based Reconstruction
-### Research @ LEMS, Brown University (CVPR 2022)
+### Research @ LEMS, Brown University
 
 ## Dependencies:
 (1) CMake 3.14 or higher <br />
