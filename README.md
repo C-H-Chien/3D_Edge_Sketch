@@ -15,7 +15,7 @@ mkdir build && cd build
 ccmake ..
 ```
 ans you will see a GUI where you can explicitly provide directories. <br />
-(3) For CCV users, manually add Eigen libraries cmake file to ``Eigen3_DIR`` then press ``q`` to exit the GUI:
+(3) For Brown University CCV Oscars users, manually add Eigen libraries cmake file to ``Eigen3_DIR`` then press ``q`` to exit the GUI:
 ```bash
 /gpfs/runtime/opt/eigen/3.3.2/share/eigen3/cmake/
 ```
@@ -23,8 +23,8 @@ ans you will see a GUI where you can explicitly provide directories. <br />
 ```bash
 make -j
 ```
-(5) An executive file will be under ``/buid/bin``.
-(6) CCV users, remember to launch an interactive CPU node to run the code:
+(5) An executive file will be under ``/buid/bin``. <br />
+(6) Brown University CCV Oscars users, remember to launch an interactive CPU node before running the code:
 ```bash
 interact -n 8 -t 03:00:00 -m 3g
 ```
