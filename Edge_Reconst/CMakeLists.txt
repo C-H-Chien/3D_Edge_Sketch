@@ -4,6 +4,8 @@ set ( control_sources
   #> Multiview Geometry Utilities
   util.hpp
   util.cpp
+  PairEdgeHypo.hpp
+  PairEdgeHypo.cpp
 
 )
 
