@@ -29,3 +29,7 @@ make -j
 interact -n 8 -t 03:00:00 -m 3g
 ```
 which means, an interactive node with 8-cores CPU, 3 hours of usage, and holding 3G memories.
+
+
+
+
