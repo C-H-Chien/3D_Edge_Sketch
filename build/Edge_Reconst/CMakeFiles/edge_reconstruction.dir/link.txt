@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libedge_reconstruction.a  CMakeFiles/edge_reconstruction.dir/util.cpp.o
+/usr/bin/ranlib ../lib/libedge_reconstruction.a

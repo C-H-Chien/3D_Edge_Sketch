@@ -47,6 +47,16 @@ namespace MultiviewGeometryUtil {
         Eigen::Matrix3d T21_x = getSkewSymmetric(T21);
         return inverse_K.transpose() * (T21_x * R21) * inverse_K;
     }
+
+    Eigen::Matrix3d multiview_geometry_util::getRelativePose_R21(Eigen::Matrix3d R1, Eigen::Matrix3d R2) {
+        return R2 * R1.inverse();
+    }
+
+    Eigen::Vector3d multiview_geometry_util::getRelativePose_T21(Eigen::Matrix3d R1, Eigen::Matrix3d R2, Eigen::Vector3d T1, Eigen::Vector3d T2) {
+        Eigen::Vector3d C1 = -1*R1.transpose() * T1;
+        Eigen::Vector3d C2 = -1*R2.transpose() * T2;
+        return R2 * (C1 - C2); 
+    }
 }
 
 #endif
