@@ -155,8 +155,34 @@ int main(int argc, char **argv) {
 
   Eigen::MatrixXd numerOfDist = PairHypo.getAp_Bp_Dist(Edges_HYPO2, pt_edgel_HYPO1, F);
   cout << "distance" << endl;
-  cout << numerOfDist.block(0,0,6,1) << endl;
+  // cout << numerOfDist.block(0,0,6,1) << endl;
   //numerOfDist = numerOfDist.cwiseAbs();
   //cout << numerOfDist.block(0,0,6,1) << endl;
+
+  Eigen::MatrixXd HYPO2_idx = PairHypo.getHYPO2_idx(Edges_HYPO2, numerOfDist);
+  Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2(Edges_HYPO2, numerOfDist);
+
+  //Eigen::MatrixXd HYPO2_idx;
+  //Eigen::MatrixXd edgels_HYPO2;
+  /*int idx_hypopair = 0;
+  for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
+    double distance = numerOfDist(idx_HYPO2,0);
+    //cout << distance << endl;
+    if(distance < DIST_THRESH){
+      //cout << DIST_THRESH << endl;
+      //cout << distance << endl;
+      HYPO2_idx.conservativeResize(idx_hypopair+1,1);
+      edgels_HYPO2.conservativeResize(idx_hypopair+1,4);
+
+      HYPO2_idx.row(idx_hypopair) << double(idx_HYPO2);
+      edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(idx_HYPO2);
+      idx_hypopair++;
+    }
+  }*/
+
+  cout<< "coordinates will be: "<< endl;
+  //cout<< HYPO2_idx << endl;
+  cout<< edgels_HYPO2.rows() << endl;
+  //cout<< edgels_HYPO2 << endl;
 
 }

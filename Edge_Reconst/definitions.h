@@ -9,4 +9,6 @@
 
 #define DEBUG                      (1)
 
+#define DIST_THRESH                (2)
+
 #endif

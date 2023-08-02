@@ -49,6 +49,34 @@ namespace PairEdgeHypothesis {
         return numerOfDist.cwiseAbs()/denomOfDist(0);
     }
 
+    Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd numerOfDist) {
+        int idx_hypopair = 0;
+        Eigen::MatrixXd HYPO2_idx;
+        for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
+            double distance = numerOfDist(idx_HYPO2,0);
+            if(distance < DIST_THRESH){
+                HYPO2_idx.conservativeResize(idx_hypopair+1,1);
+                HYPO2_idx.row(idx_hypopair) << double(idx_HYPO2);
+                idx_hypopair++;
+            }
+        }
+        return HYPO2_idx;
+    }
+
+    Eigen::MatrixXd pair_edge_hypothesis::getedgels_HYPO2(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd numerOfDist) {
+        int idx_hypopair = 0;
+        Eigen::MatrixXd edgels_HYPO2;
+        for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
+            double distance = numerOfDist(idx_HYPO2,0);
+            if(distance < DIST_THRESH){
+                edgels_HYPO2.conservativeResize(idx_hypopair+1,4);
+                edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(idx_HYPO2);
+                idx_hypopair++;
+            }
+        }
+        return edgels_HYPO2;
+    }
+
 }
 
 #endif
