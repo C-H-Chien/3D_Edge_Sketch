@@ -36,6 +36,19 @@ namespace PairEdgeHypothesis {
         return Ap_Bp;
     }
 
+    Eigen::MatrixXd pair_edge_hypothesis::getAp_Bp_Dist(Eigen::MatrixXd Edges_HYPO2, Eigen::Vector3d pt_edgel_HYPO1, Eigen::Matrix3d F ) {
+        Eigen::Vector3d coeffs;
+        coeffs = F * pt_edgel_HYPO1;
+        Eigen::MatrixXd Ap_Bp;
+        Ap_Bp.conservativeResize(Edges_HYPO2.rows(),2);
+        Ap_Bp.col(0) = coeffs(0) * Edges_HYPO2.col(0);
+        Ap_Bp.col(1) = coeffs(1) * Edges_HYPO2.col(1);
+        Eigen::MatrixXd numerOfDist = Ap_Bp.col(0) + Ap_Bp.col(1) + Eigen::VectorXd::Ones(Edges_HYPO2.rows())*coeffs(2);
+        Eigen::MatrixXd denomOfDist = Eigen::VectorXd::Ones(Edges_HYPO2.rows())*(coeffs(0)*coeffs(0)+coeffs(1)*coeffs(1));
+        denomOfDist = denomOfDist.array().sqrt();
+        return numerOfDist.cwiseAbs()/denomOfDist(0);
+    }
+
 }
 
 #endif

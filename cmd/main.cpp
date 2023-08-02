@@ -153,5 +153,10 @@ int main(int argc, char **argv) {
   cout << "function" << endl;
   cout << ApBp.block(0,0,6,2) << endl;
 
+  Eigen::MatrixXd numerOfDist = PairHypo.getAp_Bp_Dist(Edges_HYPO2, pt_edgel_HYPO1, F);
+  cout << "distance" << endl;
+  cout << numerOfDist.block(0,0,6,1) << endl;
+  //numerOfDist = numerOfDist.cwiseAbs();
+  //cout << numerOfDist.block(0,0,6,1) << endl;
 
 }
