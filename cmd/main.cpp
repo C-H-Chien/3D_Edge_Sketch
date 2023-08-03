@@ -197,27 +197,30 @@ int main(int argc, char **argv) {
   cout<< tgt1_meters << endl;
 
   Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
-  cout<< "edge_pos_gamma3: " << endl;
-  cout<< edge_pos_gamma3 << endl;
+  //cout<< "edge_pos_gamma3: " << endl;
+  //cout<< edge_pos_gamma3 << endl;
+
+  Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
+  //cout<< "edge_tgt_gamma3: " << endl;
+  //cout<< edge_tgt_gamma3 << endl;
 
   /*Eigen::Vector3d Gamma1 = K.inverse() * pt_edgel_HYPO1;
-  Eigen::Vector3d e1 = {1,0,0};
-  Eigen::Vector3d e3 = {0,0,1};
-  Eigen::MatrixXd pt_edge_HYPO2 = edgels_HYPO2.row(0);
+  Eigen::MatrixXd pt_edge_HYPO2 = edgels_HYPO2.row(65);
   Eigen::Vector3d pt_edgel_HYPO2;
   pt_edgel_HYPO2 << pt_edge_HYPO2(0,0), pt_edge_HYPO2(0,1), 1;
   Eigen::Vector3d Gamma2 = K.inverse() * pt_edgel_HYPO2;
-  double rho1 = (double(e1.transpose() * T21) - double(e3.transpose() * T21) * double(e1.transpose() *Gamma2))/(double(e3.transpose() * R21 * Gamma1)* double(e1.transpose() * Gamma2) - double(e1.transpose() * R21 * Gamma1));
-  cout<< "rho1: " << endl;
-  cout<< rho1 << endl;
-  double rho3 = rho1 * double(e3.transpose() * R31 * Gamma1) + double(e3.transpose()*T31);
-  cout<< "rho3: " << endl;
-  cout<< rho3 << endl;
-  Eigen::Vector3d Gamma3 = 1 / rho3 * (R31 * rho1 * Gamma1 + T31);
-  cout<< "Gamma3: " << endl;
-  cout<< Gamma3 << endl;
-  Eigen::Vector3d point3 = K * Gamma3;
-  cout<< "point3: " << endl;
-  cout<< point3 << endl;*/
+  Eigen::Vector3d tgt2_meters = getReprojEdgel.getTGT_Meters(pt_edge_HYPO2, K);
+  Eigen::Vector3d n1 = tgt1_meters.cross(Gamma1);
+  Eigen::Vector3d n2 = R21.transpose() * tgt2_meters.cross(Gamma2);
+
+  Eigen::Vector3d T_v1 = n1.cross(n2) / (n1.cross(n2) ).norm();
+  Eigen::Vector3d T_v3 = R31 * T_v1;
+  Eigen::Vector3d e3 = {0,0,1};
+  Eigen::Vector3d Gamma3 = {0.309617097376223, 0.303707078204112, 1.000000000000000};
+  Eigen::Vector3d Tt_v3 = T_v3 - double(e3.transpose()*T_v3)*Gamma3;
+  Eigen::Vector3d t_v3  = Tt_v3 / Tt_v3.norm();
+
+  cout<< "t_v3: " << endl;
+  cout<< t_v3 << endl;*/
 
 }
