@@ -192,25 +192,32 @@ int main(int argc, char **argv) {
   Eigen::Vector3d tgt_to_pixels;
   tgt_to_pixels << (tangent(0)+pt_edgel(0)), (tangent(1)+pt_edgel(1)), 1;
   Eigen::Vector3d tgt_to_meters = K.inverse() * tgt_to_pixels;*/
-  Eigen::Vector3d tgt_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
+  Eigen::Vector3d tgt1_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
   cout<< "tgt1_meters: " << endl;
-  cout<< tgt_meters << endl;
+  cout<< tgt1_meters << endl;
+
+  Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
+  cout<< "edge_pos_gamma3: " << endl;
+  cout<< edge_pos_gamma3 << endl;
 
   /*Eigen::Vector3d Gamma1 = K.inverse() * pt_edgel_HYPO1;
-  //cout<< Gamma1 << endl;
-  Eigen::Vector2d tangent1; 
-  tangent1 << cos(Edges_HYPO1(edge_idx-1,2)), sin(Edges_HYPO1(edge_idx-1,2));
-  cout<< "tangent 1: " << endl;
-  cout<< tangent1 << endl;
-  Eigen::Vector3d pt1_tgt_to_pixels;
-  pt1_tgt_to_pixels << (tangent1(0)+pt_edgel_HYPO1(0)), (tangent1(1)+pt_edgel_HYPO1(1)), 1;
-  cout<< "pt1_tgt_to_pixels: " << endl;
-  cout<< pt1_tgt_to_pixels << endl;
-  Eigen::Vector3d pt1_tgt_to_meters = K.inverse() * pt1_tgt_to_pixels;
-  cout<< "pt1_tgt_to_meters: " << endl;
-  cout<< pt1_tgt_to_meters << endl;
-  Eigen::Vector3d tgt1_meters = pt1_tgt_to_meters - Gamma1;
-  cout<< "tgt1_meters: " << endl;
-  cout<< tgt1_meters << endl;*/
+  Eigen::Vector3d e1 = {1,0,0};
+  Eigen::Vector3d e3 = {0,0,1};
+  Eigen::MatrixXd pt_edge_HYPO2 = edgels_HYPO2.row(0);
+  Eigen::Vector3d pt_edgel_HYPO2;
+  pt_edgel_HYPO2 << pt_edge_HYPO2(0,0), pt_edge_HYPO2(0,1), 1;
+  Eigen::Vector3d Gamma2 = K.inverse() * pt_edgel_HYPO2;
+  double rho1 = (double(e1.transpose() * T21) - double(e3.transpose() * T21) * double(e1.transpose() *Gamma2))/(double(e3.transpose() * R21 * Gamma1)* double(e1.transpose() * Gamma2) - double(e1.transpose() * R21 * Gamma1));
+  cout<< "rho1: " << endl;
+  cout<< rho1 << endl;
+  double rho3 = rho1 * double(e3.transpose() * R31 * Gamma1) + double(e3.transpose()*T31);
+  cout<< "rho3: " << endl;
+  cout<< rho3 << endl;
+  Eigen::Vector3d Gamma3 = 1 / rho3 * (R31 * rho1 * Gamma1 + T31);
+  cout<< "Gamma3: " << endl;
+  cout<< Gamma3 << endl;
+  Eigen::Vector3d point3 = K * Gamma3;
+  cout<< "point3: " << endl;
+  cout<< point3 << endl;*/
 
 }
