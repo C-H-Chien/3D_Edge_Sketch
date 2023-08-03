@@ -13,9 +13,10 @@
 
 //> Include functions
 
-#include "/users/yzhen105/Edge_Based_Reconstruction/Edge_Reconst/util.hpp"
-#include "/users/yzhen105/Edge_Based_Reconstruction/Edge_Reconst/PairEdgeHypo.hpp"
-#include "/users/yzhen105/Edge_Based_Reconstruction/Edge_Reconst/definitions.h"
+#include "../Edge_Reconst/util.hpp"
+#include "../Edge_Reconst/PairEdgeHypo.hpp"
+#include "../Edge_Reconst/getReprojectedEdgel.hpp"
+#include "../Edge_Reconst/definitions.h"
 
 using namespace std;
 using namespace MultiviewGeometryUtil;
@@ -122,67 +123,94 @@ int main(int argc, char **argv) {
     Tmatrix_File.close();
   }
   
-  cout<< "R matrix loading finished" <<endl;
+  cout<< "T matrix loading finished" <<endl;
 
   Eigen::Matrix3d K;
   K<< 537.960322000000, 0, 319.183641000000, 0,	539.597659000000,	247.053820000000,0,	0,	1;
 
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
-  Eigen::Matrix3d R1  = All_R[5];
-  Eigen::Matrix3d R2  = All_R[2];
-  Eigen::Vector3d T1  = All_T[5];
-  Eigen::Vector3d T2  = All_T[2];
+  GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
+  
+  Eigen::MatrixXd Edges_HYPO1 = All_Edgels[HYPO1_VIEW_INDX];
+  Eigen::Matrix3d R1          = All_R[HYPO1_VIEW_INDX];
+  Eigen::Vector3d T1          = All_T[HYPO1_VIEW_INDX];
+  Eigen::MatrixXd Edges_HYPO2 = All_Edgels[HYPO2_VIEW_INDX];
+  Eigen::Matrix3d R2          = All_R[HYPO2_VIEW_INDX];
+  Eigen::Vector3d T2          = All_T[HYPO2_VIEW_INDX];
+  
   Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
   Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
   Eigen::Matrix3d Tx  = util.getSkewSymmetric(T21);
   Eigen::Matrix3d E   = util.getEssentialMatrix(R21, T21);
   Eigen::Matrix3d F   = util.getFundamentalMatrix(K.inverse(), R21, T21);
 
-  Eigen::MatrixXd Edges_HYPO1;
-  Eigen::MatrixXd Edges_HYPO2;
-
-  Edges_HYPO1 = All_Edgels[5];
-  Edges_HYPO2 = All_Edgels[2];
 
   Eigen::Vector3d pt_edgel_HYPO1;
   int edge_idx = 1819;
   pt_edgel_HYPO1 << Edges_HYPO1(edge_idx-1,0), Edges_HYPO1(edge_idx-1,1), 1;
 
   Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
-  cout << "function" << endl;
-  cout << ApBp.block(0,0,6,2) << endl;
+  //cout << "function" << endl;
+  //cout << ApBp.block(0,0,6,2) << endl;
 
   Eigen::MatrixXd numerOfDist = PairHypo.getAp_Bp_Dist(Edges_HYPO2, pt_edgel_HYPO1, F);
-  cout << "distance" << endl;
-  // cout << numerOfDist.block(0,0,6,1) << endl;
+  //cout << "distance" << endl;
+  //cout << numerOfDist.block(0,0,6,1) << endl;
   //numerOfDist = numerOfDist.cwiseAbs();
   //cout << numerOfDist.block(0,0,6,1) << endl;
 
-  Eigen::MatrixXd HYPO2_idx = PairHypo.getHYPO2_idx(Edges_HYPO2, numerOfDist);
+  Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx(Edges_HYPO2, numerOfDist);
   Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2(Edges_HYPO2, numerOfDist);
 
-  //Eigen::MatrixXd HYPO2_idx;
-  //Eigen::MatrixXd edgels_HYPO2;
-  /*int idx_hypopair = 0;
-  for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
-    double distance = numerOfDist(idx_HYPO2,0);
-    //cout << distance << endl;
-    if(distance < DIST_THRESH){
-      //cout << DIST_THRESH << endl;
-      //cout << distance << endl;
-      HYPO2_idx.conservativeResize(idx_hypopair+1,1);
-      edgels_HYPO2.conservativeResize(idx_hypopair+1,4);
-
-      HYPO2_idx.row(idx_hypopair) << double(idx_HYPO2);
-      edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(idx_HYPO2);
-      idx_hypopair++;
-    }
-  }*/
-
-  cout<< "coordinates will be: "<< endl;
+  //cout<< "coordinates will be: "<< endl;
   //cout<< HYPO2_idx << endl;
-  cout<< edgels_HYPO2.rows() << endl;
+  //cout<< edgels_HYPO2.rows() << endl;
   //cout<< edgels_HYPO2 << endl;
+  cout << "meow~ ~o( =∩ω∩= )m" << endl;
+
+  int VALID_INDX = 0;
+  Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
+  Eigen::Matrix3d R3             = All_R[VALID_INDX];
+  Eigen::Vector3d T3             = All_T[VALID_INDX];
+  Eigen::MatrixXd VALI_Orient    = TO_Edges_VALID.col(2);
+  Eigen::MatrixXd Tangents_VALID;
+  Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
+  Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
+  Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
+  //cout << Tangents_VALID.block(0,0,10,2) << endl;
+
+  Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
+  Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
+  
+  Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx-1);
+  /*Eigen::Vector3d pt_edgel;
+  pt_edgel << pt_edge(0,0), pt_edge(0,1), 1;
+  Eigen::Vector3d Gamma = K.inverse() * pt_edgel;
+  Eigen::Vector2d tangent;
+  tangent << cos(pt_edge(0,2)), sin(pt_edge(0,2));
+  Eigen::Vector3d tgt_to_pixels;
+  tgt_to_pixels << (tangent(0)+pt_edgel(0)), (tangent(1)+pt_edgel(1)), 1;
+  Eigen::Vector3d tgt_to_meters = K.inverse() * tgt_to_pixels;*/
+  Eigen::Vector3d tgt_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
+  cout<< "tgt1_meters: " << endl;
+  cout<< tgt_meters << endl;
+
+  /*Eigen::Vector3d Gamma1 = K.inverse() * pt_edgel_HYPO1;
+  //cout<< Gamma1 << endl;
+  Eigen::Vector2d tangent1; 
+  tangent1 << cos(Edges_HYPO1(edge_idx-1,2)), sin(Edges_HYPO1(edge_idx-1,2));
+  cout<< "tangent 1: " << endl;
+  cout<< tangent1 << endl;
+  Eigen::Vector3d pt1_tgt_to_pixels;
+  pt1_tgt_to_pixels << (tangent1(0)+pt_edgel_HYPO1(0)), (tangent1(1)+pt_edgel_HYPO1(1)), 1;
+  cout<< "pt1_tgt_to_pixels: " << endl;
+  cout<< pt1_tgt_to_pixels << endl;
+  Eigen::Vector3d pt1_tgt_to_meters = K.inverse() * pt1_tgt_to_pixels;
+  cout<< "pt1_tgt_to_meters: " << endl;
+  cout<< pt1_tgt_to_meters << endl;
+  Eigen::Vector3d tgt1_meters = pt1_tgt_to_meters - Gamma1;
+  cout<< "tgt1_meters: " << endl;
+  cout<< tgt1_meters << endl;*/
 
 }

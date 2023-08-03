@@ -6,6 +6,8 @@ set ( control_sources
   util.cpp
   PairEdgeHypo.hpp
   PairEdgeHypo.cpp
+  getReprojectedEdgel.hpp
+  getReprojectedEdgel.cpp
 
 )
 

@@ -11,4 +11,12 @@
 
 #define DIST_THRESH                (2)
 
+#define OREN_THRESH                (0.9995)
+
+#define HYPO1_VIEW_INDX            (5)
+
+#define HYPO2_VIEW_INDX            (2)
+
+#define MAX_NUM_OF_SUPPORT_VIEWS   (4)
+
 #endif
