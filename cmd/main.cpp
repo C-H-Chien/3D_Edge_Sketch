@@ -16,6 +16,7 @@
 #include "../Edge_Reconst/util.hpp"
 #include "../Edge_Reconst/PairEdgeHypo.hpp"
 #include "../Edge_Reconst/getReprojectedEdgel.hpp"
+#include "../Edge_Reconst/getQuadrilateral.hpp"
 #include "../Edge_Reconst/definitions.h"
 
 using namespace std;
@@ -131,6 +132,7 @@ int main(int argc, char **argv) {
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
   GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
+  GetQuadrilateral::get_Quadrilateral            getQuad;
   
   Eigen::MatrixXd Edges_HYPO1 = All_Edgels[HYPO1_VIEW_INDX];
   Eigen::Matrix3d R1          = All_R[HYPO1_VIEW_INDX];
@@ -201,26 +203,39 @@ int main(int argc, char **argv) {
   //cout<< edge_pos_gamma3 << endl;
 
   Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
-  //cout<< "edge_tgt_gamma3: " << endl;
-  //cout<< edge_tgt_gamma3 << endl;
 
-  /*Eigen::Vector3d Gamma1 = K.inverse() * pt_edgel_HYPO1;
-  Eigen::MatrixXd pt_edge_HYPO2 = edgels_HYPO2.row(65);
-  Eigen::Vector3d pt_edgel_HYPO2;
-  pt_edgel_HYPO2 << pt_edge_HYPO2(0,0), pt_edge_HYPO2(0,1), 1;
-  Eigen::Vector3d Gamma2 = K.inverse() * pt_edgel_HYPO2;
-  Eigen::Vector3d tgt2_meters = getReprojEdgel.getTGT_Meters(pt_edge_HYPO2, K);
-  Eigen::Vector3d n1 = tgt1_meters.cross(Gamma1);
-  Eigen::Vector3d n2 = R21.transpose() * tgt2_meters.cross(Gamma2);
 
-  Eigen::Vector3d T_v1 = n1.cross(n2) / (n1.cross(n2) ).norm();
-  Eigen::Vector3d T_v3 = R31 * T_v1;
+  Eigen::Vector3d e1 = {1,0,0};
+  Eigen::Vector3d e2 = {0,1,0};
   Eigen::Vector3d e3 = {0,0,1};
-  Eigen::Vector3d Gamma3 = {0.309617097376223, 0.303707078204112, 1.000000000000000};
-  Eigen::Vector3d Tt_v3 = T_v3 - double(e3.transpose()*T_v3)*Gamma3;
-  Eigen::Vector3d t_v3  = Tt_v3 / Tt_v3.norm();
 
-  cout<< "t_v3: " << endl;
-  cout<< t_v3 << endl;*/
+  Eigen::Vector3d epipole_met_view1 = {double(e1.transpose() * R21.transpose() *T21) / double(e3.transpose()*R21.transpose()*T21), double(e2.transpose()*R21.transpose()*T21) / double(e3.transpose()*R21.transpose()*T21), 1};
+  Eigen::Vector3d epipole_met_view2 = {double(e1.transpose()*T21) / double(e3.transpose()*T21), double(e2.transpose()*T21) / double(e3.transpose()*T21), 1};
+  Eigen::Vector3d epipole_pix_view1 = K * epipole_met_view1;
+  Eigen::Vector3d epipole_pix_view2 = K * epipole_met_view2;
+
+  /*cout<<"epipole_met_view1: "<<endl;
+  cout<<epipole_met_view1<<endl;
+  cout<<"epipole_met_view2: "<<endl;
+  cout<<epipole_met_view2<<endl;
+  cout<<"epipole_pix_view1: "<<endl;
+  cout<<epipole_pix_view1<<endl;
+  cout<<"epipole_pix_view2: "<<endl;
+  cout<<epipole_pix_view2<<endl;*/
+  
+  double slope_hypo1 = double(pt_edge(1)-epipole_pix_view1(1))/double(pt_edge(0)-epipole_pix_view1(0));
+  cout << "slope: "<< slope_hypo1 << endl;
+  double intersect_hypo1 = double(pt_edge(1)) - slope_hypo1*double(pt_edge(0));
+  cout << "interect: "<< intersect_hypo1 << endl;
+  Eigen::Vector3d hypo1_pt1       = {double(pt_edge(0)), intersect_hypo1+slope_hypo1*double(pt_edge(0))+DIST_THRESH, 1};
+  Eigen::Vector3d hypo1_pt2       = {double(pt_edge(0)), intersect_hypo1+slope_hypo1*double(pt_edge(0))-DIST_THRESH, 1};
+  cout << "hypo1_pt1: "<< endl;
+  cout << hypo1_pt1 << endl;
+  cout << "hypo1_pt2: "<< endl;
+  cout << hypo1_pt2 << endl;
+
+  Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(13), All_R, All_T, VALID_INDX, K);
+  cout<< "QuadrilateralPoints: " << endl;
+  cout<< QuadrilateralPoints << endl;
 
 }

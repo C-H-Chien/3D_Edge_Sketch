@@ -8,6 +8,8 @@ set ( control_sources
   PairEdgeHypo.cpp
   getReprojectedEdgel.hpp
   getReprojectedEdgel.cpp
+  getQuadrilateral.hpp
+  getQuadrilateral.cpp
 
 )
 
