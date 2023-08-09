@@ -214,28 +214,19 @@ int main(int argc, char **argv) {
   Eigen::Vector3d epipole_pix_view1 = K * epipole_met_view1;
   Eigen::Vector3d epipole_pix_view2 = K * epipole_met_view2;
 
-  /*cout<<"epipole_met_view1: "<<endl;
-  cout<<epipole_met_view1<<endl;
-  cout<<"epipole_met_view2: "<<endl;
-  cout<<epipole_met_view2<<endl;
-  cout<<"epipole_pix_view1: "<<endl;
-  cout<<epipole_pix_view1<<endl;
-  cout<<"epipole_pix_view2: "<<endl;
-  cout<<epipole_pix_view2<<endl;*/
   
   double slope_hypo1 = double(pt_edge(1)-epipole_pix_view1(1))/double(pt_edge(0)-epipole_pix_view1(0));
-  cout << "slope: "<< slope_hypo1 << endl;
   double intersect_hypo1 = double(pt_edge(1)) - slope_hypo1*double(pt_edge(0));
-  cout << "interect: "<< intersect_hypo1 << endl;
   Eigen::Vector3d hypo1_pt1       = {double(pt_edge(0)), intersect_hypo1+slope_hypo1*double(pt_edge(0))+DIST_THRESH, 1};
   Eigen::Vector3d hypo1_pt2       = {double(pt_edge(0)), intersect_hypo1+slope_hypo1*double(pt_edge(0))-DIST_THRESH, 1};
-  cout << "hypo1_pt1: "<< endl;
-  cout << hypo1_pt1 << endl;
-  cout << "hypo1_pt2: "<< endl;
-  cout << hypo1_pt2 << endl;
 
-  Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(13), All_R, All_T, VALID_INDX, K);
+  Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(22), All_R, All_T, VALID_INDX, K);
   cout<< "QuadrilateralPoints: " << endl;
   cout<< QuadrilateralPoints << endl;
+  
+  Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(22), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
+
+  cout<< "inliner: " << endl;
+  cout<< inliner << endl;
 
 }

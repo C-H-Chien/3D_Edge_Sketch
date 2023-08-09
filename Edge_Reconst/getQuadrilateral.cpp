@@ -77,7 +77,51 @@ namespace GetQuadrilateral {
         return QuadrilateralPoints;
     }
     
-    
+    Eigen::MatrixXd get_Quadrilateral::getInliner(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K, Eigen::MatrixXd TO_Edges_VALID) {
+        Eigen::MatrixXd QuadrilateralPoints = getQuadrilateralPoints(pt_edge_HYPO1, pt_edge_HYPO2, All_R, All_T, VALID_INDX, K);
+        Eigen::Vector2d v1 = {double(QuadrilateralPoints(1,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(1,1) - QuadrilateralPoints(0,1))};
+        Eigen::Vector2d v2 = {double(QuadrilateralPoints(2,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(2,1) - QuadrilateralPoints(0,1))};
+        Eigen::Vector2d v3 = {double(QuadrilateralPoints(3,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(3,1) - QuadrilateralPoints(0,1))};
+        Eigen::Vector3d anglelist;
+        anglelist(0) = acos(v1.dot(v2)/(v1.norm()*v2.norm()));
+        anglelist(1) = acos(v1.dot(v3)/(v1.norm()*v3.norm()));
+        anglelist(2) = acos(v2.dot(v3)/(v2.norm()*v3.norm())); 
+        Eigen::Index   maxIndex;
+        double maxangle = anglelist.maxCoeff(&maxIndex); 
+        
+        Eigen::Vector2d inter_idx;
+        if(maxIndex == 0){
+            inter_idx = {1,2};
+        }else if(maxIndex == 1){
+            inter_idx = {1,3};
+        }else{
+            inter_idx = {2,3};
+        }
+        
+        Eigen::Matrix2d V_matrix;
+        V_matrix << double(QuadrilateralPoints(inter_idx(0),0) - QuadrilateralPoints(0,0)), double(QuadrilateralPoints(inter_idx(1),0) - QuadrilateralPoints(0,0)), 
+                    double(QuadrilateralPoints(inter_idx(0),1) - QuadrilateralPoints(0,1)), double(QuadrilateralPoints(inter_idx(1),1) - QuadrilateralPoints(0,1));
+        Eigen::MatrixXd TO_Edges_VALID_XY;
+        TO_Edges_VALID_XY.conservativeResize(TO_Edges_VALID.rows(),2);
+        TO_Edges_VALID_XY.col(0) = TO_Edges_VALID.col(0);
+        TO_Edges_VALID_XY.col(1) = TO_Edges_VALID.col(1);
+        Eigen::MatrixXd intersection1;
+        intersection1.conservativeResize(TO_Edges_VALID.rows(),2);
+        intersection1.col(0) = Eigen::VectorXd::Ones(intersection1.rows())*QuadrilateralPoints(0,0);
+        intersection1.col(1) = Eigen::VectorXd::Ones(intersection1.rows())*QuadrilateralPoints(0,1);
+        Eigen::MatrixXd Val_ab = V_matrix.inverse() * (TO_Edges_VALID_XY.transpose() - intersection1.transpose());
+        
+        Eigen::MatrixXd inliner;
+        int idx_inliner = 0;
+        for (int idx_VALI = 0; idx_VALI < Val_ab.cols(); idx_VALI++){
+            if(double(Val_ab(0,idx_VALI)) >= 0 && double(Val_ab(1,idx_VALI)) >= 0 && double(Val_ab(0,idx_VALI)) <= 1 && double(Val_ab(1,idx_VALI)) <= 1){
+                inliner.conservativeResize(idx_inliner+1,1);
+                inliner.row(idx_inliner) << double(idx_VALI);
+                idx_inliner ++;
+            }
+        }
+        return inliner;
+    }
 
 }
 
