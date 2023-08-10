@@ -10,6 +10,8 @@ set ( control_sources
   getReprojectedEdgel.cpp
   getQuadrilateral.hpp
   getQuadrilateral.cpp
+  getSupportedEdgels.hpp
+  getSupportedEdgels.cpp
 
 )
 
