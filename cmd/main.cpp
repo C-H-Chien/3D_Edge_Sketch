@@ -130,6 +130,10 @@ int main(int argc, char **argv) {
   Eigen::Matrix3d K;
   K<< 537.960322000000, 0, 319.183641000000, 0,	539.597659000000,	247.053820000000,0,	0,	1;
 
+  ////////////////////
+  // Pipeline start
+  ////////////////////
+
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
   GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
@@ -151,27 +155,23 @@ int main(int argc, char **argv) {
 
 
   Eigen::Vector3d pt_edgel_HYPO1;
+
+  /////////////////////////////////////////////////
+  // should be a for loop of edges in hypo 1 here
+  /////////////////////////////////////////////////
+
   int edge_idx = 1819;
   pt_edgel_HYPO1 << Edges_HYPO1(edge_idx-1,0), Edges_HYPO1(edge_idx-1,1), 1;
 
   Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
-  //cout << "function" << endl;
-  //cout << ApBp.block(0,0,6,2) << endl;
 
   Eigen::MatrixXd numerOfDist = PairHypo.getAp_Bp_Dist(Edges_HYPO2, pt_edgel_HYPO1, F);
-  //cout << "distance" << endl;
-  //cout << numerOfDist.block(0,0,6,1) << endl;
-  //numerOfDist = numerOfDist.cwiseAbs();
-  //cout << numerOfDist.block(0,0,6,1) << endl;
-
   Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx(Edges_HYPO2, numerOfDist);
   Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2(Edges_HYPO2, numerOfDist);
 
-  //cout<< "coordinates will be: "<< endl;
-  //cout<< HYPO2_idx << endl;
-  //cout<< edgels_HYPO2.rows() << endl;
-  //cout<< edgels_HYPO2 << endl;
-  cout << "meow~ ~o( =∩ω∩= )m" << endl;
+  ///////////////////////////////////////////////////
+  // should be a for loop of validation views here
+  ///////////////////////////////////////////////////
 
   int VALID_INDX = 0;
   Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
@@ -182,76 +182,25 @@ int main(int argc, char **argv) {
   Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
   Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
   Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
-  //cout << Tangents_VALID.block(0,0,10,2) << endl;
 
   Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
   Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
   
   Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx-1);
-  /*Eigen::Vector3d pt_edgel;
-  pt_edgel << pt_edge(0,0), pt_edge(0,1), 1;
-  Eigen::Vector3d Gamma = K.inverse() * pt_edgel;
-  Eigen::Vector2d tangent;
-  tangent << cos(pt_edge(0,2)), sin(pt_edge(0,2));
-  Eigen::Vector3d tgt_to_pixels;
-  tgt_to_pixels << (tangent(0)+pt_edgel(0)), (tangent(1)+pt_edgel(1)), 1;
-  Eigen::Vector3d tgt_to_meters = K.inverse() * tgt_to_pixels;*/
   Eigen::Vector3d tgt1_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
-  cout<< "tgt1_meters: " << endl;
-  cout<< tgt1_meters << endl;
 
   Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
-  //cout<< "edge_pos_gamma3: " << endl;
-  //cout<< edge_pos_gamma3 << endl;
-
   Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
 
-
-  /*Eigen::Vector3d e1 = {1,0,0};
-  Eigen::Vector3d e2 = {0,1,0};
-  Eigen::Vector3d e3 = {0,0,1};
-
-  Eigen::Vector3d epipole_met_view1 = {double(e1.transpose() * R21.transpose() *T21) / double(e3.transpose()*R21.transpose()*T21), double(e2.transpose()*R21.transpose()*T21) / double(e3.transpose()*R21.transpose()*T21), 1};
-  Eigen::Vector3d epipole_met_view2 = {double(e1.transpose()*T21) / double(e3.transpose()*T21), double(e2.transpose()*T21) / double(e3.transpose()*T21), 1};
-  Eigen::Vector3d epipole_pix_view1 = K * epipole_met_view1;
-  Eigen::Vector3d epipole_pix_view2 = K * epipole_met_view2;
-
-  
-  double slope_hypo1 = double(pt_edge(1)-epipole_pix_view1(1))/double(pt_edge(0)-epipole_pix_view1(0));
-  double intersect_hypo1 = double(pt_edge(1)) - slope_hypo1*double(pt_edge(0));
-  Eigen::Vector3d hypo1_pt1       = {double(pt_edge(0)), intersect_hypo1+slope_hypo1*double(pt_edge(0))+DIST_THRESH, 1};
-  Eigen::Vector3d hypo1_pt2       = {double(pt_edge(0)), intersect_hypo1+slope_hypo1*double(pt_edge(0))-DIST_THRESH, 1};*/
-
-  Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
-  cout<< "QuadrilateralPoints: " << endl;
-  cout<< QuadrilateralPoints << endl;
-  
-  Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
-
-  //cout<< "inliner: " << endl;
-  //cout<< inliner << endl;
-
-  //cout<<"number of gammas: "<< edge_tgt_gamma3.rows() << endl;
-
-  Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(16,0), edge_tgt_gamma3(16,1)};
-  cout<<"edgels_tgt_reproj: "<< endl;
-  cout<< edgels_tgt_reproj << endl;
-  //Eigen::Vector2d target_edges = {Tangents_VALID(inliner(0),0), Tangents_VALID(inliner(0),1)};
-  //cout<<"target_edges: "<< endl;
-  //cout<< target_edges << endl;
-  //double abs_dot_prod = abs(edgels_tgt_reproj(0)*target_edges(0) + edgels_tgt_reproj(1)*target_edges(1));
-  //cout << "abs_dot_prod: " << abs_dot_prod <<endl;
-  //double prev_prod = 0;
-  double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
-  /*for (int idx_inline = 0; idx_inline < inliner.rows(); idx_inline++){
-    Eigen::Vector2d target_edges = {Tangents_VALID(inliner(idx_inline),0), Tangents_VALID(inliner(idx_inline),1)};
-    double abs_dot_prod = abs(edgels_tgt_reproj(0)*target_edges(0) + edgels_tgt_reproj(1)*target_edges(1));
-    if(abs_dot_prod > OREN_THRESH && abs_dot_prod > prev_prod){
-      prev_prod = abs_dot_prod;
-      supported_link_indx = inliner(idx_inline); 
-    }
-  }*/
-  cout << "supported_link_indx: " <<endl;
-  cout << supported_link_indx <<endl;
-
+  // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
+  Eigen::MatrixXd supported_indices;
+  supported_indices.conservativeResize(edgels_HYPO2.rows(),1);
+  for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
+    Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
+    Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
+    double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
+    supported_indices.row(idx_pair) << supported_link_indx;
+  }
+  cout<< "supported_indices: " << endl;
+  cout<< supported_indices << endl;
 }
