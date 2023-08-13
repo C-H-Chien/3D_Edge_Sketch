@@ -173,34 +173,43 @@ int main(int argc, char **argv) {
   // should be a for loop of validation views here
   ///////////////////////////////////////////////////
 
-  int VALID_INDX = 0;
-  Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
-  Eigen::Matrix3d R3             = All_R[VALID_INDX];
-  Eigen::Vector3d T3             = All_T[VALID_INDX];
-  Eigen::MatrixXd VALI_Orient    = TO_Edges_VALID.col(2);
-  Eigen::MatrixXd Tangents_VALID;
-  Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
-  Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
-  Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
-
-  Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
-  Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
-  
-  Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx-1);
-  Eigen::Vector3d tgt1_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
-
-  Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
-  Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
-
-  // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
+  int VALID_idx = 0;
   Eigen::MatrixXd supported_indices;
-  supported_indices.conservativeResize(edgels_HYPO2.rows(),1);
-  for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
-    Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
-    Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
-    double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
-    supported_indices.row(idx_pair) << supported_link_indx;
+  supported_indices.conservativeResize(edgels_HYPO2.rows(),48);
+  Eigen::MatrixXd supported_indice_current;
+  supported_indice_current.conservativeResize(edgels_HYPO2.rows(),1);
+  for (int VALID_INDX = 0; VALID_INDX < 50; VALID_INDX++){
+    if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
+      continue;
+    }
+    Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
+    Eigen::Matrix3d R3             = All_R[VALID_INDX];
+    Eigen::Vector3d T3             = All_T[VALID_INDX];
+    Eigen::MatrixXd VALI_Orient    = TO_Edges_VALID.col(2);
+    Eigen::MatrixXd Tangents_VALID;
+    Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
+    Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
+    Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
+    
+    Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
+    Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
+    
+    Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx-1);
+    Eigen::Vector3d tgt1_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
+    
+    Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
+    Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
+    
+    // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
+    for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
+      Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
+      Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
+      double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
+      supported_indices.row(idx_pair) << supported_link_indx;
+    }
+    supported_indices.col(VALID_idx) << supported_indices.col(0);
+    VALID_idx++;
   }
-  cout<< "supported_indices: " << endl;
-  cout<< supported_indices << endl;
+  cout << "supported_indices.col(47)" << endl;
+  cout << supported_indices.col(47) << endl;
 }
