@@ -174,10 +174,13 @@ int main(int argc, char **argv) {
   ///////////////////////////////////////////////////
 
   int VALID_idx = 0;
+  int stack_idx = 0;
   Eigen::MatrixXd supported_indices;
   supported_indices.conservativeResize(edgels_HYPO2.rows(),48);
   Eigen::MatrixXd supported_indice_current;
   supported_indice_current.conservativeResize(edgels_HYPO2.rows(),1);
+  Eigen::MatrixXd supported_indices_stack;
+  
   for (int VALID_INDX = 0; VALID_INDX < 50; VALID_INDX++){
     if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
       continue;
@@ -206,10 +209,17 @@ int main(int argc, char **argv) {
       Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
       double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
       supported_indices.row(idx_pair) << supported_link_indx;
+      if (supported_link_indx != -2){
+        supported_indices_stack.conservativeResize(stack_idx+1,2);
+        supported_indices_stack.row(stack_idx) << {double(idx_pair), double(supported_link_indx)};
+        stack_idx++;
+      }
     }
     supported_indices.col(VALID_idx) << supported_indices.col(0);
     VALID_idx++;
   }
-  cout << "supported_indices.col(47)" << endl;
-  cout << supported_indices.col(47) << endl;
+  //cout << "supported_indices.col(47)" << endl;
+  //cout << supported_indices.col(47) << endl;
+  cout << "supported_indices_stack size" << endl;
+  cout << supported_indices_stack.rows() << endl;
 }
