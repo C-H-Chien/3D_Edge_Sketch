@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
       supported_indices.row(idx_pair) << supported_link_indx;
       if (supported_link_indx != -2){
         supported_indices_stack.conservativeResize(stack_idx+1,2);
-        supported_indices_stack.row(stack_idx) << {double(idx_pair), double(supported_link_indx)};
+        supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
         stack_idx++;
       }
     }
@@ -220,6 +220,6 @@ int main(int argc, char **argv) {
   }
   //cout << "supported_indices.col(47)" << endl;
   //cout << supported_indices.col(47) << endl;
-  cout << "supported_indices_stack size" << endl;
-  cout << supported_indices_stack.rows() << endl;
+  cout << "supported_indices_stack" << endl;
+  cout << supported_indices_stack.block(0,0,50,2) << endl;
 }
