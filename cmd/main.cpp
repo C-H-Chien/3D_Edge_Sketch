@@ -162,7 +162,18 @@ int main(int argc, char **argv) {
 
   Eigen::MatrixXd paired_edge;
   int pair_num = 0;
+  int mod1 = 0;
+  int mod2 = 0;
+  cout<< "pipeline start" <<endl;
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  mod1 = (edge_idx+1)%10;
+  if( mod1 == 0){
+    cout<< ". "<< flush;
+  }
+  mod2 = (edge_idx+1)%500;
+  if(mod2 == 0){
+    cout<< " "<< endl;
+  }
   pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
 
   Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
@@ -247,12 +258,8 @@ int main(int argc, char **argv) {
     // cout << max_support << endl;
     continue;
   }
-  int finalpair;
-  if(numofmax == 1){
-    finalpair = indices_stack_unique[int(maxIndex)];
-    // cout << finalpair << endl;
-  }else{
-    //TODO: find the final pair among multiple maximum support
+  int finalpair = -2;
+  if(numofmax > 1){
     std::vector<double> rep_count_vec(rep_count.data(), rep_count.data() + rep_count.rows());
     std::vector<int> max_index;
     auto start_it = begin(rep_count_vec);
@@ -280,7 +287,13 @@ int main(int argc, char **argv) {
     //cout << dist << endl;
     Eigen::VectorXd::Index   minIndex;
     double min_dist = dist.minCoeff(&minIndex);
+    if(min_dist > DIST_THRESH){
+      continue;
+    }
     finalpair = int(indices_stack_unique[max_index[minIndex]]);
+    // cout << finalpair << endl;
+  }else{
+    finalpair = int(indices_stack_unique[int(maxIndex)]);
     // cout << finalpair << endl;
   }
   // linearTriangulation code already exist
