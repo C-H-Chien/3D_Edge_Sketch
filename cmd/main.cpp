@@ -160,8 +160,10 @@ int main(int argc, char **argv) {
   // should be a for loop of edges in hypo 1 here
   /////////////////////////////////////////////////
 
-  int edge_idx = 1819;
-  pt_edgel_HYPO1 << Edges_HYPO1(edge_idx-1,0), Edges_HYPO1(edge_idx-1,1), 1;
+  Eigen::MatrixXd paired_edge;
+  int pair_num = 0;
+  for(int edge_idx = 1818; edge_idx<1825; edge_idx++){
+  pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
 
   Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
 
@@ -197,7 +199,7 @@ int main(int argc, char **argv) {
     Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
     Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
     
-    Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx-1);
+    Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx);
     Eigen::Vector3d tgt1_meters = getReprojEdgel.getTGT_Meters(pt_edge, K);
     
     Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
@@ -208,18 +210,85 @@ int main(int argc, char **argv) {
       Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
       Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
       double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
-      supported_indices.row(idx_pair) << supported_link_indx;
+      supported_indice_current.row(idx_pair) << supported_link_indx;
       if (supported_link_indx != -2){
         supported_indices_stack.conservativeResize(stack_idx+1,2);
         supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
         stack_idx++;
       }
     }
-    supported_indices.col(VALID_idx) << supported_indices.col(0);
+    supported_indices.col(VALID_idx) << supported_indice_current.col(0);
     VALID_idx++;
   }
-  //cout << "supported_indices.col(47)" << endl;
-  //cout << supported_indices.col(47) << endl;
-  cout << "supported_indices_stack" << endl;
-  cout << supported_indices_stack.block(0,0,50,2) << endl;
+  //cout<< VALID_idx << endl;
+  //cout << "supported_indices.col(0)" << endl;
+  //cout << supported_indices.col(0) << endl;
+  //cout << "supported_indices_stack" << endl;
+  //cout << supported_indices_stack.block(0,0,50,2) << endl;
+  std::vector<double> indices_stack(supported_indices_stack.data(), supported_indices_stack.data() + supported_indices_stack.rows());
+  std::vector<double> indices_stack_unique = indices_stack;
+  std::sort(indices_stack_unique.begin(), indices_stack_unique.end());
+  std::vector<double>::iterator it1;
+  it1 = std::unique(indices_stack_unique.begin(), indices_stack_unique.end());
+  indices_stack_unique.resize( std::distance(indices_stack_unique.begin(),it1) );
+  //cout << "supported_indices_stack" << endl;
+  //cout << indices_stack_unique.size() << endl;
+  //std::vector<double>::iterator it2;
+  Eigen::VectorXd rep_count;
+  rep_count.conservativeResize(indices_stack_unique.size(),1);
+  for(int unique_idx = 0; unique_idx<indices_stack_unique.size(); unique_idx++){
+    rep_count.row(unique_idx) << double(count(indices_stack.begin(), indices_stack.end(), indices_stack_unique[unique_idx]));
+  }
+  Eigen::VectorXd::Index   maxIndex;
+  double max_support = rep_count.maxCoeff(&maxIndex);
+  int numofmax = count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
+  cout << rep_count.row(maxIndex) << endl;
+  if( double(max_support) < MAX_NUM_OF_SUPPORT_VIEWS){
+    // cout << max_support << endl;
+    continue;
+  }
+  int finalpair;
+  if(numofmax == 1){
+    finalpair = indices_stack_unique[int(maxIndex)];
+    cout << finalpair << endl;
+  }else{
+    //TODO: find the final pair among multiple maximum support
+    std::vector<double> rep_count_vec(rep_count.data(), rep_count.data() + rep_count.rows());
+    std::vector<int> max_index;
+    auto start_it = begin(rep_count_vec);
+    while (start_it != end(rep_count_vec)) {
+      start_it = std::find(start_it, end(rep_count_vec), max_support);
+      if (start_it != end(rep_count_vec)) {
+        auto const pos = std::distance(begin(rep_count_vec), start_it);
+        max_index.push_back(int(pos));
+        ++start_it;
+      }
+    }
+    Eigen::Vector3d coeffs;
+    coeffs = F * pt_edgel_HYPO1;
+    Eigen::MatrixXd Edge_Pts;
+    Edge_Pts.conservativeResize(max_index.size(),2);
+    for(int maxidx = 0; maxidx<max_index.size(); maxidx++){
+      Edge_Pts.row(maxidx) << edgels_HYPO2(indices_stack_unique[max_index[maxidx]], 0),edgels_HYPO2(indices_stack_unique[max_index[maxidx]], 1) ;
+    }
+    Eigen::VectorXd Ap = coeffs(0)*Edge_Pts.col(0);
+    Eigen::VectorXd Bp = coeffs(1)*Edge_Pts.col(1);
+    Eigen::VectorXd numDist = Ap + Bp + Eigen::VectorXd::Ones(Ap.rows())*coeffs(2);
+    double denomDist = coeffs(0)*coeffs(0) + coeffs(1)*coeffs(1);
+    denomDist = sqrt(denomDist);
+    Eigen::VectorXd dist = numDist.cwiseAbs()/denomDist;
+    //cout << dist << endl;
+    Eigen::VectorXd::Index   minIndex;
+    double min_dist = dist.minCoeff(&minIndex);
+    finalpair = int(indices_stack_unique[max_index[minIndex]]);
+    cout << finalpair << endl;
+  }
+  // linearTriangulation code already exist
+  paired_edge.conservativeResize(pair_num+1,50);
+  paired_edge.row(pair_num) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+  pair_num++;
+  }
+
+  
+  cout<<paired_edge<<endl;
 }
