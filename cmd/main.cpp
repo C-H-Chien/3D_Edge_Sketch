@@ -167,6 +167,7 @@ int main(int argc, char **argv) {
   int mod3 = 1;
   cout<< "pipeline start" <<endl;
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  //for(int edge_idx = 0; edge_idx < 100; edge_idx++){
     //cout<<edge_idx<<endl;
   mod1 = (edge_idx+1)%10;
   if( mod1 == 0){
@@ -320,5 +321,9 @@ int main(int argc, char **argv) {
   paired_edge.row(pair_num) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
   pair_num++;
   }
-  cout<<paired_edge<<endl;
+  cout<<paired_edge.rows()<<endl;
+  ofstream myfile1;
+  myfile1.open ("pairededge6n3_quadsize2.txt");
+  myfile1 << paired_edge;
+  myfile1.close();
 }
