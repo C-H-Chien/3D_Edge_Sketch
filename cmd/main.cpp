@@ -164,15 +164,23 @@ int main(int argc, char **argv) {
   int pair_num = 0;
   int mod1 = 0;
   int mod2 = 0;
+  int mod3 = 1;
   cout<< "pipeline start" <<endl;
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+    //cout<<edge_idx<<endl;
   mod1 = (edge_idx+1)%10;
   if( mod1 == 0){
-    cout<< ". "<< flush;
+    cout << mod3 << ". "<< flush;
+    mod3 ++;
   }
   mod2 = (edge_idx+1)%500;
   if(mod2 == 0){
-    cout<< " "<< endl;
+    mod3 = 1;
+    cout<< " "<< edge_idx <<endl;
+  }
+
+  if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
+    continue;
   }
   pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
 
@@ -194,6 +202,8 @@ int main(int argc, char **argv) {
   supported_indice_current.conservativeResize(edgels_HYPO2.rows(),1);
   Eigen::MatrixXd supported_indices_stack;
   
+  // cout<< "run here 1" << endl;
+  int isempty = 1;
   for (int VALID_INDX = 0; VALID_INDX < 50; VALID_INDX++){
     if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
       continue;
@@ -225,12 +235,17 @@ int main(int argc, char **argv) {
       if (supported_link_indx != -2){
         supported_indices_stack.conservativeResize(stack_idx+1,2);
         supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
+        isempty = 0;
         stack_idx++;
       }
     }
     supported_indices.col(VALID_idx) << supported_indice_current.col(0);
     VALID_idx++;
   }
+  if(isempty == 1){
+    continue;
+  }
+  // cout<< "run here 2" << endl;
   //cout<< VALID_idx << endl;
   //cout << "supported_indices.col(0)" << endl;
   //cout << supported_indices.col(0) << endl;
@@ -247,13 +262,17 @@ int main(int argc, char **argv) {
   //std::vector<double>::iterator it2;
   Eigen::VectorXd rep_count;
   rep_count.conservativeResize(indices_stack_unique.size(),1);
+  // cout<< "run here 3" << endl;
   for(int unique_idx = 0; unique_idx<indices_stack_unique.size(); unique_idx++){
     rep_count.row(unique_idx) << double(count(indices_stack.begin(), indices_stack.end(), indices_stack_unique[unique_idx]));
   }
+  // cout<< "run here 4" << endl;
+  // cout<< rep_count << endl;
   Eigen::VectorXd::Index   maxIndex;
   double max_support = rep_count.maxCoeff(&maxIndex);
   int numofmax = count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
   //cout << rep_count.row(maxIndex) << endl;
+  // cout<< "run here 5" << endl;
   if( double(max_support) < MAX_NUM_OF_SUPPORT_VIEWS){
     // cout << max_support << endl;
     continue;

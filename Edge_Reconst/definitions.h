@@ -19,4 +19,8 @@
 
 #define MAX_NUM_OF_SUPPORT_VIEWS   (4)
 
+#define imgcols                       (640)
+
+#define imgrows                       (480)
+
 #endif
