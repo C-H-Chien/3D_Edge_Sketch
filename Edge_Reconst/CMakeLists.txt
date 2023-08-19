@@ -13,6 +13,13 @@ set ( control_sources
   getSupportedEdgels.hpp
   getSupportedEdgels.cpp
 
+  lemsvpe_CH/vgl_polygon_CH.hpp
+  lemsvpe_CH/vgl_point_2d_CH.hpp
+  lemsvpe_CH/vgl_point_2d_CH.cpp
+  lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp
+  lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp
+  lemsvpe_CH/vgl_region_scan_iterator_CH.hpp
+
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
