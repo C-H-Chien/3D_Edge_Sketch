@@ -188,11 +188,17 @@ int main(int argc, char **argv) {
   int mod2 = 0;
   int mod3 = 1;
   cout<< "pipeline start" <<endl;
+<<<<<<< HEAD
   clock_t tstart, tstart1, tend;
   //tstart = clock();
   bool should_break = false;
   //for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
   for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
+=======
+  bool should_break = false;
+  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  //for(int edge_idx = 0; edge_idx < 100; edge_idx++){
+>>>>>>> 5fcc2c311f94a96f24881913e3c2a60b4f174a8b
     //cout<<edge_idx<<endl;
   /*mod1 = (edge_idx+1)%10;
   if( mod1 == 0){
@@ -283,7 +289,11 @@ int main(int argc, char **argv) {
     break;
     //>>>>> END OF ACCESSING PIXEL-SIZED BUCKET COORINDATES FROM FOUR CORNERS OF A QUADRILATERAL >>>>>>>
     */
+<<<<<<< HEAD
     tstart1 = clock();
+=======
+    
+>>>>>>> 5fcc2c311f94a96f24881913e3c2a60b4f174a8b
     for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
       Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
       Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
