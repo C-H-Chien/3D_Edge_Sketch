@@ -6,6 +6,7 @@
 #include <chrono>
 #include <assert.h>
 #include <string>
+#include <ctime>
 
 //> Eigen library
 #include <Eigen/Core>
@@ -20,6 +21,10 @@
 #include "../Edge_Reconst/getSupportedEdgels.hpp"
 #include "../Edge_Reconst/definitions.h"
 
+//> Added by CH
+#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
+#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
+
 using namespace std;
 using namespace MultiviewGeometryUtil;
 
@@ -28,12 +33,29 @@ using namespace MultiviewGeometryUtil;
 //
 // Modifications
 //    Chiang-Heng Chien  23-07-18    Initially create a blank repository with minor multiview geometry utility functions.
+//    Chiang-Heng Chien  23-08-19    Add edited bucketing method from VXL. If this repo is to be integrated under LEMSVPE 
+//                                   scheme, simply use vgl library from VXL. This is very easy to be handled.
 //
 //> (c) LEMS, Brown University
 //> Yilin Zheng (yilin_zheng@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
 // =========================================================================================================================
 
+void 
+getInteriorBuckets(const vgl_polygon_CH<double> &p, bool boundary_in)
+{
+  // iterate
+  vgl_polygon_scan_iterator_CH<double> it(p, boundary_in); 
+
+  std::cout << "Interior points:\n";
+  for (it.reset(); it.next(); ) {
+    int y = it.scany();
+    for (int x = it.startx(); x <= it.endx(); ++x) {
+      std::cout << "(" << x << "," << y << ") ";
+    }
+  }
+  std::cout << std::endl;
+}
 
 int main(int argc, char **argv) {
   std::fstream Edge_File;
@@ -48,7 +70,7 @@ int main(int argc, char **argv) {
   Eigen::Vector4d row_edge;
   cout << "read file now\n";
   while(file_idx<51){
-    std::string Edge_File_Path = "/users/yzhen105/Edge_Based_Reconstruction/datasets/cabinet/Edges/Edge_"+std::to_string(file_idx)+".txt";
+    std::string Edge_File_Path = REPO_DIR + "datasets/cabinet/Edges/Edge_"+std::to_string(file_idx)+".txt";
     file_idx ++;
     Edge_File.open(Edge_File_Path, std::ios_base::in);
     if (!Edge_File) { 
@@ -79,7 +101,7 @@ int main(int argc, char **argv) {
   std::vector<Eigen::Matrix3d> All_R;
   Eigen::Matrix3d R_matrix;
   Eigen::Vector3d row_R;
-  std::string Rmatrix_File_Path = "/users/yzhen105/Edge_Based_Reconstruction/datasets/cabinet/RnT/R_matrix.txt";
+  std::string Rmatrix_File_Path = REPO_DIR + "datasets/cabinet/RnT/R_matrix.txt";
   Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
   if (!Rmatrix_File) { 
     std::cerr << "R_matrix file not existed!\n"; exit(1); 
@@ -107,7 +129,7 @@ int main(int argc, char **argv) {
 
   std::vector<Eigen::Vector3d> All_T;
   Eigen::Vector3d T_matrix;
-  std::string Tmatrix_File_Path = "/users/yzhen105/Edge_Based_Reconstruction/datasets/cabinet/RnT/T_matrix.txt";
+  std::string Tmatrix_File_Path = REPO_DIR + "datasets/cabinet/RnT/T_matrix.txt";
   Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
   if (!Tmatrix_File) { 
     std::cerr << "T_matrix file not existed!\n"; exit(1); 
@@ -166,10 +188,13 @@ int main(int argc, char **argv) {
   int mod2 = 0;
   int mod3 = 1;
   cout<< "pipeline start" <<endl;
-  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
-  //for(int edge_idx = 0; edge_idx < 100; edge_idx++){
+  clock_t tstart, tstart1, tend;
+  //tstart = clock();
+  bool should_break = false;
+  //for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
     //cout<<edge_idx<<endl;
-  mod1 = (edge_idx+1)%10;
+  /*mod1 = (edge_idx+1)%10;
   if( mod1 == 0){
     cout << mod3 << ". "<< flush;
     mod3 ++;
@@ -178,7 +203,7 @@ int main(int argc, char **argv) {
   if(mod2 == 0){
     mod3 = 1;
     cout<< " "<< edge_idx <<endl;
-  }
+  }*/
 
   if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
     continue;
@@ -205,10 +230,12 @@ int main(int argc, char **argv) {
   
   // cout<< "run here 1" << endl;
   int isempty = 1;
+  tstart = clock();
   for (int VALID_INDX = 0; VALID_INDX < 50; VALID_INDX++){
     if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
       continue;
     }
+    
     Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
     Eigen::Matrix3d R3             = All_R[VALID_INDX];
     Eigen::Vector3d T3             = All_T[VALID_INDX];
@@ -228,6 +255,35 @@ int main(int argc, char **argv) {
     Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K);
     
     // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
+
+    /*
+    //>>>>> START OF ACCESSING PIXEL-SIZED BUCKET COORINDATES FROM FOUR CORNERS OF A QUADRILATERAL >>>>>>>
+
+    Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
+    cout<< "QuadrilateralPoints: " << endl;
+    cout<< QuadrilateralPoints << endl;
+
+    std::cout << "================================================" << std::endl;
+    std::cout << round(QuadrilateralPoints(0,0)) << "\t" << round(QuadrilateralPoints(0,1)) << std::endl;
+    std::cout << round(QuadrilateralPoints(1,0)) << "\t" << round(QuadrilateralPoints(1,1)) << std::endl;
+    std::cout << round(QuadrilateralPoints(2,0)) << "\t" << round(QuadrilateralPoints(2,1)) << std::endl;
+    std::cout << round(QuadrilateralPoints(3,0)) << "\t" << round(QuadrilateralPoints(3,1)) << std::endl;
+
+    vgl_polygon_CH<double> Quadrilateral_Corner_Pts_vgl(1);
+    Quadrilateral_Corner_Pts_vgl.push_back_(round(QuadrilateralPoints(0,0)), round(QuadrilateralPoints(0,1)));
+    Quadrilateral_Corner_Pts_vgl.push_back_(round(QuadrilateralPoints(1,0)), round(QuadrilateralPoints(1,1)));
+    Quadrilateral_Corner_Pts_vgl.push_back_(round(QuadrilateralPoints(2,0)), round(QuadrilateralPoints(2,1)));
+    Quadrilateral_Corner_Pts_vgl.push_back_(round(QuadrilateralPoints(3,0)), round(QuadrilateralPoints(3,1)));
+
+    getInteriorBuckets(Quadrilateral_Corner_Pts_vgl, true);
+    //getInteriorBuckets(p1,false);
+
+    std::cout << "================================================" << std::endl;
+    should_break = true;
+    break;
+    //>>>>> END OF ACCESSING PIXEL-SIZED BUCKET COORINDATES FROM FOUR CORNERS OF A QUADRILATERAL >>>>>>>
+    */
+    tstart1 = clock();
     for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
       Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
       Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
@@ -240,9 +296,13 @@ int main(int argc, char **argv) {
         stack_idx++;
       }
     }
+    tend = clock() - tstart1; 
+    //cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from one validation view."<< endl;
     supported_indices.col(VALID_idx) << supported_indice_current.col(0);
     VALID_idx++;
   }
+  tend = clock() - tstart; 
+  cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from validation views."<< endl;
   if(isempty == 1){
     continue;
   }
@@ -321,9 +381,12 @@ int main(int argc, char **argv) {
   paired_edge.row(pair_num) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
   pair_num++;
   }
-  cout<<paired_edge.rows()<<endl;
-  ofstream myfile1;
+  cout<< "pipeline finished" <<endl;
+  tend = clock() - tstart; 
+  cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to find a pair."<< endl;
+  cout << "Number of pairs found: " << paired_edge.rows()<<endl;
+  /*ofstream myfile1;
   myfile1.open ("pairededge6n3_quadsize2.txt");
   myfile1 << paired_edge;
-  myfile1.close();
+  myfile1.close();*/
 }
