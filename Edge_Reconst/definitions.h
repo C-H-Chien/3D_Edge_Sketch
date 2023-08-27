@@ -19,8 +19,10 @@
 
 #define MAX_NUM_OF_SUPPORT_VIEWS   (4)
 
-#define imgcols                       (640)
+#define imgcols                    (640)
 
-#define imgrows                       (480)
+#define imgrows                    (480)
+
+#define DATASET_NUM_OF_FRAMES      (50)
 
 #endif
