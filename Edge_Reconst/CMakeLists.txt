@@ -13,6 +13,8 @@ set ( control_sources
   getSupportedEdgels.hpp
   getSupportedEdgels.cpp
 
+  subpixel_point_set.hpp
+
   lemsvpe_CH/vgl_polygon_CH.hpp
   lemsvpe_CH/vgl_point_2d_CH.hpp
   lemsvpe_CH/vgl_point_2d_CH.cpp
