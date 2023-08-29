@@ -63,8 +63,8 @@ public:
         for (unsigned id=0; id < pt_.rows(); ++id) 
         {
             //> Get the cell coordinates for this edgel
-            unsigned gx = (unsigned)(pt_(id, 1) / NNN);
-            unsigned gy = (unsigned)(pt_(id, 0) / NNN);
+            unsigned gx = (unsigned)(pt_(id, 0) / NNN);
+            unsigned gy = (unsigned)(pt_(id, 1) / NNN);
 
             //> if the edgel position is within the grid, assign it to the right grid point
             if ( gx < ncols_ && gy < nrows_) cells_[gy][gx].push_back(id);

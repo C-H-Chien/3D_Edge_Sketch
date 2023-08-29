@@ -72,9 +72,13 @@ void getEdgelsFromInteriorQuadrilateral(
 )
 {
   //> Traverse all buckets inside the quadrilateral
+  cout << "InteriorBucketCoordinates size: " << InteriorBucketCoordinates.size()<<endl;
   for (int bi = 0; bi < InteriorBucketCoordinates.size(); bi++) {
+    
     unsigned const i_col = InteriorBucketCoordinates[bi](0);  //> x
     unsigned const i_row = InteriorBucketCoordinates[bi](1);  //> y
+
+    //cout<< "coordinate " << bi << ": "<< i_col<< ", "<< i_row << endl;
 
     //> Ignore if bucket coordinate exceeds image boundary
     if (i_row >= sp_pts.nrows() || i_col >= sp_pts.ncols()) continue;
@@ -84,7 +88,10 @@ void getEdgelsFromInteriorQuadrilateral(
       unsigned const p2_idx = sp_pts.cells()[i_row][i_col][k];
       Edgel_Indices.push_back(p2_idx);
     }
+    cout << "sp_pts.cells()[i_row][i_col].size(): " << sp_pts.cells()[i_row][i_col].size() << endl;
   }
+  
+  cout << "num of edges in quad: "<< Edgel_Indices.size() << endl;
 }
 
 int main(int argc, char **argv) {
@@ -102,7 +109,7 @@ int main(int argc, char **argv) {
   //> All_Bucketed_Imgs stores all "bucketed" images
   //> (A "bucketed image" means that edgels are inserted to the buckets of that image)
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
-  cout << "read file now\n";
+  cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
     std::string Edge_File_Path = REPO_DIR + "datasets/cabinet/Edges/Edge_"+std::to_string(file_idx)+".txt";
     file_idx ++;
@@ -233,8 +240,8 @@ int main(int argc, char **argv) {
   clock_t tstart, tend;
   tstart = clock();
   bool should_break = false;
-  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
-    //for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
+  //for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
       //cout<<edge_idx<<endl;
     /*mod1 = (edge_idx+1)%10;
     if( mod1 == 0){
@@ -298,10 +305,10 @@ int main(int argc, char **argv) {
       
       // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
 
-/*      
+      
       //>>>>>>>>>>>>>> START OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
 
-      Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
+      Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(1), All_R, All_T, VALID_INDX, K);
       cout<< "QuadrilateralPoints: " << endl;
       cout<< QuadrilateralPoints << endl;
 
@@ -330,8 +337,9 @@ int main(int argc, char **argv) {
       //> Edgel coordinate (x, y) = (TO_Edges_VALID(Edgel_Indices[ei], 0), TO_Edges_VALID(Edgel_Indices[ei], 1))
       if (Edgel_Indices.size() > 0) {
         for (int ei = 0; ei < Edgel_Indices.size(); ei++) {
-          std::cout << Edgel_Indices[ei] << ": (";
-          std::cout << TO_Edges_VALID(Edgel_Indices[ei], 0) << ", " << TO_Edges_VALID(Edgel_Indices[ei], 1) << ")" << std::endl;
+          cout << Edgel_Indices[ei] <<endl;
+          //std::cout << Edgel_Indices[ei] << ": (";
+          //std::cout << TO_Edges_VALID(Edgel_Indices[ei], 0) << ", " << TO_Edges_VALID(Edgel_Indices[ei], 1) << ")" << std::endl;
         }
         std::cout << std::endl;
         should_break = true;
@@ -339,10 +347,11 @@ int main(int argc, char **argv) {
 
       //std::cout << "================================================" << std::endl;
       //>>>>>>>>>>>>>> END OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
-*/      
+      
       
       //tstart1 = clock();
-      for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
+      //for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
+        int idx_pair = 1;
         Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
         Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
         double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
@@ -353,7 +362,11 @@ int main(int argc, char **argv) {
           isempty = false;
           stack_idx++;
         }
-      }
+        cout << "size should be: " << inliner.size() << endl;
+        cout << inliner << endl;
+        should_break = true;
+      if (should_break) break;
+      //}
       //tend = clock() - tstart1; 
       //cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from one validation view."<< endl;
       supported_indices.col(VALID_idx) << supported_indice_current.col(0);
@@ -448,7 +461,8 @@ int main(int argc, char **argv) {
   cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to find a pair."<< endl;
   cout << "Number of pairs found: " << paired_edge.rows()<<endl;
   ofstream myfile1;
-  myfile1.open ("pairededge6n3_quadsize2.txt");
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2.txt";
+  myfile1.open (Output_File_Path);
   myfile1 << paired_edge;
   myfile1.close();
 }

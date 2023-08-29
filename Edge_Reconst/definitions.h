@@ -3,7 +3,7 @@
 
 //> Put thresholds here as macros 
 #define REPO_DIR                   std::string("/users/yzhen105/Edge_Based_Reconstruction/")
-#define OUTPUT_WRITE_FOLDER        std::string("outputs_write_files/")
+#define OUTPUT_WRITE_FOLDER        std::string("/users/yzhen105/Edge_Based_Reconstruction/outputs_write_files/")
 
 #define SHOW_LAPACK_NUM_OF_THREADS (0)
 
