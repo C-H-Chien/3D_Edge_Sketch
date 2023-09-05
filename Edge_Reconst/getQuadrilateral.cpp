@@ -23,6 +23,10 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <stdio.h>
+#include <stdlib.h>
+using namespace std;
+
 namespace GetQuadrilateral {
     
     get_Quadrilateral::get_Quadrilateral( ) { }
@@ -67,12 +71,36 @@ namespace GetQuadrilateral {
         Eigen::Vector3d coeffshypo2_1 = F32*hypo2_pt1;
         Eigen::Vector3d coeffshypo2_2 = F32*hypo2_pt2;
 
+        Eigen::Vector2d inter1((coeffshypo1_1(1)*coeffshypo2_1(2) - coeffshypo2_1(1)*coeffshypo1_1(2))/(coeffshypo1_1(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_1(1)), (coeffshypo1_1(2)*coeffshypo2_1(0) - coeffshypo2_1(2)*coeffshypo1_1(0))/(coeffshypo1_1(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_1(1)));
+        Eigen::Vector2d inter2((coeffshypo1_1(1)*coeffshypo2_2(2) - coeffshypo2_2(1)*coeffshypo1_1(2))/(coeffshypo1_1(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_1(1)), (coeffshypo1_1(2)*coeffshypo2_2(0) - coeffshypo2_2(2)*coeffshypo1_1(0))/(coeffshypo1_1(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_1(1)));
+        Eigen::Vector2d inter3((coeffshypo1_2(1)*coeffshypo2_1(2) - coeffshypo2_1(1)*coeffshypo1_2(2))/(coeffshypo1_2(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_2(1)), (coeffshypo1_2(2)*coeffshypo2_1(0) - coeffshypo2_1(2)*coeffshypo1_2(0))/(coeffshypo1_2(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_2(1)));
+        Eigen::Vector2d inter4((coeffshypo1_2(1)*coeffshypo2_2(2) - coeffshypo2_2(1)*coeffshypo1_2(2))/(coeffshypo1_2(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_2(1)), (coeffshypo1_2(2)*coeffshypo2_2(0) - coeffshypo2_2(2)*coeffshypo1_2(0))/(coeffshypo1_2(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_2(1)));
+
+        Eigen::Vector2d v1 = inter2 - inter1;
+        Eigen::Vector2d v2 = inter3 - inter1;
+        Eigen::Vector2d v3 = inter4 - inter1;
+
+        Eigen::Vector3d angle_list(acos(v1.dot(v2)/(v1.norm()*v2.norm())), acos(v1.dot(v3)/(v1.norm()*v3.norm())),acos(v2.dot(v3)/(v2.norm()*v3.norm())));
+
         Eigen::MatrixXd QuadrilateralPoints;
         QuadrilateralPoints.conservativeResize(4,2);
-        QuadrilateralPoints.row(0)<< double(coeffshypo1_1(1)*coeffshypo2_1(2) - coeffshypo2_1(1)*coeffshypo1_1(2))/double(coeffshypo1_1(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_1(1)), double(coeffshypo1_1(2)*coeffshypo2_1(0) - coeffshypo2_1(2)*coeffshypo1_1(0))/double(coeffshypo1_1(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_1(1));
-        QuadrilateralPoints.row(1)<< double(coeffshypo1_1(1)*coeffshypo2_2(2) - coeffshypo2_2(1)*coeffshypo1_1(2))/double(coeffshypo1_1(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_1(1)), double(coeffshypo1_1(2)*coeffshypo2_2(0) - coeffshypo2_2(2)*coeffshypo1_1(0))/double(coeffshypo1_1(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_1(1));
-        QuadrilateralPoints.row(2)<< double(coeffshypo1_2(1)*coeffshypo2_1(2) - coeffshypo2_1(1)*coeffshypo1_2(2))/double(coeffshypo1_2(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_2(1)), double(coeffshypo1_2(2)*coeffshypo2_1(0) - coeffshypo2_1(2)*coeffshypo1_2(0))/double(coeffshypo1_2(0)*coeffshypo2_1(1) - coeffshypo2_1(0)*coeffshypo1_2(1));
-        QuadrilateralPoints.row(3)<< double(coeffshypo1_2(1)*coeffshypo2_2(2) - coeffshypo2_2(1)*coeffshypo1_2(2))/double(coeffshypo1_2(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_2(1)), double(coeffshypo1_2(2)*coeffshypo2_2(0) - coeffshypo2_2(2)*coeffshypo1_2(0))/double(coeffshypo1_2(0)*coeffshypo2_2(1) - coeffshypo2_2(0)*coeffshypo1_2(1));
+
+        if(angle_list(0) == angle_list.maxCoeff()){
+            QuadrilateralPoints.row(0)<< inter1(0),inter1(1);
+            QuadrilateralPoints.row(1)<< inter2(0),inter2(1);
+            QuadrilateralPoints.row(2)<< inter4(0),inter4(1);
+            QuadrilateralPoints.row(3)<< inter3(0),inter3(1);
+        }else if(angle_list(1) ==angle_list.maxCoeff()){
+            QuadrilateralPoints.row(0)<< inter1(0),inter1(1);
+            QuadrilateralPoints.row(1)<< inter2(0),inter2(1);
+            QuadrilateralPoints.row(2)<< inter3(0),inter3(1);
+            QuadrilateralPoints.row(3)<< inter4(0),inter4(1);
+        }else{
+            QuadrilateralPoints.row(0)<< inter1(0),inter1(1);
+            QuadrilateralPoints.row(1)<< inter3(0),inter3(1);
+            QuadrilateralPoints.row(2)<< inter2(0),inter2(1);
+            QuadrilateralPoints.row(3)<< inter4(0),inter4(1);
+        }
         
         return QuadrilateralPoints;
     }

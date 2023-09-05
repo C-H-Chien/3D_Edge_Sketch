@@ -72,13 +72,16 @@ void getEdgelsFromInteriorQuadrilateral(
 )
 {
   //> Traverse all buckets inside the quadrilateral
-  cout << "InteriorBucketCoordinates size: " << InteriorBucketCoordinates.size()<<endl;
+  cout << "Number of interior bucket coordinates: " << InteriorBucketCoordinates.size()<<endl;
+  cout<<"bucket coordinates(starts from 0) are shown below: "<< endl;
   for (int bi = 0; bi < InteriorBucketCoordinates.size(); bi++) {
     
     unsigned const i_col = InteriorBucketCoordinates[bi](0);  //> x
     unsigned const i_row = InteriorBucketCoordinates[bi](1);  //> y
 
     //cout<< "coordinate " << bi << ": "<< i_col<< ", "<< i_row << endl;
+    cout<< i_col << ", "<< i_row << ";" << endl;
+
 
     //> Ignore if bucket coordinate exceeds image boundary
     if (i_row >= sp_pts.nrows() || i_col >= sp_pts.ncols()) continue;
@@ -86,12 +89,13 @@ void getEdgelsFromInteriorQuadrilateral(
     //> Traverse all edgels inside the bucket
     for (unsigned k = 0; k < sp_pts.cells()[i_row][i_col].size(); ++k) {
       unsigned const p2_idx = sp_pts.cells()[i_row][i_col][k];
+      //cout<< "inlier edge index(starts from 0): " << p2_idx << endl;
       Edgel_Indices.push_back(p2_idx);
     }
-    cout << "sp_pts.cells()[i_row][i_col].size(): " << sp_pts.cells()[i_row][i_col].size() << endl;
+    //cout << "sp_pts.cells()[i_row][i_col].size(): " << sp_pts.cells()[i_row][i_col].size() << endl;
   }
   
-  cout << "num of edges in quad: "<< Edgel_Indices.size() << endl;
+  cout << "number of edges in this quadrilateral found by bucketing: "<< Edgel_Indices.size() << endl;
 }
 
 int main(int argc, char **argv) {
@@ -280,7 +284,7 @@ int main(int argc, char **argv) {
     // cout<< "run here 1" << endl;
     bool isempty = true;
     //tstart = clock();
-    for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
+    for (int VALID_INDX = 38; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
       if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
         continue;
       }
@@ -308,7 +312,7 @@ int main(int argc, char **argv) {
       
       //>>>>>>>>>>>>>> START OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
 
-      Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(1), All_R, All_T, VALID_INDX, K);
+      Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(47), All_R, All_T, VALID_INDX, K);
       cout<< "QuadrilateralPoints: " << endl;
       cout<< QuadrilateralPoints << endl;
 
@@ -336,8 +340,10 @@ int main(int argc, char **argv) {
       //> Edgel ID: Edgel_Indices[ei]
       //> Edgel coordinate (x, y) = (TO_Edges_VALID(Edgel_Indices[ei], 0), TO_Edges_VALID(Edgel_Indices[ei], 1))
       if (Edgel_Indices.size() > 0) {
+        cout << "inlier edges are shown below: " << endl;
+        cout << "index: (x,y), index starts from 0" << endl;
         for (int ei = 0; ei < Edgel_Indices.size(); ei++) {
-          cout << Edgel_Indices[ei] <<endl;
+          cout << Edgel_Indices[ei]+1 << ";"<<endl;
           //std::cout << Edgel_Indices[ei] << ": (";
           //std::cout << TO_Edges_VALID(Edgel_Indices[ei], 0) << ", " << TO_Edges_VALID(Edgel_Indices[ei], 1) << ")" << std::endl;
         }
@@ -351,7 +357,7 @@ int main(int argc, char **argv) {
       
       //tstart1 = clock();
       //for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
-        int idx_pair = 1;
+        int idx_pair = 47;
         Eigen::MatrixXd inliner = getQuad.getInliner(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K, TO_Edges_VALID);
         Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
         double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
@@ -362,8 +368,13 @@ int main(int argc, char **argv) {
           isempty = false;
           stack_idx++;
         }
-        cout << "size should be: " << inliner.size() << endl;
-        cout << inliner << endl;
+        cout << "Number of inlier found using old method: " << inliner.size() << endl;
+
+        for(int oldi = 0; oldi < inliner.size(); oldi++){
+          std::cout << inliner(oldi) << ": (";
+          std::cout << TO_Edges_VALID(inliner(oldi), 0) << ", " << TO_Edges_VALID(inliner(oldi), 1) << ")" << std::endl;
+        }
+        //cout << inliner << endl;
         should_break = true;
       if (should_break) break;
       //}
