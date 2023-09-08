@@ -246,7 +246,7 @@ int main(int argc, char **argv) {
   bool should_break = false;
   for(int edge_idx = 60; edge_idx < Edges_HYPO1.rows(); edge_idx++){
   //for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
-    cout<<edge_idx<<endl;
+    //cout<<edge_idx<<endl;
     mod1 = (edge_idx+1)%10;
     if( mod1 == 0){
       cout << mod3 << ". "<< flush;
@@ -313,11 +313,19 @@ int main(int argc, char **argv) {
       //>>>>>>>>>>>>>> START OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
       for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
       Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K);
-      //cout<< "QuadrilateralPoints: " << endl;
-      //cout<< QuadrilateralPoints << endl;
-      if (VALID_INDX == 12){
-        cout<<"idx_pair: "<<idx_pair<<endl;
+      if(QuadrilateralPoints(0,0)<0   || QuadrilateralPoints(1,0)<0   || QuadrilateralPoints(2,0)<0   || QuadrilateralPoints(3,0)<0   ||
+         QuadrilateralPoints(0,0)>640 || QuadrilateralPoints(1,0)>640 || QuadrilateralPoints(2,0)>640 || QuadrilateralPoints(3,0)>640 ||
+         QuadrilateralPoints(0,1)<0   || QuadrilateralPoints(1,1)<0   || QuadrilateralPoints(2,1)<0   || QuadrilateralPoints(3,1)<0   ||
+         QuadrilateralPoints(0,1)>480 || QuadrilateralPoints(1,1)>480 || QuadrilateralPoints(2,1)>480 || QuadrilateralPoints(3,1)>480){
+        supported_indice_current.row(idx_pair) << -2;
+        continue;
       }
+      
+      /*if (VALID_INDX == 12){
+        cout<<"idx_pair: "<<idx_pair<<endl;
+        cout<< "QuadrilateralPoints: " << endl;
+      cout<< QuadrilateralPoints << endl;
+      }*/
       //std::cout << "================================================" << std::endl;
       //std::cout << round(QuadrilateralPoints(0,0)) << "\t" << round(QuadrilateralPoints(0,1)) << std::endl;
       //std::cout << round(QuadrilateralPoints(1,0)) << "\t" << round(QuadrilateralPoints(1,1)) << std::endl;
@@ -330,27 +338,27 @@ int main(int argc, char **argv) {
       Quadrilateral_Corner_Pts_vgl.push_back_(round(QuadrilateralPoints(2,0)), round(QuadrilateralPoints(2,1)));
       Quadrilateral_Corner_Pts_vgl.push_back_(round(QuadrilateralPoints(3,0)), round(QuadrilateralPoints(3,1)));
 
-      if (VALID_INDX == 12){
+      /*if (VALID_INDX == 12){
         tstart1 = clock();
-      }
+      }*/
       //> Get bucket coordinates inside the quadrilateral
       std::vector<Eigen::Vector2d> InteriorBucketCoordinates;
       getInteriorBuckets(Quadrilateral_Corner_Pts_vgl, true, InteriorBucketCoordinates);
-      if (VALID_INDX == 12){
+      /*if (VALID_INDX == 12){
       tend = clock() - tstart1; 
       cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to select buckets."<< endl;
       }
 
       if (VALID_INDX == 12){
         tstart1 = clock();
-      }
+      }*/
       //> Fetch edgel IDs of the corresponding buckets
       std::vector< unsigned > Edgel_Indices;
       getEdgelsFromInteriorQuadrilateral( All_Bucketed_Imgs[VALID_INDX], InteriorBucketCoordinates, Edgel_Indices);
-      if (VALID_INDX == 12){
+      /*if (VALID_INDX == 12){
       tend = clock() - tstart1; 
       cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to find inliers."<< endl;
-      }
+      }*/
       std::vector< double > Edgel_Idx(Edgel_Indices.begin(), Edgel_Indices.end());
       Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(Edgel_Idx.data(), Edgel_Idx.size());
       Eigen::MatrixXd inliner(idxVector);
@@ -450,7 +458,7 @@ int main(int argc, char **argv) {
     int finalpair = -2;
     if(numofmax > 1){
       std::vector<double> rep_count_vec(rep_count.data(), rep_count.data() + rep_count.rows());
-      cout<< "here"<<endl;
+      //cout<< "here"<<endl;
       std::vector<int> max_index;
       auto start_it = begin(rep_count_vec);
       while (start_it != end(rep_count_vec)) {
