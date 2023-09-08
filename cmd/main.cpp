@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
   for(int edge_idx = 60; edge_idx < Edges_HYPO1.rows(); edge_idx++){
   //for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
     //cout<<edge_idx<<endl;
-    mod1 = (edge_idx+1)%10;
+    /*mod1 = (edge_idx+1)%10;
     if( mod1 == 0){
       cout << mod3 << ". "<< flush;
       mod3 ++;
@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
     if(mod2 == 0){
       mod3 = 1;
       cout<< " "<< edge_idx <<endl;
-    }
+    }*/
 
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
@@ -501,7 +501,7 @@ int main(int argc, char **argv) {
   }
   cout<< "pipeline finished" <<endl;
   tend = clock() - tstart; 
-  cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to find a pair."<< endl;
+  cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to finish the whole pipeline."<< endl;
   cout << "Number of pairs found: " << paired_edge.rows()<<endl;
   ofstream myfile1;
   std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_bucket.txt";
