@@ -8,6 +8,9 @@
 #include <string>
 #include <ctime>
 
+//> Inluce OpenMP here
+#include <omp.h>
+
 //> Eigen library
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -204,6 +207,8 @@ int main(int argc, char **argv) {
   Eigen::Matrix3d K;
   K<< 537.960322000000, 0, 319.183641000000, 0,	539.597659000000,	247.053820000000,0,	0,	1;
 
+  //>>>>>>>>>>>>>>>>>>>>
+
   ////////////////////
   // Pipeline start
   ////////////////////
@@ -234,6 +239,8 @@ int main(int argc, char **argv) {
   // should be a for loop of edges in hypo 1 here
   /////////////////////////////////////////////////
 
+  //> CH: "paired_edge" is a conflict variable if using OpenMP. Make both paired_edge and pair_num local variables 
+  //>     under the first for-loop, so that they are both individual to each CPU core. 
   Eigen::MatrixXd paired_edge;
   int pair_num = 0;
   int mod1 = 0;
@@ -243,20 +250,21 @@ int main(int argc, char **argv) {
   clock_t tstart, tstart1, tend;
   //clock_t tstart, tend;
   tstart = clock();
-  bool should_break = false;
+
+  //> First loop: loop over all edgels from hypothesis view 1
+  #if defined(_OPENMP)
+    unsigned nthreads = NUM_OF_OPENMP_THREADS;
+    omp_set_num_threads(nthreads);
+    std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
+  #pragma omp parallel for schedule(dynamic) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
+  #endif
   for(int edge_idx = 60; edge_idx < Edges_HYPO1.rows(); edge_idx++){
-  //for(int edge_idx = 2001; edge_idx < 2002; edge_idx++){
-    //cout<<edge_idx<<endl;
-    /*mod1 = (edge_idx+1)%10;
-    if( mod1 == 0){
-      cout << mod3 << ". "<< flush;
-      mod3 ++;
-    }
-    mod2 = (edge_idx+1)%500;
-    if(mod2 == 0){
-      mod3 = 1;
-      cout<< " "<< edge_idx <<endl;
-    }*/
+
+    //> CH: get the ID of the CPU core if necessary
+    //int ID = omp_get_thread_num();
+
+    //> CH: declare local variables here for each CPU processor
+    // .....
 
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
@@ -284,6 +292,8 @@ int main(int argc, char **argv) {
     // cout<< "run here 1" << endl;
     bool isempty = true;
     //tstart = clock();
+
+    //> second loop: loop over all validation views
     for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
       if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
         continue;
@@ -364,7 +374,6 @@ int main(int argc, char **argv) {
       Eigen::MatrixXd inliner(idxVector);
       
       //cout<<inliner<<endl;
-      //should_break = true;
 
       //> Print out a list of edgel IDs and their subpixel coordinates on the validation view locating inside the quadrilateral, if there are any
       //> Edgel ID: Edgel_Indices[ei]
@@ -378,9 +387,7 @@ int main(int argc, char **argv) {
           //std::cout << TO_Edges_VALID(Edgel_Indices[ei], 0) << ", " << TO_Edges_VALID(Edgel_Indices[ei], 1) << ")" << std::endl;
         }
         std::cout << std::endl;
-        should_break = true;
       }*/
-      //if (should_break) break;
 
       //std::cout << "================================================" << std::endl;
       //>>>>>>>>>>>>>> END OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
@@ -414,9 +421,7 @@ int main(int argc, char **argv) {
       supported_indices.col(VALID_idx) << supported_indice_current.col(0);
       VALID_idx++;
       
-    }
-
-    //if (should_break) break; //> CH: Feel free to remove it!
+    } //> End of second loop
 
     //tend = clock() - tstart; 
     //cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from validation views."<< endl;
@@ -498,14 +503,26 @@ int main(int argc, char **argv) {
     paired_edge.conservativeResize(pair_num+1,50);
     paired_edge.row(pair_num) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
     pair_num++;
-  }
+  } //> End of first loop
+  #if defined(_OPENMP)
+    std::cout << "End of using OpenMP parallelization." << std::endl;
+  #endif
+
+  //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
+  // .....
+
   cout<< "pipeline finished" <<endl;
   tend = clock() - tstart; 
   cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to finish the whole pipeline."<< endl;
   cout << "Number of pairs found: " << paired_edge.rows()<<endl;
+
+
+
+  /*
   ofstream myfile1;
   std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_bucket.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge;
   myfile1.close();
+  */
 }

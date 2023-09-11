@@ -5,7 +5,8 @@
 #define REPO_DIR                   std::string("/users/yzhen105/Edge_Based_Reconstruction/")
 #define OUTPUT_WRITE_FOLDER        std::string("/users/yzhen105/Edge_Based_Reconstruction/outputs_write_files/")
 
-#define SHOW_LAPACK_NUM_OF_THREADS (0)
+//> CH: Change this number to the number of CPU-cores you want your code to be processed by
+#define NUM_OF_OPENMP_THREADS      (1)
 
 #define DEBUG                      (1)
 
