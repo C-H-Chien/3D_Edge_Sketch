@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
   Eigen::Matrix3d F   = util.getFundamentalMatrix(K.inverse(), R21, T21);
 
 
-  Eigen::Vector3d pt_edgel_HYPO1;
+  
 
   /////////////////////////////////////////////////
   // should be a for loop of edges in hypo 1 here
@@ -241,32 +241,43 @@ int main(int argc, char **argv) {
 
   //> CH: "paired_edge" is a conflict variable if using OpenMP. Make both paired_edge and pair_num local variables 
   //>     under the first for-loop, so that they are both individual to each CPU core. 
-  Eigen::MatrixXd paired_edge;
-  int pair_num = 0;
+  Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+  //paired_edge.conservativeResize(Edges_HYPO1.rows(),50);
+  //int pair_num = 0;
   int mod1 = 0;
   int mod2 = 0;
   int mod3 = 1;
   cout<< "pipeline start" <<endl;
-  clock_t tstart, tstart1, tend;
-  //clock_t tstart, tend;
-  tstart = clock();
+  //clock_t tstart, tstart1, tend;
+  clock_t tstart, tend;
+  //tstart = clock();
+  double itime, ftime, exec_time;
 
   //> First loop: loop over all edgels from hypothesis view 1
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
     omp_set_num_threads(nthreads);
+    int ID = omp_get_thread_num();
+    itime = omp_get_wtime();
     std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
-  #pragma omp parallel for schedule(dynamic) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
+    std::cout << "nthreads: " << nthreads << "." << std::endl;
+  #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
   #endif
-  for(int edge_idx = 60; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  
+  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  //for(int edge_idx = omp_get_thread_num(); edge_idx < Edges_HYPO1.rows(); edge_idx+= omp_get_num_threads()){
 
     //> CH: get the ID of the CPU core if necessary
     //int ID = omp_get_thread_num();
+    //std::cout << "ID: " << ID << "." << std::endl;
 
     //> CH: declare local variables here for each CPU processor
     // .....
+    //Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(1,50,-2);
+    Eigen::Vector3d pt_edgel_HYPO1;
 
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
+      
       continue;
     }
     pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
@@ -500,29 +511,45 @@ int main(int argc, char **argv) {
       // cout << finalpair << endl;
     }
     // linearTriangulation code already exist
-    paired_edge.conservativeResize(pair_num+1,50);
-    paired_edge.row(pair_num) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
-    pair_num++;
+    //paired_edge.conservativeResize(pair_num+1,50);
+    //paired_edge.row(0) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+    paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+    // pair_num++;
   } //> End of first loop
   #if defined(_OPENMP)
+    ftime = omp_get_wtime();
+    exec_time = ftime - itime;
+    cout << "It took "<< exec_time <<" second(s) to finish the whole pipeline."<< endl;
     std::cout << "End of using OpenMP parallelization." << std::endl;
   #endif
 
+  cout<< "pipeline finished" <<endl;
+
   //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
   // .....
+  tstart = clock();
+  int pair_num = 0;
+  Eigen::MatrixXd paired_edge_final;
+  for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++){
+    if(paired_edge(pair_idx,0) != -2){
+      paired_edge_final.conservativeResize(pair_num+1,50);
+      paired_edge_final.row(pair_num) << paired_edge.row(pair_idx);
+      pair_num++;
+    }
+  }
 
-  cout<< "pipeline finished" <<endl;
+  //cout<< "pipeline finished" <<endl;
   tend = clock() - tstart; 
-  cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to finish the whole pipeline."<< endl;
-  cout << "Number of pairs found: " << paired_edge.rows()<<endl;
+  cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to generate the final edge pair for output file."<< endl;
+  cout << "Number of pairs found: " << paired_edge_final.rows()<<endl;
 
 
 
-  /*
+  
   ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_bucket.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_parallel.txt";
   myfile1.open (Output_File_Path);
-  myfile1 << paired_edge;
+  myfile1 << paired_edge_final;
   myfile1.close();
-  */
+  
 }
