@@ -235,10 +235,7 @@ int main(int argc, char **argv) {
   Eigen::Matrix3d E   = util.getEssentialMatrix(R21, T21);
   Eigen::Matrix3d F   = util.getFundamentalMatrix(K.inverse(), R21, T21);
 
-
-  
-
-  /////////////////////////////////////////////////
+    /////////////////////////////////////////////////
   // should be a for loop of edges in hypo 1 here
   /////////////////////////////////////////////////
 
@@ -548,11 +545,11 @@ int main(int argc, char **argv) {
 
 
 
-  
   ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_ICL-NUIM.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize1_ICL-NUIM.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();
-  
+
+
 }
