@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
   cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
-    std::string Edge_File_Path = REPO_DIR + "datasets/cabinet/Edges/Edge_"+std::to_string(file_idx)+".txt";
+    std::string Edge_File_Path = REPO_DIR + "datasets/ICL-NUIM_officeft1/Edges/Edge_"+std::to_string(file_idx)+".txt";
     file_idx ++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_Path, std::ios_base::in);
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
   std::vector<Eigen::Matrix3d> All_R;
   Eigen::Matrix3d R_matrix;
   Eigen::Vector3d row_R;
-  std::string Rmatrix_File_Path = REPO_DIR + "datasets/cabinet/RnT/R_matrix.txt";
+  std::string Rmatrix_File_Path = REPO_DIR + "datasets/ICL-NUIM_officeft1/RnT/R_matrix.txt";
   Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
   if (!Rmatrix_File) { 
     std::cerr << "R_matrix file not existed!\n"; exit(1); 
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
 
   std::vector<Eigen::Vector3d> All_T;
   Eigen::Vector3d T_matrix;
-  std::string Tmatrix_File_Path = REPO_DIR + "datasets/cabinet/RnT/T_matrix.txt";
+  std::string Tmatrix_File_Path = REPO_DIR + "datasets/ICL-NUIM_officeft1/RnT/T_matrix.txt";
   Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
   if (!Tmatrix_File) { 
     std::cerr << "T_matrix file not existed!\n"; exit(1); 
@@ -205,7 +205,10 @@ int main(int argc, char **argv) {
   cout<< "T matrix loading finished" <<endl;
 
   Eigen::Matrix3d K;
-  K<< 537.960322000000, 0, 319.183641000000, 0,	539.597659000000,	247.053820000000,0,	0,	1;
+  // Cabinet
+  // K<< 537.960322000000, 0, 319.183641000000, 0,	539.597659000000,	247.053820000000,0,	0,	1;
+  // ICL-NUIM_officekt1
+  K<< 481.2000000000000, 0, 319.5000000000000, 0,	-480,	239.5000000000000,0,	0,	1;
 
   //>>>>>>>>>>>>>>>>>>>>
 
@@ -547,7 +550,7 @@ int main(int argc, char **argv) {
 
   
   ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_parallel.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n3_quadsize2_ICL-NUIM.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();
