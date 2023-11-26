@@ -33,7 +33,7 @@ namespace MultiviewGeometryUtil {
         
         Eigen::Matrix3d getSkewSymmetric( Eigen::Vector3d T );
         Eigen::Matrix3d getEssentialMatrix( Eigen::Matrix3d R21, Eigen::Vector3d T21 );
-        Eigen::Matrix3d getFundamentalMatrix( Eigen::Matrix3d inverse_K, Eigen::Matrix3d R21, Eigen::Vector3d T21 );
+        Eigen::Matrix3d getFundamentalMatrix(Eigen::Matrix3d inverse_K1, Eigen::Matrix3d inverse_K2, Eigen::Matrix3d R21, Eigen::Vector3d T21);
         
         Eigen::Matrix3d getRelativePose_R21(Eigen::Matrix3d R1, Eigen::Matrix3d R2);
         Eigen::Vector3d getRelativePose_T21(Eigen::Matrix3d R1, Eigen::Matrix3d R2, Eigen::Vector3d T1, Eigen::Vector3d T2);

@@ -12,6 +12,8 @@ set ( control_sources
   getQuadrilateral.cpp
   getSupportedEdgels.hpp
   getSupportedEdgels.cpp
+  getOrientationList.hpp
+  getOrientationList.cpp
 
   subpixel_point_set.hpp
 

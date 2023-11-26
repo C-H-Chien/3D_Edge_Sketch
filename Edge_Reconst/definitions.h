@@ -8,22 +8,32 @@
 //> CH: Change this number to the number of CPU-cores you want your code to be processed by
 #define NUM_OF_OPENMP_THREADS      (8)
 
-#define DEBUG                      (1)
+#define DEBUG                      (0)
 
-#define DIST_THRESH                (1)
-
-#define OREN_THRESH                (0.9995)
+#define DATASET_NUM_OF_FRAMES      (50)
 
 #define HYPO1_VIEW_INDX            (5)
 
-#define HYPO2_VIEW_INDX            (2)
+#define HYPO2_VIEW_INDX            (15)
+
+#define DIST_THRESH                (2)
+
+#define OREN_THRESH                (0.99)
 
 #define MAX_NUM_OF_SUPPORT_VIEWS   (4)
 
-#define imgcols                    (640)
+#define imgcols                    (400)
 
-#define imgrows                    (480)
+#define imgrows                    (400)
 
-#define DATASET_NUM_OF_FRAMES      (50)
+#define PERCENT_EPIPOLE            (0.025)
+
+#define IF_ICLNUIM_DATASET         (0)
+
+#define IF_TLESS_DATASET           (1)
+
+#define IF_MULTIPLE_K              (1)
+
+#define PI                         (3.1415926)
 
 #endif

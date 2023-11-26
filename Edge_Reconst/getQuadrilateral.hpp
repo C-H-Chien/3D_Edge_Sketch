@@ -26,8 +26,8 @@ namespace GetQuadrilateral {
     public:
         get_Quadrilateral();
         
-        Eigen::MatrixXd getQuadrilateralPoints(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K);
-        Eigen::MatrixXd getInliner(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K, Eigen::MatrixXd TO_Edges_VALID);
+        Eigen::MatrixXd getQuadrilateralPoints(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3);
+        Eigen::MatrixXd getInliner(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3, Eigen::MatrixXd TO_Edges_VALID);
         
 
     private:

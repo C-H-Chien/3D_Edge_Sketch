@@ -31,7 +31,7 @@ namespace GetQuadrilateral {
     
     get_Quadrilateral::get_Quadrilateral( ) { }
     
-    Eigen::MatrixXd get_Quadrilateral::getQuadrilateralPoints(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K) {
+    Eigen::MatrixXd get_Quadrilateral::getQuadrilateralPoints(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e2  = {0,1,0};
@@ -51,8 +51,8 @@ namespace GetQuadrilateral {
 
         Eigen::Vector3d epipole_met_view1 = {double(e1.transpose() * R21.transpose() *T21) / double(e3.transpose()*R21.transpose()*T21), double(e2.transpose()*R21.transpose()*T21) / double(e3.transpose()*R21.transpose()*T21), 1};
         Eigen::Vector3d epipole_met_view2 = {double(e1.transpose()*T21) / double(e3.transpose()*T21), double(e2.transpose()*T21) / double(e3.transpose()*T21), 1};
-        Eigen::Vector3d epipole_pix_view1 = K * epipole_met_view1;
-        Eigen::Vector3d epipole_pix_view2 = K * epipole_met_view2;
+        Eigen::Vector3d epipole_pix_view1 = K1 * epipole_met_view1;
+        Eigen::Vector3d epipole_pix_view2 = K2 * epipole_met_view2;
 
         double slope_hypo1        = double(pt_edge_HYPO1(1)-epipole_pix_view1(1))/double(pt_edge_HYPO1(0)-epipole_pix_view1(0));
         double intersect_hypo1    = double(pt_edge_HYPO1(1)) - slope_hypo1*double(pt_edge_HYPO1(0));
@@ -63,8 +63,8 @@ namespace GetQuadrilateral {
         Eigen::Vector3d hypo2_pt1 = {double(pt_edge_HYPO2(0)), intersect_hypo2+slope_hypo2*double(pt_edge_HYPO2(0))+DIST_THRESH, 1};
         Eigen::Vector3d hypo2_pt2 = {double(pt_edge_HYPO2(0)), intersect_hypo2+slope_hypo2*double(pt_edge_HYPO2(0))-DIST_THRESH, 1};
 
-        Eigen::Matrix3d F31   = util.getFundamentalMatrix(K.inverse(), R31, T31);
-        Eigen::Matrix3d F32   = util.getFundamentalMatrix(K.inverse(), R32, T32);
+        Eigen::Matrix3d F31   = util.getFundamentalMatrix(K3.inverse(), K1.inverse(), R31, T31);
+        Eigen::Matrix3d F32   = util.getFundamentalMatrix(K3.inverse(), K2.inverse(), R32, T32);
 
         Eigen::Vector3d coeffshypo1_1 = F31*hypo1_pt1;
         Eigen::Vector3d coeffshypo1_2 = F31*hypo1_pt2;
@@ -105,8 +105,8 @@ namespace GetQuadrilateral {
         return QuadrilateralPoints;
     }
     
-    Eigen::MatrixXd get_Quadrilateral::getInliner(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K, Eigen::MatrixXd TO_Edges_VALID) {
-        Eigen::MatrixXd QuadrilateralPoints = getQuadrilateralPoints(pt_edge_HYPO1, pt_edge_HYPO2, All_R, All_T, VALID_INDX, K);
+    Eigen::MatrixXd get_Quadrilateral::getInliner(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3, Eigen::MatrixXd TO_Edges_VALID) {
+        Eigen::MatrixXd QuadrilateralPoints = getQuadrilateralPoints(pt_edge_HYPO1, pt_edge_HYPO2, All_R, All_T, VALID_INDX, K1, K2, K3);
         Eigen::Vector2d v1 = {double(QuadrilateralPoints(1,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(1,1) - QuadrilateralPoints(0,1))};
         Eigen::Vector2d v2 = {double(QuadrilateralPoints(2,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(2,1) - QuadrilateralPoints(0,1))};
         Eigen::Vector2d v3 = {double(QuadrilateralPoints(3,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(3,1) - QuadrilateralPoints(0,1))};

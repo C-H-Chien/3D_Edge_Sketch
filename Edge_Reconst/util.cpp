@@ -42,20 +42,40 @@ namespace MultiviewGeometryUtil {
         return T21_x * R21;
     }
 
-    Eigen::Matrix3d multiview_geometry_util::getFundamentalMatrix(Eigen::Matrix3d inverse_K, Eigen::Matrix3d R21, Eigen::Vector3d T21) {
+    Eigen::Matrix3d multiview_geometry_util::getFundamentalMatrix(Eigen::Matrix3d inverse_K1, Eigen::Matrix3d inverse_K2, Eigen::Matrix3d R21, Eigen::Vector3d T21) {
         //> F21 = inv_K'*(skew_T(T21)*R21)*inv_K;
         Eigen::Matrix3d T21_x = getSkewSymmetric(T21);
-        return inverse_K.transpose() * (T21_x * R21) * inverse_K;
+        return inverse_K2.transpose() * (T21_x * R21) * inverse_K1;
     }
 
     Eigen::Matrix3d multiview_geometry_util::getRelativePose_R21(Eigen::Matrix3d R1, Eigen::Matrix3d R2) {
-        return R2 * R1.inverse();
+        Eigen::Matrix3d R_1; 
+        Eigen::Matrix3d R_2;
+        if(IF_TLESS_DATASET == 1){
+            R_1 = R1.transpose();
+            R_2 = R2.transpose();
+        }else{
+            R_1 = R1;
+            R_2 = R2;
+        }
+        return R_2.transpose() * R_1;
     }
 
     Eigen::Vector3d multiview_geometry_util::getRelativePose_T21(Eigen::Matrix3d R1, Eigen::Matrix3d R2, Eigen::Vector3d T1, Eigen::Vector3d T2) {
         Eigen::Vector3d C1 = -1*R1.transpose() * T1;
         Eigen::Vector3d C2 = -1*R2.transpose() * T2;
-        return R2 * (C1 - C2); 
+        Eigen::Matrix3d R_1; 
+        Eigen::Matrix3d R_2;
+        if(IF_TLESS_DATASET == 1){
+            R_1 = R1.transpose();
+            R_2 = R2.transpose();
+            C1 = -1*C1;
+            C2 = -1*C2;
+        }else{
+            R_1 = R1;
+            R_2 = R2;
+        }
+        return R_2.transpose() * (C1 - C2); 
     }
 }
 
