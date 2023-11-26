@@ -277,71 +277,11 @@ int main(int argc, char **argv) {
   Eigen::Matrix3d Tx  = util.getSkewSymmetric(T21);
   Eigen::Matrix3d E   = util.getEssentialMatrix(R21, T21);
   Eigen::Matrix3d F   = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
-
-  /*cout << "K1: \n" << K1 <<endl;
-  cout << "K2: \n" << K2 <<endl;
-  cout << "F: \n"  << F <<endl;*/
-
-  /*
-  Eigen::MatrixXd OreListBar_raw;
-  OreListBar_raw.conservativeResize(Edges_HYPO1.rows(),2);
-  Eigen::Vector3d e1  = {1,0,0};
-  Eigen::Vector3d e2  = {0,1,0};
-  Eigen::Vector3d e3  = {0,0,1};
-
-  Eigen::Vector3d epipole_met_view1 = {double(e1.transpose() * R21.transpose() *T21) / double(e3.transpose()*R21.transpose()*T21), double(e2.transpose()*R21.transpose()*T21) / double(e3.transpose()*R21.transpose()*T21), 1};
-  Eigen::Vector3d epipole_pix_view1 = K1 * epipole_met_view1;
-  cout << "epipole_pix_view1: \n" << epipole_pix_view1 <<endl;
-
-  Eigen::Vector3d epipole_met_view2 = {double(e1.transpose()*T21) / double(e3.transpose()*T21), double(e2.transpose()*T21) / double(e3.transpose()*T21), 1};
-  Eigen::Vector3d epipole_pix_view2 = K2 * epipole_met_view2;
-  cout << "epipole_pix_view2: \n" << epipole_pix_view2 <<endl;
-
-  Eigen::MatrixXd DyDx;
-  DyDx.conservativeResize(Edges_HYPO1.rows(),2);
-  DyDx.col(0) = Edges_HYPO1.col(1) - Eigen::VectorXd::Ones(Edges_HYPO1.rows())*epipole_pix_view1(1);
-  DyDx.col(1) = Edges_HYPO1.col(0) - Eigen::VectorXd::Ones(Edges_HYPO1.rows())*epipole_pix_view1(0);
-   
-  Eigen::MatrixXd slope_hypo1 = DyDx.col(0).array()/DyDx.col(1).array();
-  cout << "slope_hypo1: \n" << slope_hypo1.row(0) <<endl;
-
-  OreListBar_raw.col(0) = -1*(Eigen::VectorXd::Ones(Edges_HYPO1.rows())*F(0,0)+F(0,1)*slope_hypo1.col(0));
-  OreListBar_raw.col(1) = (Eigen::VectorXd::Ones(Edges_HYPO1.rows())*F(1,0)+F(1,1)*slope_hypo1.col(0));
-  Eigen::MatrixXd OreListBar = OreListBar_raw.col(0).array()/OreListBar_raw.col(1).array();
-  cout << "OreListBar: \n" << OreListBar.block(0,0,6,1) <<endl;
-  Eigen::MatrixXd OreListBarAtan = OreListBar.col(0).array().atan();
-  cout << "OreListBarAtan: \n" << OreListBarAtan.block(0,0,6,1) <<endl;
-  Eigen::MatrixXd OreListBardegree = (OreListBarAtan.col(0)*180)/M_PI;
-  cout << "OreListBardegree: \n" << OreListBardegree.block(0,0,6,1) <<endl;
-  */
-
+  
   /*
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
-  */
-  // cout << "OreListBardegree: \n" << OreListBardegree.block(0,0,16,1) <<endl;
-  // cout << "OreListdegree: \n" << OreListdegree.block(0,0,16,1) <<endl;
-
-  //vector<double> Ore_List1Bar(OreListBardegree.data(), OreListBardegree.data() + OreListBardegree.rows());
-  //vector<double> Ore_List1Bar{-1, -2, -3, 1,2,3,-1};
-  //Eigen::MatrixXd Ore_List1Bar(7,1);
-  //Ore_List1Bar<< -1, -2, -3, 1,2,3,-1;
-  //Eigen::MatrixXd Ore_List1Bar1 = Ore_List1Bar.col(0) + Eigen::VectorXd::Ones(Ore_List1Bar.rows())*180;
-  /*
-  vector<size_t> results;
   
-  auto it = find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [](double i){return i > 0 && i <3;});
-  while (it != end(Ore_List1Bar)) {
-    results.emplace_back(distance(begin(Ore_List1Bar), it));
-    it = find_if(next(it), end(Ore_List1Bar), [](double i){return i > 0 && i <3;});
-  }
-
-  for(int value:results)cout<<value<<", ";
-  */
-  //Ore_List1Bar = (Ore_List1Bar.array() < 0).select(Ore_List1Bar1, Ore_List1Bar);
-  //cout << Ore_List1Bar << endl;
-
-  /*
   double angle_range1 = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
   // cout << "angle_range1: " << angle_range1 << endl;
   double range1 =  angle_range1 * PERCENT_EPIPOLE;
@@ -358,6 +298,7 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
   // cout<<"edgels_HYPO2: \n"<<edgels_HYPO2<<endl;
 
+  int VALID_idx = 0;
   int stack_idx = 0;
   Eigen::MatrixXd supported_indices;
   supported_indices.conservativeResize(edgels_HYPO2.rows(),DATASET_NUM_OF_FRAMES-2);
@@ -370,7 +311,8 @@ int main(int argc, char **argv) {
   //tstart = clock();
 
   for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
-      if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
+  //for (int VALID_INDX = 0; VALID_INDX < 1; VALID_INDX++){
+        if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
         continue;
       }
   Eigen::Vector3d pt_edgel_HYPO1;
@@ -420,7 +362,10 @@ int main(int argc, char **argv) {
   // cout << "OreListBardegree32: \n" << OreListBardegree32.block(0,0,6,1)<<endl;
   // cout << "OreListdegree32: \n" << OreListdegree32.block(0,0,6,1) <<endl;
 
+  Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(edgels_HYPO2.rows());
+
   for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
+  //for (int idx_pair = 0; idx_pair < 1; idx_pair++){
   double angle_range3 = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
   double range3 =  angle_range3 * PERCENT_EPIPOLE;
   double thresh_ore32_1 = OreListBardegree32(idx_pair,0) - range3;
@@ -432,6 +377,15 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd edgels_32 = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
   // cout<<"vali_idx32: \n"<<vali_idx32<<endl;
   // cout<<"edgels_32: \n"<<edgels_32<<endl;
+
+  Eigen::MatrixXd anglediff(4,1);
+  anglediff << abs(thresh_ore31_1 - thresh_ore32_1), 
+               abs(thresh_ore31_1 - thresh_ore32_2),
+               abs(thresh_ore31_2 - thresh_ore32_1),
+               abs(thresh_ore31_2 - thresh_ore32_2);
+  if(anglediff.maxCoeff() <= 30 && anglediff.maxCoeff() <= 30){
+    isparallel.row(idx_pair) << 0;
+  }
 
   vector<double> v_intersection;
   vector<double> v1(vali_idx31.data(), vali_idx31.data() + vali_idx31.rows());
@@ -445,18 +399,27 @@ int main(int argc, char **argv) {
   //cout<<"edgels_tgt_reproj: \n"<<edgels_tgt_reproj<<endl;
   double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
 
-  supported_indice_current.row(idx_pair) << supported_link_indx;
-  if (supported_link_indx != -2){
+  if (isparallel(idx_pair,0) != 0){
+    supported_indice_current.row(idx_pair) << supported_link_indx;
+  }else{
+    supported_indice_current.row(idx_pair) << -2;
+  }
+  if (supported_link_indx != -2 && isparallel(idx_pair,0) != 0){
     supported_indices_stack.conservativeResize(stack_idx+1,2);
     supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
     isempty = false;
     stack_idx++;
   }
   }
+  // cout<<"isparallel: \n"<<isparallel<<endl;
+  supported_indices.col(VALID_idx) << supported_indice_current.col(0);
+  VALID_idx++;
   }
-  cout<<"supported_indice_current: \n"<<supported_indice_current<<endl;
-  cout<<"supported_indice_current: \n"<<supported_indices_stack.rows()<<endl;
+  cout<<"supported_indices: \n"<<supported_indices<<endl;
+  cout<<"supported_indices_stack.row(): \n"<<supported_indices_stack.rows()<<endl;
+  cout<<"supported_indices.row(): \n"<<supported_indices.rows()<<endl;
   */
+  
  
   /*
   vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
@@ -485,8 +448,8 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   double angle_range1 = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
-  // cout << "angle_range1: " << angle_range1 << endl;
   double range1 =  angle_range1 * PERCENT_EPIPOLE;
+  // cout << "angle_range1: " << angle_range1 << endl;
 
   //paired_edge.conservativeResize(Edges_HYPO1.rows(),50);
   //int pair_num = 0;
@@ -606,6 +569,7 @@ int main(int argc, char **argv) {
 
       Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBarVali(edgels_HYPO2, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
       Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
+      Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(edgels_HYPO2.rows());
 
       // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
 
@@ -624,6 +588,14 @@ int main(int argc, char **argv) {
         // cout<<"vali_idx32: \n"<<vali_idx32<<endl;
         // cout<<"edgels_32: \n"<<edgels_32<<endl;
         
+        Eigen::MatrixXd anglediff(4,1);
+        anglediff << abs(thresh_ore31_1 - thresh_ore32_1), 
+                    abs(thresh_ore31_1 - thresh_ore32_2),
+                    abs(thresh_ore31_2 - thresh_ore32_1),
+                    abs(thresh_ore31_2 - thresh_ore32_2);
+        if(anglediff.maxCoeff() <= 30 && anglediff.maxCoeff() <= 30){
+          isparallel.row(idx_pair) << 0;
+        }
         vector<double> v_intersection;
         vector<double> v1(vali_idx31.data(), vali_idx31.data() + vali_idx31.rows());
         vector<double> v2(vali_idx32.data(), vali_idx32.data() + vali_idx32.rows());
@@ -635,13 +607,17 @@ int main(int argc, char **argv) {
         // cout<<"edgels_tgt_reproj: \n"<<edgels_tgt_reproj<<endl;
         double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
 
-        supported_indice_current.row(idx_pair) << supported_link_indx;
-        if (supported_link_indx != -2){
+        if (isparallel(idx_pair,0) != 0){
+          supported_indice_current.row(idx_pair) << supported_link_indx;
+        }else{
+          supported_indice_current.row(idx_pair) << -2;
+        }
+        if (supported_link_indx != -2 && isparallel(idx_pair,0) != 0){
           supported_indices_stack.conservativeResize(stack_idx+1,2);
           supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
           isempty = false;
           stack_idx++;
-      }
+        }
       /*
       Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(idx_pair), All_R, All_T, VALID_INDX, K1, K2, K3);
       if(QuadrilateralPoints(0,0)<0   || QuadrilateralPoints(1,0)<0   || QuadrilateralPoints(2,0)<0   || QuadrilateralPoints(3,0)<0   ||
