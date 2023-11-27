@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
   //tstart = clock();
 
   for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
-  //for (int VALID_INDX = 0; VALID_INDX < 1; VALID_INDX++){
+  //for (int VALID_INDX = 18; VALID_INDX < 19; VALID_INDX++){
         if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
         continue;
       }
@@ -339,7 +339,6 @@ int main(int argc, char **argv) {
       
   // Eigen::MatrixXd edge_pos_gamma3 = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K1, K2, K3);
   Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K1, K2);
-  
 
   Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBarVali(pt_edge, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
   Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
@@ -394,10 +393,12 @@ int main(int argc, char **argv) {
   // for(int value:v_intersection)cout<<value<<", ";
   Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(v_intersection.data(), v_intersection.size());
   Eigen::MatrixXd inliner(idxVector);
+  //cout<<"inliner: \n"<<inliner<<endl;
 
   Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
   //cout<<"edgels_tgt_reproj: \n"<<edgels_tgt_reproj<<endl;
   double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
+  //cout<<"supported_link_indx: \n"<<supported_link_indx<<endl;
 
   if (isparallel(idx_pair,0) != 0){
     supported_indice_current.row(idx_pair) << supported_link_indx;
@@ -415,7 +416,8 @@ int main(int argc, char **argv) {
   supported_indices.col(VALID_idx) << supported_indice_current.col(0);
   VALID_idx++;
   }
-  cout<<"supported_indices: \n"<<supported_indices<<endl;
+  
+  cout<<"supported_indices.col(VALID_idx): \n"<<supported_indices<<endl;
   cout<<"supported_indices_stack.row(): \n"<<supported_indices_stack.rows()<<endl;
   cout<<"supported_indices.row(): \n"<<supported_indices.rows()<<endl;
   */
@@ -445,10 +447,12 @@ int main(int argc, char **argv) {
   //> CH: "paired_edge" is a conflict variable if using OpenMP. Make both paired_edge and pair_num local variables 
   //>     under the first for-loop, so that they are both individual to each CPU core. 
   Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+  
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   double angle_range1 = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
   double range1 =  angle_range1 * PERCENT_EPIPOLE;
+  
   // cout << "angle_range1: " << angle_range1 << endl;
 
   //paired_edge.conservativeResize(Edges_HYPO1.rows(),50);
