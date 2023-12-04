@@ -415,9 +415,7 @@ int main(int argc, char **argv) {
     VALID_idx++;
   }
   */
-  if (DEBUG == 1) {
-    std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
-  }
+  
 
   // Initialization for paired edges between Hypo1 and Hypo 2
   Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
@@ -444,8 +442,9 @@ int main(int argc, char **argv) {
     std::cout << "nthreads: " << nthreads << "." << std::endl;
   #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
   #endif
-  
+
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  //for(int edge_idx = 0; edge_idx < 1; edge_idx++){
   //for(int edge_idx = omp_get_thread_num(); edge_idx < Edges_HYPO1.rows(); edge_idx+= omp_get_num_threads()){
 
     //> CH: get the ID of the CPU core if necessary
@@ -472,6 +471,10 @@ int main(int argc, char **argv) {
 
     Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
     Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
+
+    if (DEBUG == 1) {
+    std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
+  }
 
     // Initialization
     int VALID_idx = 0;
@@ -537,6 +540,8 @@ int main(int argc, char **argv) {
 
       //cout << VALID_INDX << " here0 "<< edgels_HYPO2.rows()<<endl;
       //>>>>>>>>>>>>>> START OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
+      // cout<< "here"<<endl;
+      // cout << "edge num: "<< edgels_HYPO2.rows() << endl;
       for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
         double angle_range3   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
         double range3         =  angle_range3 * PERCENT_EPIPOLE;
@@ -772,6 +777,7 @@ int main(int argc, char **argv) {
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
     // pair_num++;
   } //> End of first loop
+  
   #if defined(_OPENMP)
     ftime = omp_get_wtime();
     exec_time = ftime - itime;

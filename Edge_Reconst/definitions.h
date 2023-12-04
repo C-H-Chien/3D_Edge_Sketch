@@ -26,11 +26,9 @@
 
 #define imgrows                    (400)
 
-#define PERCENT_EPIPOLE            (0.02,5)
+#define PERCENT_EPIPOLE            (0.025)
 
 #define IF_ICLNUIM_DATASET         (0)
-
-#define IF_TLESS_DATASET           (1)
 
 #define IF_MULTIPLE_K              (1)
 
