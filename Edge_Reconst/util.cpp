@@ -51,6 +51,9 @@ namespace MultiviewGeometryUtil {
     Eigen::Matrix3d multiview_geometry_util::getRelativePose_R21(Eigen::Matrix3d R1, Eigen::Matrix3d R2) {
         Eigen::Matrix3d R_1; 
         Eigen::Matrix3d R_2;
+        R_1 = R1;
+        R_2 = R2;
+        /*
         if(IF_TLESS_DATASET == 1){
             R_1 = R1.transpose();
             R_2 = R2.transpose();
@@ -58,7 +61,8 @@ namespace MultiviewGeometryUtil {
             R_1 = R1;
             R_2 = R2;
         }
-        return R_2.transpose() * R_1;
+        */
+        return R_2* R_1.transpose();
     }
 
     Eigen::Vector3d multiview_geometry_util::getRelativePose_T21(Eigen::Matrix3d R1, Eigen::Matrix3d R2, Eigen::Vector3d T1, Eigen::Vector3d T2) {
@@ -66,7 +70,10 @@ namespace MultiviewGeometryUtil {
         Eigen::Vector3d C2 = -1*R2.transpose() * T2;
         Eigen::Matrix3d R_1; 
         Eigen::Matrix3d R_2;
-        if(IF_TLESS_DATASET == 1){
+        R_1 = R1;
+        R_2 = R2;
+        /*
+        if(IF_TLESS_DATASET == 1){ 
             R_1 = R1.transpose();
             R_2 = R2.transpose();
             C1 = -1*C1;
@@ -75,7 +82,8 @@ namespace MultiviewGeometryUtil {
             R_1 = R1;
             R_2 = R2;
         }
-        return R_2.transpose() * (C1 - C2); 
+        */
+        return R_2 * (C1 - C2); 
     }
 }
 
