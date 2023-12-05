@@ -297,7 +297,6 @@ int main(int argc, char **argv) {
   double itime, ftime, exec_time;
 
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
-  /*
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
     omp_set_num_threads(nthreads);
@@ -307,7 +306,6 @@ int main(int argc, char **argv) {
     std::cout << "nthreads: " << nthreads << "." << std::endl;
   #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
   #endif
-  */
 
   //> First loop: loop over all edgels from hypothesis view 1
   for(int edge_idx = 40; edge_idx < Edges_HYPO1.rows(); edge_idx++){
