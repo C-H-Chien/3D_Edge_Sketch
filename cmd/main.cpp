@@ -245,9 +245,6 @@ int main(int argc, char **argv) {
 
 
   //<<<<<<<<< Pipeline start >>>>>>>>>//
-
-
-
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
   GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
@@ -286,7 +283,7 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   // Calculate the angle range for epipolar lines (Hypo1 --> Hypo2)
   double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
-  // Calculate the angle range for epipolar wedges
+  // Calculate the angle range for epipolar wedges (Hypo1 --> Hypo2)
   double range1                    =  angle_range1 * PERCENT_EPIPOLE;
   // std::cout << "angle_range1: " << angle_range1 <<std::endl;
 
@@ -299,6 +296,7 @@ int main(int argc, char **argv) {
   //tstart = clock();
   double itime, ftime, exec_time;
 
+  //<<<<<<<<< OpenMp Operation >>>>>>>>>//
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
     omp_set_num_threads(nthreads);
@@ -312,16 +310,14 @@ int main(int argc, char **argv) {
   //> First loop: loop over all edgels from hypothesis view 1
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
-      
       continue;
     }
     // Get the current edge from Hypo1
     Eigen::Vector3d pt_edgel_HYPO1;
     pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
 
-    // 
-    Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
-    // Get the range of epipolar wedge for the current edge
+    // Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
+    // Get the range of epipolar wedge for the current edge (Hypo1 --> Hypo2)
     double thresh_ore21_1 = OreListBardegree(edge_idx,0) - range1;
     double thresh_ore21_2 = OreListBardegree(edge_idx,0) + range1;
     // std::cout << "thresh_ore21_1: " << thresh_ore21_1 <<std::endl;
@@ -330,7 +326,7 @@ int main(int argc, char **argv) {
     Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
     Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
 
-    // Initialization
+    // Initializations for all validation views
     int VALID_idx = 0;
     int stack_idx = 0;
     Eigen::MatrixXd supported_indices;
@@ -347,7 +343,7 @@ int main(int argc, char **argv) {
       if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
         continue;
       }
-      
+      // Get camera pose and other info for current validation view
       Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
       Eigen::Matrix3d R3             = All_R[VALID_INDX];
       Eigen::Vector3d T3             = All_T[VALID_INDX];
@@ -356,18 +352,18 @@ int main(int argc, char **argv) {
       Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
       Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
       Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
+      // deal with multiple K scenario
       Eigen::Matrix3d K3;
       if(IF_MULTIPLE_K == 1){
         K3 = All_K[VALID_INDX];
       }else{
         K3 = K;
       }
-      
+      // Calculate relative pose
       Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
       Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
       
-      // Eigen::Vector3d tgt1_meters        = getReprojEdgel.getTGT_Meters(pt_edge, K1);
-      // Eigen::MatrixXd edge_pos_gamma3    = getReprojEdgel.getGamma3Pos(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K1, K2, K3);
+      // Calculate the angle range for epipolar lines (Hypo1 --> Vali)
       Eigen::MatrixXd pt_edge            = Edges_HYPO1.row(edge_idx);
       Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K1, K2);
       Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBarVali(pt_edge, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
@@ -375,12 +371,15 @@ int main(int argc, char **argv) {
       // std::cout << "OreListBardegree31: \n" << OreListBardegree31<<std::endl;
       // std::cout << "OreListdegree31: \n" << OreListdegree31.block(0,0,16,1) <<std::endl;
       double angle_range2   = OreListdegree31.maxCoeff() - OreListdegree31.minCoeff();
+      // Calculate the angle range for epipolar wedges (Hypo1 --> Vali)
       double range2         =  angle_range2 * PERCENT_EPIPOLE;
+      // Get the range of epipolar wedge for the current edge (Hypo1 --> Vali)
       double thresh_ore31_1 = OreListBardegree31(0,0) - range2;
       double thresh_ore31_2 = OreListBardegree31(0,0) + range2;
       // std::cout << "thresh_ore31_1: " << thresh_ore31_1 <<std::endl;
       // std::cout << "thresh_ore31_2: " << thresh_ore31_2 <<std::endl;
 
+      // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
       Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
       Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
       // std::cout<<"vali_idx31: \n"<<vali_idx31<<std::endl;
@@ -390,25 +389,24 @@ int main(int argc, char **argv) {
       Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
       Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(edgels_HYPO2.rows());
 
-      // Eigen::MatrixXd QuadrilateralPoints = getQuad.getQuadrilateralPoints(pt_edge, edgels_HYPO2.row(20), All_R, All_T, VALID_INDX, K);
-
-      //std::cout << VALID_INDX << " here0 "<< edgels_HYPO2.rows()<<std::endl;
-      //>>>>>>>>>>>>>> START OF FETCHING EDGEL IDS FROM A QUADRILATERAL >>>>>>>>>>>>>>
-      // std::cout<< "here"<<std::endl;
-      // std::cout << "edge num: "<< edgels_HYPO2.rows() <<std::endl;
       for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
+        // Calculate the angle range for epipolar lines (Hypo2 --> Vali)
         double angle_range3   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
+        // Calculate the angle range for epipolar wedges (Hypo2 --> Vali)
         double range3         =  angle_range3 * PERCENT_EPIPOLE;
+        // Get the range of epipolar wedge for the current edge (Hypo2 --> Vali)
         double thresh_ore32_1 = OreListBardegree32(idx_pair,0) - range3;
         double thresh_ore32_2 = OreListBardegree32(idx_pair,0) + range3;
         // std::cout << "thresh_ore32_1: " << thresh_ore32_1 <<std::endl;
         // std::cout << "thresh_ore32_2: " << thresh_ore32_2 <<std::endl;
         
+        // Find all the edges fall inside epipolar wedge on validation view (Hypo2 --> Vali)
         Eigen::MatrixXd vali_idx32 = PairHypo.getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
         Eigen::MatrixXd edgels_32  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
         // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
         // std::cout<<"edgels_32: \n"<<edgels_32<<std::endl;
         
+        // Check if the two wedges could be considered as parallel to each other
         Eigen::MatrixXd anglediff(4,1);
         anglediff << abs(thresh_ore31_1 - thresh_ore32_1), 
                      abs(thresh_ore31_1 - thresh_ore32_2),
@@ -417,6 +415,9 @@ int main(int argc, char **argv) {
         if(anglediff.maxCoeff() <= 30 && anglediff.maxCoeff() <= 30){
           isparallel.row(idx_pair) << 0;
         }
+
+        // Find all the edges fall inside the two epipolar wedges intersection on validation view 
+        // (Hypo1 --> Vali) && (Hypo2 --> Vali)
         std::vector<double> v_intersection;
         std::vector<double> v1(vali_idx31.data(), vali_idx31.data() + vali_idx31.rows());
         std::vector<double> v2(vali_idx32.data(), vali_idx32.data() + vali_idx32.rows());
@@ -424,11 +425,14 @@ int main(int argc, char **argv) {
         Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(v_intersection.data(), v_intersection.size());
         Eigen::MatrixXd inliner(idxVector);
         
+        // Caluclate orientation of gamma 3
         Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
         // std::cout<<"edgels_tgt_reproj: \n"<<edgels_tgt_reproj<<std::endl;
+        // Get support from validation view for this gamma 3
         double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
         // std::cout << "supported_link_indx: " << supported_link_indx <<std::endl;
 
+        // Get the supporting edge idx from this validation view (if isnotparallel)
         if (isparallel(idx_pair,0) != 0){
           supported_indice_current.row(idx_pair) << supported_link_indx;
         }else{
@@ -457,36 +461,26 @@ int main(int argc, char **argv) {
     if(isempty_link){
       continue;
     }
-    // std::cout<< "run here 2" <<std::endl;
-    //std::cout<< VALID_idx <<std::endl;
-    //std::cout << "supported_indices.col(0)" <<std::endl;
-    //std::cout << supported_indices.col(0) <<std::endl;
-    //std::cout << "supported_indices_stack" <<std::endl;
-    //std::cout << supported_indices_stack.block(0,0,50,2) <<std::endl;
+
     std::vector<double> indices_stack(supported_indices_stack.data(), supported_indices_stack.data() + supported_indices_stack.rows());
     std::vector<double> indices_stack_unique = indices_stack;
     std::sort(indices_stack_unique.begin(), indices_stack_unique.end());
     std::vector<double>::iterator it1;
     it1 = std::unique(indices_stack_unique.begin(), indices_stack_unique.end());
     indices_stack_unique.resize( std::distance(indices_stack_unique.begin(),it1) );
-    //std::cout << "supported_indices_stack" <<std::endl;
-    //std::cout << indices_stack_unique.size() <<std::endl;
-    //std::vector<double>::iterator it2;
+
     Eigen::VectorXd rep_count;
     rep_count.conservativeResize(indices_stack_unique.size(),1);
-    // std::cout<< "run here 3" <<std::endl;
+
     for(int unique_idx = 0; unique_idx<indices_stack_unique.size(); unique_idx++){
       rep_count.row(unique_idx) << double(count(indices_stack.begin(), indices_stack.end(), indices_stack_unique[unique_idx]));
     }
-    // std::cout<< "run here 4" <<std::endl;
-    // std::cout<< rep_count <<std::endl;
+
     Eigen::VectorXd::Index   maxIndex;
     double max_support = rep_count.maxCoeff(&maxIndex);
     int numofmax = std::count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
-    //std::cout << rep_count.row(maxIndex) <<std::endl;
-    // std::cout<< "run here 5" <<std::endl;
+
     if( double(max_support) < MAX_NUM_OF_SUPPORT_VIEWS){
-      // std::cout << max_support <<std::endl;
       continue;
     }
     int finalpair = -2;
@@ -529,10 +523,8 @@ int main(int argc, char **argv) {
       // std::cout << finalpair <<std::endl;
     }
     // linearTriangulation code already exist
-    //paired_edge.conservativeResize(pair_num+1,50);
-    //paired_edge.row(0) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
-    // pair_num++;
   } //> End of first loop
   
   #if defined(_OPENMP)
