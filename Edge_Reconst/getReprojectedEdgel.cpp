@@ -57,6 +57,11 @@ namespace GetReprojectedEdgel {
         Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
         Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
         Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
+        Eigen::Matrix3d R32 = util.getRelativePose_R21(R2, R3);
+        Eigen::Vector3d T32 = util.getRelativePose_T21(R2, R3, T2, T3);
+        Eigen::Matrix3d E21 = util.getEssentialMatrix(R21, T21);
+        Eigen::Matrix3d E31 = util.getEssentialMatrix(R31, T31);
+        Eigen::Matrix3d E32 = util.getEssentialMatrix(R32, T32);
         Eigen::MatrixXd edge_pos_gamma3;
         edge_pos_gamma3.conservativeResize(edgels_HYPO2.rows(),2);
         for (int idx_HYPO2 = 0; idx_HYPO2 < edgels_HYPO2.rows(); idx_HYPO2++){
@@ -69,6 +74,10 @@ namespace GetReprojectedEdgel {
             Eigen::Vector3d Gamma3 = 1 / rho3 * (R31 * rho1 * Gamma1 + T31);
             Eigen::Vector3d point3 = K3 * Gamma3;
             edge_pos_gamma3.row(idx_HYPO2) << point3(0), point3(1);
+
+
+
+
         }
         return edge_pos_gamma3;
     }

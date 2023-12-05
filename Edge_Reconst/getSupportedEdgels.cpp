@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-using namespace std;
+//using namespace std;
 
 #include "getSupportedEdgels.hpp"
 #include "definitions.h"
