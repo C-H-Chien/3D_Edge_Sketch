@@ -297,6 +297,7 @@ int main(int argc, char **argv) {
   double itime, ftime, exec_time;
 
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
+  /*
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
     omp_set_num_threads(nthreads);
@@ -306,9 +307,10 @@ int main(int argc, char **argv) {
     std::cout << "nthreads: " << nthreads << "." << std::endl;
   #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
   #endif
+  */
 
   //> First loop: loop over all edgels from hypothesis view 1
-  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  for(int edge_idx = 40; edge_idx < Edges_HYPO1.rows(); edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
     }
@@ -339,7 +341,7 @@ int main(int argc, char **argv) {
     //tstart = clock();
 
     //> second loop: loop over all validation views
-    for (int VALID_INDX = 2; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
+    for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
       if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
         continue;
       }
@@ -412,7 +414,9 @@ int main(int argc, char **argv) {
                      abs(thresh_ore31_1 - thresh_ore32_2),
                      abs(thresh_ore31_2 - thresh_ore32_1),
                      abs(thresh_ore31_2 - thresh_ore32_2);
-        if(anglediff.maxCoeff() <= 30 && anglediff.maxCoeff() <= 30){
+        // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
+        // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
+        if(anglediff.maxCoeff() <= 30){
           isparallel.row(idx_pair) << 0;
         }
 
@@ -446,15 +450,16 @@ int main(int argc, char **argv) {
         }
       }
       supported_indices.col(VALID_idx) << supported_indice_current.col(0);
+      // std::cout << "isparallel: \n" << isparallel << std::endl;
+      // std::cout << "supported_indices.col(VALID_idx): \n" << supported_indices.col(VALID_idx) << std::endl;
       VALID_idx++;
+      if (DEBUG == 1) {
+        std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
+      }
       
     } //> End of second loop
-    /*
-    std::cout << "supported_indices: " << supported_indices <<std::endl;
-    */
-    if (DEBUG == 1) {
-      std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
-    }
+    
+    // std::cout << "supported_indices: " << supported_indices <<std::endl;
 
     //tend = clock() - tstart; 
     //std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from validation views."<<std::endl;
@@ -479,7 +484,8 @@ int main(int argc, char **argv) {
     Eigen::VectorXd::Index   maxIndex;
     double max_support = rep_count.maxCoeff(&maxIndex);
     int numofmax = std::count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
-
+    // std::cout << "num of max: "<< numofmax<<std::endl;
+    
     if( double(max_support) < MAX_NUM_OF_SUPPORT_VIEWS){
       continue;
     }
