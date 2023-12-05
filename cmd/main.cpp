@@ -297,6 +297,7 @@ int main(int argc, char **argv) {
   double itime, ftime, exec_time;
 
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
+
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
     omp_set_num_threads(nthreads);
@@ -307,8 +308,9 @@ int main(int argc, char **argv) {
   #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
   #endif
 
+
   //> First loop: loop over all edgels from hypothesis view 1
-  for(int edge_idx = 40; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
     }
@@ -368,8 +370,6 @@ int main(int argc, char **argv) {
       Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K1, K2);
       Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBarVali(pt_edge, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
       Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
-      // std::cout << "OreListBardegree31: \n" << OreListBardegree31<<std::endl;
-      // std::cout << "OreListdegree31: \n" << OreListdegree31.block(0,0,16,1) <<std::endl;
       double angle_range2   = OreListdegree31.maxCoeff() - OreListdegree31.minCoeff();
       // Calculate the angle range for epipolar wedges (Hypo1 --> Vali)
       double range2         =  angle_range2 * PERCENT_EPIPOLE;
@@ -408,11 +408,11 @@ int main(int argc, char **argv) {
         
         // Check if the two wedges could be considered as parallel to each other
         Eigen::MatrixXd anglediff(4,1);
-        anglediff << abs(thresh_ore31_1 - thresh_ore32_1), 
-                     abs(thresh_ore31_1 - thresh_ore32_2),
-                     abs(thresh_ore31_2 - thresh_ore32_1),
-                     abs(thresh_ore31_2 - thresh_ore32_2);
-        // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
+        anglediff << fabs(thresh_ore31_1 - thresh_ore32_1), 
+                     fabs(thresh_ore31_1 - thresh_ore32_2),
+                     fabs(thresh_ore31_2 - thresh_ore32_1),
+                     fabs(thresh_ore31_2 - thresh_ore32_2);
+        // std::cout<<"anglediff: \n"<<anglediff<<std::endl;
         // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
         if(anglediff.maxCoeff() <= 30){
           isparallel.row(idx_pair) << 0;
@@ -451,9 +451,6 @@ int main(int argc, char **argv) {
       // std::cout << "isparallel: \n" << isparallel << std::endl;
       // std::cout << "supported_indices.col(VALID_idx): \n" << supported_indices.col(VALID_idx) << std::endl;
       VALID_idx++;
-      if (DEBUG == 1) {
-        std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
-      }
       
     } //> End of second loop
     
@@ -530,13 +527,17 @@ int main(int argc, char **argv) {
 
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
   } //> End of first loop
-  
+
   #if defined(_OPENMP)
     ftime = omp_get_wtime();
     exec_time = ftime - itime;
     std::cout << "It took "<< exec_time <<" second(s) to finish the whole pipeline."<<std::endl;
     std::cout << "End of using OpenMP parallelization." << std::endl;
   #endif
+  if (DEBUG == 1) {
+    std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
+  }
+
 
   std::cout<< "pipeline finished" <<std::endl;
 
