@@ -52,6 +52,7 @@ class EdgeReconstGPU {
     ~EdgeReconstGPU();
 
     //> Member functions
+    void GPU_Edge_Reconstruction_Main();
 
     //void read_array_from_file(std::string filename, T *rd_data, int first_dim, int second_dim);
     //void write_array_to_file(std::string filename, T *wr_data, int first_dim, int second_dim);
@@ -67,6 +68,13 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, \
     cudacheck( cudaGetDeviceProperties(&prop, device_id));
     std::cout << "## GPU Device : " << prop.name << std::endl;
     cudacheck( cudaSetDevice(device_id) );
+
+    //> Create CUDA events
+    cudacheck( cudaEventCreate(&start) );
+    cudacheck( cudaEventCreate(&stop) );
+
+    //> Time holder
+    time_ER = 0.0;
 
     //> Allocate CPU memory
     All_Rot        = new T[ 3 * 3 * All_R.size() ];
@@ -127,47 +135,12 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, \
     cudacheck( cudaMalloc((void**)&dev_Edgels_H1,       (Num_Of_Edgels_H1 * 3) * sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_OreList_Deg,     (Num_Of_Edgels_H1)     * sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_OreListBar_Deg,  (Num_Of_Edgels_H1)     * sizeof(T)) );
+}
 
-
+template< typename T >
+void EdgeReconstGPU<T>::GPU_Edge_Reconstruction_Main() {
     //> Transfer memory from CPU to GPU
-
-/*
-    // cpu
-    img            = new T[img_height*img_width];
-    Ix             = new T[interp_img_height*interp_img_width];
-    Iy             = new T[interp_img_height*interp_img_width];
-    I_grad_mag     = new T[interp_img_height*interp_img_width];
-    I_orient       = new T[interp_img_height*interp_img_width]; 
-
-    subpix_pos_x_map   = new T[interp_img_height*interp_img_width];
-    subpix_pos_y_map   = new T[interp_img_height*interp_img_width]; 
-
-    // --------------------------------------------------------------------------------
-    // gpu
-    cudacheck( cudaMalloc((void**)&dev_img,         img_height*img_width*sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Ix,          interp_img_height*interp_img_width*sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Iy,          interp_img_height*interp_img_width*sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_I_grad_mag,  interp_img_height*interp_img_width*sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_I_orient,    interp_img_height*interp_img_width*sizeof(T)) );
-
-    cudacheck( cudaMalloc((void**)&dev_Gx,          shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Gxx,         shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Gxxx,        shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_G_of_x,      shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Gx_sh,       shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Gxx_sh,      shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Gxxx_sh,     shifted_kernel_sz *sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_G_of_x_sh,   shifted_kernel_sz *sizeof(T)) );
-
-    cudacheck( cudaMalloc((void**)&dev_subpix_pos_x_map,       interp_img_height*interp_img_width*sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_subpix_pos_y_map,       interp_img_height*interp_img_width*sizeof(T)) );
-
-    time_conv = 0;
-    time_nms = 0;
-
-    // cuda event
-    cudacheck( cudaEventCreate(&start) );
-    cudacheck( cudaEventCreate(&stop) );*/
+    
 }
 
 // ===================================== Destructor =======================================
@@ -192,26 +165,10 @@ EdgeReconstGPU<T>::~EdgeReconstGPU () {
     cudacheck( cudaFree(dev_OreList_Deg) );
     cudacheck( cudaFree(dev_OreListBar_Deg) );
 
-/*
-    // free memory gpu
-    cudacheck( cudaFree(dev_img) );
-    cudacheck( cudaFree(dev_Ix) );
-    cudacheck( cudaFree(dev_Iy) );
-    cudacheck( cudaFree(dev_I_grad_mag) );
-    cudacheck( cudaFree(dev_I_orient) );
-
-    cudacheck( cudaFree(dev_Gx) );
-    cudacheck( cudaFree(dev_Gxx) );
-    cudacheck( cudaFree(dev_Gxxx) );
-    cudacheck( cudaFree(dev_G_of_x) );
-    cudacheck( cudaFree(dev_Gx_sh) );
-    cudacheck( cudaFree(dev_Gxx_sh) );
-    cudacheck( cudaFree(dev_Gxxx_sh) );
-    cudacheck( cudaFree(dev_G_of_x_sh) );
-
+    //> Destroy CUDA Events
     cudacheck( cudaEventDestroy(start) );
     cudacheck( cudaEventDestroy(stop) );
-    */
+    
 }
 
 #endif    // GPU_EDGE_RECONST_HPP
