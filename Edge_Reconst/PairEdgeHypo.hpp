@@ -32,6 +32,7 @@ namespace PairEdgeHypothesis {
         Eigen::MatrixXd getedgels_HYPO2(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd numerOfDist);
         Eigen::MatrixXd getHYPO2_idx_Ore(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2);
         Eigen::MatrixXd getedgels_HYPO2_Ore(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2);
+        Eigen::MatrixXd getHYPO2_idx_Ore_sted(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2);
 
 
     private:

@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
   std::cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
-    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges/Edge_"+std::to_string(file_idx)+".txt";
+    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges/Edge_"+std::to_string(file_idx)+"to6.txt";
     file_idx ++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_Path, std::ios_base::in);
@@ -245,6 +245,7 @@ int main(int argc, char **argv) {
 
 
   //<<<<<<<<< Pipeline start >>>>>>>>>//
+  ////////PREPROCESSING/////////
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
   GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
@@ -287,6 +288,59 @@ int main(int argc, char **argv) {
   double range1                    =  angle_range1 * PERCENT_EPIPOLE;
   // std::cout << "angle_range1: " << angle_range1 <<std::endl;
 
+  std::vector <int> idx_start;
+  std::vector <int> idx_end;
+  
+  for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
+    if(VALID_INDX == HYPO1_VIEW_INDX){
+      continue;
+    }
+    //////////////////////////////////////////////
+    // find sted idx for all views --> HYPO1
+    //////////////////////////////////////////////
+    // Get camera pose and other info for current validation view
+    Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
+    Eigen::Matrix3d R3             = All_R[VALID_INDX];
+    Eigen::Vector3d T3             = All_T[VALID_INDX];
+    Eigen::MatrixXd VALI_Orient    = TO_Edges_VALID.col(2);
+    Eigen::MatrixXd Tangents_VALID;
+    Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
+    Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
+    Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
+    // deal with multiple K scenario
+    Eigen::Matrix3d K3;
+    if(IF_MULTIPLE_K == 1){
+      K3 = All_K[VALID_INDX];
+    }else{
+      K3 = K;
+    }
+    Eigen::MatrixXd OreListBardegree_pre = getOre.getOreListBarVali(Edges_HYPO1, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
+    Eigen::MatrixXd OreListdegree_pre    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
+    double angle_range_pre               = OreListdegree_pre.maxCoeff() - OreListdegree_pre.minCoeff();
+    double range_pre                     =  angle_range_pre * PERCENT_EPIPOLE;
+    for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+      double thresh_ore21_1_pre            = OreListBardegree_pre(edge_idx,0) - range_pre;
+      double thresh_ore21_2_pre            = OreListBardegree_pre(edge_idx,0) + range_pre;
+      Eigen::MatrixXd HYPO2_idxsted = PairHypo.getHYPO2_idx_Ore_sted(OreListdegree_pre, thresh_ore21_1_pre, thresh_ore21_2_pre);
+      //std::cout<< "HYPO2_idxsted: \n" << HYPO2_idxsted <<std::endl;
+      idx_start.push_back(int(HYPO2_idxsted(0,0)));
+      idx_end.push_back(int(HYPO2_idxsted(1,0)));
+    }
+  }
+  /*
+  for (int i = 0; i < idx_start.size(); i++) {
+    std::cout << idx_start[i] << " ";
+  }
+  std::cout << std::endl;
+  for (int i = 0; i < idx_end.size(); i++) {
+    std::cout << idx_end[i] << " ";
+  }
+  std::cout << std::endl;
+  */
+  std::cout << idx_end.size() << std::endl;
+  if (DEBUG == 1) {
+    std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
+  }
 
   //<<<<<<<<< Core of the pipeline starts here >>>>>>>>>//
   std::cout<< "pipeline start" <<std::endl;
@@ -297,7 +351,6 @@ int main(int argc, char **argv) {
   double itime, ftime, exec_time;
 
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
-
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
     omp_set_num_threads(nthreads);
@@ -308,8 +361,8 @@ int main(int argc, char **argv) {
   #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
   #endif
 
-
   //> First loop: loop over all edgels from hypothesis view 1
+  
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
@@ -326,6 +379,8 @@ int main(int argc, char **argv) {
     // std::cout << "thresh_ore21_2: " << thresh_ore21_2 <<std::endl;
 
     Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    // std::cout << "HYPO2_idx: \n" << HYPO2_idx <<std::endl;
+    // std::cout << "HYPO2_idxsted: \n" << HYPO2_idxsted <<std::endl;
     Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
 
     // Initializations for all validation views

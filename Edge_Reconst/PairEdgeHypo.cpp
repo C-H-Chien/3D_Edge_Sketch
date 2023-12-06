@@ -108,6 +108,19 @@ namespace PairEdgeHypothesis {
         return edgels_HYPO2;
     }
 
+    Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx_Ore_sted(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
+        Eigen::MatrixXd HYPO2_idx;
+        HYPO2_idx.conservativeResize(2,1);
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto itst = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1](double i){return i > thresh_ore21_1;});
+        HYPO2_idx.row(0) << double(std::distance(std::begin(Ore_List1Bar), itst));
+        auto ited = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_2](double i){return i > thresh_ore21_2;});
+        HYPO2_idx.row(1) << double(std::distance(std::begin(Ore_List1Bar), ited)-1);
+        
+        return HYPO2_idx;
+    }
+
+
 }
 
 #endif
