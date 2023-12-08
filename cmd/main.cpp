@@ -366,6 +366,7 @@ int main(int argc, char **argv) {
   //> Find epipolar wedge angles from HYPO2 --> all VALID Views
   ///////////////////////////////////////////////////////////////////
   //> SP32 or DP64
+#if USE_DOUBLE_PRECISION
   std::vector<double> Wedge_Angle_Range_from_HYPO2_to_VALID;
   for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++) {
       if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX) continue;
@@ -379,6 +380,21 @@ int main(int argc, char **argv) {
       double range3_         = angle_range3_ * PERCENT_EPIPOLE;  //> Calculate the angle range for epipolar wedges (Hypo2 --> Vali)
       Wedge_Angle_Range_from_HYPO2_to_VALID.push_back(range3_);
   }
+#else
+  std::vector<float> Wedge_Angle_Range_from_HYPO2_to_VALID;
+  for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++) {
+      if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX) continue;
+      Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
+      Eigen::Matrix3d K3;
+      if(IF_MULTIPLE_K == 1) K3 = All_K[VALID_INDX];
+      else K3 = K;
+
+      Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
+      float angle_range3_   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();  
+      float range3_         = angle_range3_ * PERCENT_EPIPOLE;  //> Calculate the angle range for epipolar wedges (Hypo2 --> Vali)
+      Wedge_Angle_Range_from_HYPO2_to_VALID.push_back(range3_);
+  }
+#endif
 
   ///////////////////////////////////////////////////////////////////
   //> Compute all relative poses and fundamental matrices
@@ -427,6 +443,8 @@ int main(int argc, char **argv) {
   //> GPU Computation starts here ...
   int device_ID = 0;
   std::cout << "Number of Total Edgels for All Views = " << Num_Of_Total_Edgels_for_All_Views << std::endl;
+
+#if USE_DOUBLE_PRECISION
   EdgeReconstGPU<double> Parallel_MVW_ER \
                         (device_ID, Num_Of_Total_Edgels_for_All_Views, \
                          R21, T21, F21, Rel_Rot, Rel_Transl, F31s, All_K, \
@@ -434,9 +452,25 @@ int main(int argc, char **argv) {
                          Wedge_Angle_Range_from_HYPO2_to_VALID );
 
   Parallel_MVW_ER.GPU_PreProcess_Edgels_HYPO1( Edges_HYPO1, K1, All_K );
+
+  Parallel_MVW_ER.GPU_Edge_Reconstruction_Main();
   
   Parallel_MVW_ER.~EdgeReconstGPU();
   exit(1);
+#else
+  EdgeReconstGPU<float> Parallel_MVW_ER \
+                        (device_ID, Num_Of_Total_Edgels_for_All_Views, \
+                         R21, T21, F21, Rel_Rot, Rel_Transl, F31s, All_K, \
+                         All_Edgels, idx_truncated_start_HYPO2, idx_truncated_start_VALID, \
+                         Wedge_Angle_Range_from_HYPO2_to_VALID );
+
+  Parallel_MVW_ER.GPU_PreProcess_Edgels_HYPO1( Edges_HYPO1, K1, All_K );
+
+  Parallel_MVW_ER.GPU_Edge_Reconstruction_Main();
+  
+  Parallel_MVW_ER.~EdgeReconstGPU();
+  exit(1);
+#endif
 
 
   

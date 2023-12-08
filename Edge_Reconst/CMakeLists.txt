@@ -27,9 +27,11 @@ set ( control_sources
   #> GPU
   GPU_Edge_Reconst/gpu_edge_reconst.hpp
   GPU_Edge_Reconst/gpu_kernels.hpp
-  GPU_Edge_Reconst/indices.hpp
   GPU_Edge_Reconst/consistency_check.hpp
   GPU_Edge_Reconst/gpu_preprocess_edgels_HYPO1.cu
+  GPU_Edge_Reconst/gpu_edge_reconst_main.cu
+  GPU_Edge_Reconst/dev_functions.cuh
+  
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

@@ -15,7 +15,6 @@
 #include <Eigen/Dense>
 
 #include "../getReprojectedEdgel.hpp"
-#include "./indices.hpp"
 #include "../definitions.h"
 
 template< typename T >
@@ -79,7 +78,14 @@ bool Check_PreProcess_Edgels_in_HYPO1( Eigen::MatrixXd Edges_HYPO1, Eigen::Matri
     return ((gamma1_valid_counter == Edges_HYPO1.rows()) && (normal_vec_valid_counter == Edges_HYPO1.rows())) ? (true) : (false);
 }
 
+bool Check_Hypothesis_Edgels_Pairs( int* host_Hypothesis_Edgel_Pair_Index ) 
+{
+    for (int i = 100; i < 110; i++) {
+        std::cout << host_Hypothesis_Edgel_Pair_Index[i] << std::endl;
+    }
+}
 
+/*
 template< typename T, typename EigenT >
 bool Check_Converted_Matrix_Consistency( T *Converted_Matrix, std::vector<EigenT> ThirdParty_Matrix ) {
 
@@ -112,6 +118,6 @@ bool Check_Converted_Vector_Consistency( T *Converted_Vector, std::vector<EigenT
 
     int total_consistency_count = rows * ThirdParty_Vector.size();
     return ( consistency_count == total_consistency_count ) ? (true) : (false);
-}
+}*/
 
 #endif    // CONSISTENCY_CHECK_HPP

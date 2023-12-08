@@ -36,18 +36,26 @@
 #define WARP_SIZE                               (32)      //> Constant. Must not change!
 #define CHECK_PREPROCESS_CONSISTENCY_CPU_GPU    (true)
 #define PREPROCESS_CONSISTENCY_CPU_GPU_TOL      (1e-5)
+#define USE_DOUBLE_PRECISION                    (false)
 
 //> PART II: PAIRING EDGLES FROM HYPO1 AND HYPO2
-#define NUM_OF_THREADBLOCKS        (3200)     //> Must be identical to the number of edgels in HYPO1
-#define NUM_OF_THREADS_PER_BLOCK   (32)
-#define GAMMA_INDEX_RANGE          (10)
-#define TRUNCATED_WEDGE_RANGE      (2*GAMMA_INDEX_RANGE)
+#define NUM_OF_THREADBLOCKS                     (3200)     //> Must be identical to the number of edgels in HYPO1
+#define NUM_OF_THREADS_PER_BLOCK                (32)
+#define GAMMA_INDEX_RANGE                       (10)
+#define TRUNCATED_WEDGE_RANGE                   (2*GAMMA_INDEX_RANGE)
 
-#define CALIB_FX                   (1075.65091572)
-#define CALIB_FY                   (1073.90347929)
+#define GAMMA3_POS_TOL_PIXEL                    (10)
+#define GAMMA3_TANGENT_DOT_PRODUCT_TOL          (0.9995)
 
-#define DEBUG_GPU                  (true)
-#define CONSISTENCY_TOL            (1e-4)
+#define CALIB_FX                                (1075.65091572)
+#define CALIB_FY                                (1073.90347929)
+
+//> indicies
+#define s_R21(i,j)                              s_R31[ (i)*3 + (j) ]
+#define s_R31(i,j)                              s_R31[ (i)*3 + (j) ]
+
+#define DEBUG_GPU                               (true)
+#define CONSISTENCY_TOL                         (1e-4)
 
 //> CUDA error check
 #define cudacheck( a )  do { \

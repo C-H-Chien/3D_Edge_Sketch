@@ -16,8 +16,6 @@
 
 #include "./consistency_check.hpp"
 #include "./gpu_kernels.hpp"
-
-#include "./indices.hpp"
 #include "../definitions.h"
 
 template< typename T >
@@ -28,10 +26,10 @@ class EdgeReconstGPU {
     
     T *Rel_R21,     *dev_Rel_R21;
     T *Rel_T21,     *dev_Rel_T21;
-    T *Fund21,      *dev_Fund21;
+    //T *Fund21,      *dev_Fund21;
     T *Rel_Rots,    *dev_Rel_Rots;
     T *Rel_Transls, *dev_Rel_Transls;
-    T *Funds,       *dev_Funds;
+    //T *Funds,       *dev_Funds;
     T *All_Calib,   *dev_All_Calib;
 
     T *host_check_Edgel_H1_in_Meters;
@@ -46,6 +44,9 @@ class EdgeReconstGPU {
 
     T *dev_Edgel_H1_in_Meters;
     T *dev_Edgel_H1_Normal_Vectors;
+    
+    int *dev_Hypothesis_Edgel_Pair_Index;
+    int *host_Hypothesis_Edgel_Pair_Index;
 
   public:
     //> Setup the timer
@@ -98,15 +99,16 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, int Num_Of_Total_Edgels_for_All_Vi
     //> Allocate CPU memory
     Rel_R21     = new T[ 9 ];
     Rel_T21     = new T[ 3 ];
-    Fund21      = new T[ 9 ];
     Rel_Rots    = new T[ 9 * R31s.size()  ];
-    Funds       = new T[ 9 * R31s.size()  ];
     Rel_Transls = new T[ 3 * T31s.size()  ];
     All_Calib   = new T[ 2 * All_K.size() ];         //> Only {cx, cy} is necessary
+    //Fund21      = new T[ 9 ];
+    //Funds       = new T[ 9 * R31s.size()  ];
 
     //> Some CPU memory capturing GPU memory data for consistency check and debugging purposes
     host_check_Edgel_H1_in_Meters      = new T[ 2 * Num_Of_Total_Edgels ];
     host_check_Edgel_H1_Normal_Vectors = new T[ 3 * Num_Of_Total_Edgels ];
+    host_Hypothesis_Edgel_Pair_Index   = new int[ Num_Of_Total_Edgels ];
 
     Edgel_List_Start_Indx            = new int[ DATASET_NUM_OF_FRAMES ];
     All_Edgels_List                  = new T[ 3 * Num_Of_Total_Edgels ];
@@ -124,7 +126,7 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, int Num_Of_Total_Edgels_for_All_Vi
         Rel_T21[i] = T21[i];
         for (int j = 0; j < 3; j++) {
             Rel_R21[(i)*3 + (j)] = R21(i,j);
-            Fund21[(i)*3 + (j)]  = F21(i,j);
+            //Fund21[(i)*3 + (j)]  = F21(i,j);
         }
     }
     for (int k = 0; k < R31s.size(); k++) {
@@ -132,7 +134,6 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, int Num_Of_Total_Edgels_for_All_Vi
             Rel_Transls[(i) + (k) * 3] = T31s[k](i);
             for (int j = 0; j < 3; j++) {
                 Rel_Rots[(i)*3 + (j) + (k)*9] = R31s[k](i,j);
-                Funds[(i)*3 + (j) + (k)*9]    = F31s[k](i,j);
             }
         }
     }
@@ -140,17 +141,6 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, int Num_Of_Total_Edgels_for_All_Vi
         All_Calib[0 + k*(2)] = All_K[k](0,2);   //> cx
         All_Calib[1 + k*(2)] = All_K[k](1,2);   //> cy
     }
-
-/*#if DEBUG_GPU
-    bool is_consistent_Rot    = Check_Converted_Matrix_Consistency<T, Eigen::Matrix3d>( All_Rot, All_R    );
-    bool is_consistent_Transl = Check_Converted_Vector_Consistency<T, Eigen::Vector3d>( All_Transl, All_T );
-    if (is_consistent_Rot)    std::cout << "Rotation Matrix conversion is successful!" << std::endl;
-    if (is_consistent_Transl) std::cout << "Translation Vector conversion is successful!" << std::endl;
-    for (int k = 0; k < 2; k++) {
-        for (int i = 0; i < 4; i++) std::cout << All_Calib[i + k*(4)] << "\t";
-        std::cout << std::endl;
-    }
-#endif*/
 
     //> 2) Construct a list of number of edgels for each image by stacking the start index for each view in a list
     int cumulative_start_index = 0;
@@ -194,10 +184,10 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, int Num_Of_Total_Edgels_for_All_Vi
 
     //> Allocate GPU memory
     cudacheck( cudaMalloc((void**)&dev_Rel_R21,     (9) * sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Fund21,      (9) * sizeof(T)) );
+    //cudacheck( cudaMalloc((void**)&dev_Fund21,      (9) * sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_Rel_T21,     (3) * sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_Rel_Rots,    (9) * R31s.size() * sizeof(T)) );
-    cudacheck( cudaMalloc((void**)&dev_Funds,       (9) * T31s.size() * sizeof(T)) );
+    //cudacheck( cudaMalloc((void**)&dev_Funds,       (9) * T31s.size() * sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_Rel_Transls, (3) * T31s.size() * sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_All_Calib,   (2) * All_K.size() * sizeof(T)) );
 
@@ -210,6 +200,8 @@ EdgeReconstGPU<T>::EdgeReconstGPU(int device, int Num_Of_Total_Edgels_for_All_Vi
 
     cudacheck( cudaMalloc((void**)&dev_Edgel_H1_in_Meters,      (2 * Num_Of_Edgels_in_HYPO1)*sizeof(T)) );
     cudacheck( cudaMalloc((void**)&dev_Edgel_H1_Normal_Vectors, (3 * Num_Of_Edgels_in_HYPO1)*sizeof(T)) );
+    cudacheck( cudaMalloc((void**)&dev_Hypothesis_Edgel_Pair_Index, (Num_Of_Edgels_in_HYPO1)*sizeof(int)) );
+    
 #if DEBUG_GPU
     std::cout << "Finished allocating GPU memory!" << std::endl;
 #endif
@@ -245,16 +237,16 @@ void EdgeReconstGPU<T>::GPU_PreProcess_Edgels_HYPO1(
     if (pass_consistency_check) std::cout << " (GPU Preprocessing stage has passed the computation consistency check!) " << std::endl;
 #endif
 }
-/*
+
 template< typename T >
 void EdgeReconstGPU<T>::GPU_Edge_Reconstruction_Main() {
     //> Transfer memory from CPU to GPU
     cudacheck( cudaMemcpy(dev_Rel_R21,     Rel_R21,     (9)*sizeof(T), cudaMemcpyHostToDevice) );
-    cudacheck( cudaMemcpy(dev_Fund21,      Fund21,      (9)*sizeof(T), cudaMemcpyHostToDevice) );
     cudacheck( cudaMemcpy(dev_Rel_T21,     Rel_T21,     (3)*sizeof(T), cudaMemcpyHostToDevice) );
     cudacheck( cudaMemcpy(dev_Rel_Rots,    Rel_Rots,    (9*(DATASET_NUM_OF_FRAMES-2))*sizeof(T), cudaMemcpyHostToDevice) );
-    cudacheck( cudaMemcpy(dev_Funds,       Funds,       (9*(DATASET_NUM_OF_FRAMES-2))*sizeof(T), cudaMemcpyHostToDevice) );
     cudacheck( cudaMemcpy(dev_Rel_Transls, Rel_Transls, (3*(DATASET_NUM_OF_FRAMES-2))*sizeof(T), cudaMemcpyHostToDevice) );
+    //cudacheck( cudaMemcpy(dev_Funds,       Funds,       (9*(DATASET_NUM_OF_FRAMES-2))*sizeof(T), cudaMemcpyHostToDevice) );
+    //cudacheck( cudaMemcpy(dev_Fund21,      Fund21,      (9)*sizeof(T), cudaMemcpyHostToDevice) );
 
     cudacheck( cudaMemcpy(dev_Wedge_Angle_Range_H2_to_VALID,    Wedge_Angle_Range_H2_to_VALID,    (DATASET_NUM_OF_FRAMES-2)*sizeof(T),   cudaMemcpyHostToDevice) );
     cudacheck( cudaMemcpy(dev_Valid_Views_Indices,              Valid_Views_Indices,              (DATASET_NUM_OF_FRAMES-2)*sizeof(int), cudaMemcpyHostToDevice) );
@@ -265,19 +257,27 @@ void EdgeReconstGPU<T>::GPU_Edge_Reconstruction_Main() {
     cudacheck( cudaEventRecord(start) );
 
     //> Create and Launch the GPU kernel
-    gpu_Edge_Reconstruction_template<T>(device_id, dev_Rel_R21, dev_Rel_T21, dev_Fund21, dev_All_Calib, \
-                                        dev_Rel_Rots, dev_Rel_Transls, dev_Funds, \
-                                        dev_All_Edgels_List, dev_Edgel_List_Start_Indx, \
-                                        dev_Truncated_Wedge_Start_Indx_HYPO2, dev_Truncated_Wedge_Start_Indx_VALID, \
-                                        dev_Valid_Views_Indices, dev_Wedge_Angle_Range_H2_to_VALID \
-                                        );
+    gpu_Edge_Reconstruction(device_id, dev_Rel_R21, dev_Rel_T21, dev_All_Calib, \
+                            dev_Rel_Rots, dev_Rel_Transls, \
+                            dev_All_Edgels_List, dev_Edgel_List_Start_Indx, \
+                            dev_Truncated_Wedge_Start_Indx_HYPO2, dev_Truncated_Wedge_Start_Indx_VALID, \
+                            dev_Valid_Views_Indices, dev_Wedge_Angle_Range_H2_to_VALID, \
+                            dev_Edgel_H1_in_Meters, dev_Edgel_H1_Normal_Vectors,
+                            dev_Hypothesis_Edgel_Pair_Index \
+                            );
+
+    //> Copy data from GPU to CPU
+    cudacheck( cudaMemcpy(host_Hypothesis_Edgel_Pair_Index, dev_Hypothesis_Edgel_Pair_Index, (Num_Of_Edgels_in_HYPO1)*sizeof(int), cudaMemcpyDeviceToHost) );
+
+    //> Check the results
+    Check_Hypothesis_Edgels_Pairs( host_Hypothesis_Edgel_Pair_Index );
 
     //> End the CUDA event timer
     cudacheck( cudaEventRecord(stop) );
 	cudacheck( cudaEventSynchronize(stop) );
 	cudacheck( cudaEventElapsedTime(&time_ER, start, stop) );
     printf(" ## GPU Edge Reconstruction time = %8.4f (ms)\n", time_ER );
-}*/
+}
 
 // ===================================== Destructor =======================================
 template< typename T >
@@ -290,8 +290,8 @@ EdgeReconstGPU<T>::~EdgeReconstGPU () {
     delete [] Rel_Transls;
     delete [] All_Calib;
 
-    delete [] Fund21;
-    delete [] Funds;
+    //delete [] Fund21;
+    //delete [] Funds;
 
     delete [] Edgel_List_Start_Indx;
     delete [] All_Edgels_List;
@@ -302,6 +302,7 @@ EdgeReconstGPU<T>::~EdgeReconstGPU () {
 
     delete [] host_check_Edgel_H1_in_Meters;
     delete [] host_check_Edgel_H1_Normal_Vectors;
+    delete [] host_Hypothesis_Edgel_Pair_Index;
 
     //> Free GPU Memory
     cudacheck( cudaFree(dev_Rel_R21) );
@@ -310,8 +311,8 @@ EdgeReconstGPU<T>::~EdgeReconstGPU () {
     cudacheck( cudaFree(dev_Rel_Transls) );
     cudacheck( cudaFree(dev_All_Calib) );
 
-    cudacheck( cudaFree(dev_Fund21) );
-    cudacheck( cudaFree(dev_Funds) );
+    //cudacheck( cudaFree(dev_Fund21) );
+    //cudacheck( cudaFree(dev_Funds) );
 
     cudacheck( cudaFree(dev_Edgel_List_Start_Indx) );
     cudacheck( cudaFree(dev_All_Edgels_List) );
@@ -322,6 +323,7 @@ EdgeReconstGPU<T>::~EdgeReconstGPU () {
 
     cudacheck( cudaFree(dev_Edgel_H1_in_Meters) );
     cudacheck( cudaFree(dev_Edgel_H1_Normal_Vectors) );
+    cudacheck( cudaFree(dev_Hypothesis_Edgel_Pair_Index) );
 
     //> Destroy CUDA Events
     cudacheck( cudaEventDestroy(start) );
