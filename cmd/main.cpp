@@ -288,9 +288,9 @@ int main(int argc, char **argv) {
   double range1                    =  angle_range1 * PERCENT_EPIPOLE;
   // std::cout << "angle_range1: " << angle_range1 <<std::endl;
 
+  /*
   std::vector <int> idx_start;
   std::vector <int> idx_end;
-  
   for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
     if(VALID_INDX == HYPO1_VIEW_INDX){
       continue;
@@ -299,6 +299,7 @@ int main(int argc, char **argv) {
     // find sted idx for all views --> HYPO1
     //////////////////////////////////////////////
     // Get camera pose and other info for current validation view
+    
     Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
     Eigen::Matrix3d R3             = All_R[VALID_INDX];
     Eigen::Vector3d T3             = All_T[VALID_INDX];
@@ -327,6 +328,7 @@ int main(int argc, char **argv) {
       idx_end.push_back(int(HYPO2_idxsted(1,0)));
     }
   }
+  */
   /*
   for (int i = 0; i < idx_start.size(); i++) {
     std::cout << idx_start[i] << " ";
@@ -336,18 +338,14 @@ int main(int argc, char **argv) {
     std::cout << idx_end[i] << " ";
   }
   std::cout << std::endl;
-  */
   std::cout << idx_end.size() << std::endl;
-  if (DEBUG == 1) {
-    std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
-  }
+  */
 
   //<<<<<<<<< Core of the pipeline starts here >>>>>>>>>//
   std::cout<< "pipeline start" <<std::endl;
   
   //clock_t tstart, tstart1, tend;
   clock_t tstart, tend;
-  //tstart = clock();
   double itime, ftime, exec_time;
 
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
@@ -363,7 +361,7 @@ int main(int argc, char **argv) {
 
   //> First loop: loop over all edgels from hypothesis view 1
   
-  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  for(int edge_idx = 28; edge_idx < Edges_HYPO1.rows(); edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
     }
@@ -378,10 +376,11 @@ int main(int argc, char **argv) {
     // std::cout << "thresh_ore21_1: " << thresh_ore21_1 <<std::endl;
     // std::cout << "thresh_ore21_2: " << thresh_ore21_2 <<std::endl;
 
-    Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore_fixed(OreListdegree, thresh_ore21_1, thresh_ore21_2);
     // std::cout << "HYPO2_idx: \n" << HYPO2_idx <<std::endl;
+    
     // std::cout << "HYPO2_idxsted: \n" << HYPO2_idxsted <<std::endl;
-    Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore_fixed(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
 
     // Initializations for all validation views
     int VALID_idx = 0;
@@ -435,8 +434,8 @@ int main(int argc, char **argv) {
       // std::cout << "thresh_ore31_2: " << thresh_ore31_2 <<std::endl;
 
       // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
-      Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-      Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+      Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore_fixed(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+      Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore_fixed(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
       // std::cout<<"vali_idx31: \n"<<vali_idx31<<std::endl;
       // std::cout<<"edgels_31: \n"<<edgels_31<<std::endl;
 
@@ -573,15 +572,19 @@ int main(int argc, char **argv) {
         continue;
       }
       finalpair = int(indices_stack_unique[max_index[minIndex]]);
-      // std::cout << finalpair <<std::endl;
+      // std::cout << "Multi: " << finalpair <<std::endl;
     }else{
       finalpair = int(indices_stack_unique[int(maxIndex)]);
-      // std::cout << finalpair <<std::endl;
+      // std::cout << "single: " << finalpair <<std::endl;
     }
     // linearTriangulation code already exist
-
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+
+    if (DEBUG == 1) {
+      std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
+    }
   } //> End of first loop
+
 
   #if defined(_OPENMP)
     ftime = omp_get_wtime();
@@ -589,9 +592,6 @@ int main(int argc, char **argv) {
     std::cout << "It took "<< exec_time <<" second(s) to finish the whole pipeline."<<std::endl;
     std::cout << "End of using OpenMP parallelization." << std::endl;
   #endif
-  if (DEBUG == 1) {
-    std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
-  }
 
 
   std::cout<< "pipeline finished" <<std::endl;
@@ -617,7 +617,7 @@ int main(int argc, char **argv) {
 
 
   std::ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n16_T-less_wedge.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n16_T-less_FixNumofEdge.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();

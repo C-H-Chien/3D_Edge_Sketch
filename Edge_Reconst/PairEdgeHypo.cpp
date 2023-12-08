@@ -120,6 +120,36 @@ namespace PairEdgeHypothesis {
         return HYPO2_idx;
     }
 
+    Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx_Ore_fixed(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
+        Eigen::MatrixXd HYPO2_idx;
+        HYPO2_idx.conservativeResize(20,1);
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto itst = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1](double i){return i > thresh_ore21_1;});
+        auto ited = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_2](double i){return i > thresh_ore21_2;});
+        int idx_start = std::distance(std::begin(Ore_List1Bar), itst);
+        int idx_end   = std::distance(std::begin(Ore_List1Bar), ited)-1;
+        int midpoint  = std::round((idx_start+idx_end)/2);
+        for(int idx = 0; idx < 20; idx++){
+            HYPO2_idx.row(idx) << double(midpoint-11+idx);
+        }
+        return HYPO2_idx;
+    }
+
+    Eigen::MatrixXd pair_edge_hypothesis::getedgels_HYPO2_Ore_fixed(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
+        Eigen::MatrixXd edgels_HYPO2;
+        edgels_HYPO2.conservativeResize(20,4);
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto itst = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1](double i){return i > thresh_ore21_1;});
+        auto ited = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_2](double i){return i > thresh_ore21_2;});
+        int idx_start = std::distance(std::begin(Ore_List1Bar), itst);
+        int idx_end   = std::distance(std::begin(Ore_List1Bar), ited)-1;
+        int midpoint  = std::round((idx_start+idx_end)/2);
+        for(int idx = 0; idx < 20; idx++){
+            edgels_HYPO2.row(idx) = Edges_HYPO2.row(midpoint-11+idx);
+        }        
+        return edgels_HYPO2;
+    }
+
 
 }
 

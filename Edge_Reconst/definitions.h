@@ -14,7 +14,7 @@
 
 #define HYPO1_VIEW_INDX            (5)
 
-#define HYPO2_VIEW_INDX            (15)
+#define HYPO2_VIEW_INDX            (15) 
 
 #define DIST_THRESH                (2)
 
