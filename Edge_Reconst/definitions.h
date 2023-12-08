@@ -28,8 +28,36 @@
 
 #define PI                         (3.1415926)
 #define DEBUG                      (0)
-#define DEBUG_GPU                  (1)
 
-#define CONSISTENCY_TOL             (1e-4)
+//> GPU Implementations
+//> PART I: PREPROCESSING ON EDGELS IN HYPO1
+#define NUM_OF_THREADBLOCKS_PREPROCESS          (100)
+#define NUM_OF_WARPS_PER_BLOCK_PREPROCESS       (1)
+#define WARP_SIZE                               (32)      //> Constant. Must not change!
+#define CHECK_PREPROCESS_CONSISTENCY_CPU_GPU    (true)
+#define PREPROCESS_CONSISTENCY_CPU_GPU_TOL      (1e-5)
+
+//> PART II: PAIRING EDGLES FROM HYPO1 AND HYPO2
+#define NUM_OF_THREADBLOCKS        (3200)     //> Must be identical to the number of edgels in HYPO1
+#define NUM_OF_THREADS_PER_BLOCK   (32)
+#define GAMMA_INDEX_RANGE          (10)
+#define TRUNCATED_WEDGE_RANGE      (2*GAMMA_INDEX_RANGE)
+
+#define CALIB_FX                   (1075.65091572)
+#define CALIB_FY                   (1073.90347929)
+
+#define DEBUG_GPU                  (true)
+#define CONSISTENCY_TOL            (1e-4)
+
+//> CUDA error check
+#define cudacheck( a )  do { \
+                            cudaError_t e = a; \
+                            if(e != cudaSuccess) { \
+                                printf("\033[1;31m"); \
+                                printf("Error in %s:%d %s\n", __func__, __LINE__, cudaGetErrorString(e)); \
+                                printf("\033[0m"); \
+                            }\
+                        } while(0)
+
 
 #endif

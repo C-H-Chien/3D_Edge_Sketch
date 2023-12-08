@@ -14,9 +14,71 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-//#include "gpu_kernels.hpp"
+#include "../getReprojectedEdgel.hpp"
 #include "./indices.hpp"
 #include "../definitions.h"
+
+template< typename T >
+bool Check_PreProcess_Edgels_in_HYPO1( Eigen::MatrixXd Edges_HYPO1, Eigen::Matrix3d K1, \
+                                       T* host_check_Edgel_H1_in_Meters, T* host_check_Edgel_H1_Normal_Vectors) 
+{
+    GetReprojectedEdgel::get_Reprojected_Edgel getReprojEdgel;
+    Eigen::Vector3d GPU_Computed_gamma;
+    Eigen::Vector3d GPU_Computed_normal_vec;
+    GPU_Computed_gamma(2) = 1.0;
+    int gamma1_valid_counter = 0;
+    int normal_vec_valid_counter = 0;
+    T avg_gamma1_err = 0.0;
+    T avg_normal_vec_err = 0.0;
+    T max_gamma1_err = 0.0;
+    T max_normal_vec_err = 0.0;
+    int max_gamma1_err_indx, max_normal_vec_err_indx;
+
+    for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++) {
+        Eigen::MatrixXd pt_edge = Edges_HYPO1.row(edge_idx);
+        Eigen::Vector3d pt_edgel_HYPO1;
+        pt_edgel_HYPO1 << pt_edge(0,0), pt_edge(0,1), 1;
+        Eigen::Vector3d Gamma1 = K1.inverse() * pt_edgel_HYPO1;
+        Eigen::Vector3d tgt1_meters = getReprojEdgel.getTGT_Meters(pt_edge, K1);
+        Eigen::Vector3d n1 = tgt1_meters.cross(Gamma1);
+
+        //> Fetch data from the array capturing data transferred back from the GPU side
+        GPU_Computed_gamma(0) = host_check_Edgel_H1_in_Meters[ 2*edge_idx    ];
+        GPU_Computed_gamma(1) = host_check_Edgel_H1_in_Meters[ 2*edge_idx + 1];
+        GPU_Computed_normal_vec(0) = host_check_Edgel_H1_Normal_Vectors[ 3*edge_idx     ];
+        GPU_Computed_normal_vec(1) = host_check_Edgel_H1_Normal_Vectors[ 3*edge_idx + 1 ];
+        GPU_Computed_normal_vec(2) = host_check_Edgel_H1_Normal_Vectors[ 3*edge_idx + 2 ];
+
+        T gamma1_err     = (Gamma1 - GPU_Computed_gamma).norm();
+        T normal_vec_err = (n1 - GPU_Computed_normal_vec).norm();
+        gamma1_valid_counter = ( gamma1_err <= PREPROCESS_CONSISTENCY_CPU_GPU_TOL ) ? (gamma1_valid_counter + 1) : (gamma1_valid_counter);
+        normal_vec_valid_counter = ( normal_vec_err <= PREPROCESS_CONSISTENCY_CPU_GPU_TOL ) ? (normal_vec_valid_counter + 1) : (normal_vec_valid_counter);
+        avg_gamma1_err += gamma1_err;
+        avg_normal_vec_err += normal_vec_err;
+
+        if (gamma1_err > max_gamma1_err) {
+            max_gamma1_err = gamma1_err;
+            max_gamma1_err_indx = edge_idx;
+        }
+        if (normal_vec_err > max_normal_vec_err) {
+            max_normal_vec_err = normal_vec_err;
+            max_normal_vec_err_indx = edge_idx;
+        }
+    }
+    if (gamma1_valid_counter != Edges_HYPO1.rows())     std::cout << "FAILURE TO PASS CONCSISTENCY CHECK: Preprocessing stage for computing gamma1 in GPU!" << std::endl;
+    if (normal_vec_valid_counter != Edges_HYPO1.rows()) std::cout << "FAILURE TO PASS CONCSISTENCY CHECK: Preprocessing stage for computing normal vectors in GPU!" << std::endl;
+/*
+#if DEBUG_GPU
+    std::cout << "Average gamma1 consistency error: " << avg_gamma1_err / (T)Edges_HYPO1.rows() << std::endl;
+    std::cout << "Average normal vec consistency error: " << avg_normal_vec_err / (T)Edges_HYPO1.rows() << std::endl;
+    std::cout << std::endl;
+    std::cout << max_gamma1_err << ", " << max_gamma1_err_indx << std::endl;
+    std::cout << max_normal_vec_err << ", " << max_normal_vec_err_indx << std::endl;
+#endif*/
+
+    return ((gamma1_valid_counter == Edges_HYPO1.rows()) && (normal_vec_valid_counter == Edges_HYPO1.rows())) ? (true) : (false);
+}
+
 
 template< typename T, typename EigenT >
 bool Check_Converted_Matrix_Consistency( T *Converted_Matrix, std::vector<EigenT> ThirdParty_Matrix ) {
@@ -29,16 +91,9 @@ bool Check_Converted_Matrix_Consistency( T *Converted_Matrix, std::vector<EigenT
             for (int  j = 0; j < cols; j++) {
                 consistency_count = ( fabs(ThirdParty_Matrix[k](i,j) - Converted_Matrix(i,j,k)) < CONSISTENCY_TOL ) ? \
                                     (consistency_count + 1) : (consistency_count);
-                //if (fabs(ThirdParty_Matrix[k](i,j) - Converted_Matrix(i,j,k)) >= CONSISTENCY_TOL) {
-                //    std::cout << ThirdParty_Matrix[k](i,j) << ", " << Converted_Matrix(i,j,k) << ", " << fabs(ThirdParty_Matrix[k](i,j) - Converted_Matrix(i,j,k)) << std::endl;
-                //}
             }
         }
     }
-    
-    std::cout << ThirdParty_Matrix.size() << std::endl;
-    std::cout << "(" << rows << ", " << cols << ")" << std::endl;
-    std::cout << consistency_count << std::endl;
     int total_consistency_count = rows * cols * ThirdParty_Matrix.size();
     return ( consistency_count == total_consistency_count ) ? (true) : (false);
 }

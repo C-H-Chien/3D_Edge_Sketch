@@ -26,16 +26,19 @@ set ( control_sources
 
   #> GPU
   GPU_Edge_Reconst/gpu_edge_reconst.hpp
+  GPU_Edge_Reconst/gpu_kernels.hpp
   GPU_Edge_Reconst/indices.hpp
   GPU_Edge_Reconst/consistency_check.hpp
+  GPU_Edge_Reconst/gpu_preprocess_edgels_HYPO1.cu
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library( edge_reconstruction ${control_sources} )
 target_link_libraries(edge_reconstruction 
+        PUBLIC OpenMP::OpenMP_CXX
         #-L/gpfs/runtime/opt/magma-gpu/2.4.0/lib magma
-        -L${CUDAPATH}/lib cublas cudart cusparse
+        #-L${CUDAPATH}/lib cublas cudart cusparse
         #-L/gpfs/runtime/opt/openblas/0.3.7/lib openblas
         -L/usr/lib64 pthread
 )

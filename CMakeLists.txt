@@ -15,8 +15,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math" CACHE STRIN
 project(Edge_Based_Reconstruction)
 
 # -- enable the use of cuda --
-#option(USE_CUDA "Use CUDA" ON)
-#enable_language("CUDA")
+option(USE_CUDA "Use CUDA" ON)
+enable_language("CUDA")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/config/cmake/InitializeBuildType.cmake)
 
