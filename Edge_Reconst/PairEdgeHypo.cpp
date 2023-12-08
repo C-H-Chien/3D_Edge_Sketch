@@ -22,7 +22,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-using namespace std;
+//using namespace std;
 
 namespace PairEdgeHypothesis {
     
@@ -55,8 +55,8 @@ namespace PairEdgeHypothesis {
         int idx_hypopair = 0;
         Eigen::MatrixXd HYPO2_idx;
         for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
-            double distance = numerOfDist(idx_HYPO2,0);
-            if(distance < DIST_THRESH){
+            double dist = numerOfDist(idx_HYPO2,0);
+            if(dist < DIST_THRESH){
                 HYPO2_idx.conservativeResize(idx_hypopair+1,1);
                 HYPO2_idx.row(idx_hypopair) << double(idx_HYPO2);
                 idx_hypopair++;
@@ -69,8 +69,8 @@ namespace PairEdgeHypothesis {
         int idx_hypopair = 0;
         Eigen::MatrixXd edgels_HYPO2;
         for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
-            double distance = numerOfDist(idx_HYPO2,0);
-            if(distance < DIST_THRESH){
+            double dist = numerOfDist(idx_HYPO2,0);
+            if(dist < DIST_THRESH){
                 edgels_HYPO2.conservativeResize(idx_hypopair+1,4);
                 edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(idx_HYPO2);
                 idx_hypopair++;
@@ -82,13 +82,13 @@ namespace PairEdgeHypothesis {
     Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx_Ore(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
         int idx_hypopair = 0;
         Eigen::MatrixXd HYPO2_idx;
-        vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
-        auto it = find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
-        while (it != end(Ore_List1Bar)) {
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto it = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
+        while (it != std::end(Ore_List1Bar)) {
             HYPO2_idx.conservativeResize(idx_hypopair+1,1);
-            HYPO2_idx.row(idx_hypopair) << double(distance(begin(Ore_List1Bar), it));
+            HYPO2_idx.row(idx_hypopair) << double(std::distance(std::begin(Ore_List1Bar), it));
             idx_hypopair++;
-            it = find_if(next(it), end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
+            it = std::find_if(std::next(it), std::end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
         }
         return HYPO2_idx;
     }
@@ -96,17 +96,60 @@ namespace PairEdgeHypothesis {
     Eigen::MatrixXd pair_edge_hypothesis::getedgels_HYPO2_Ore(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
         int idx_hypopair = 0;
         Eigen::MatrixXd edgels_HYPO2;
-        vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
-        auto it = find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
-        while (it != end(Ore_List1Bar)) {
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto it = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
+        while (it != std::end(Ore_List1Bar)) {
             edgels_HYPO2.conservativeResize(idx_hypopair+1,4);
-            //edgels_HYPO2.row(idx_hypopair) << double(distance(begin(Ore_List1Bar), it));
-            edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(distance(begin(Ore_List1Bar), it));
+            //edgels_HYPO2.row(idx_hypopair) << double(std::distance(std::begin(Ore_List1Bar), it));
+            edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(std::distance(std::begin(Ore_List1Bar), it));
             idx_hypopair++;
-            it = find_if(next(it), end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
+            it = std::find_if(std::next(it), std::end(Ore_List1Bar), [thresh_ore21_1, thresh_ore21_2](double i){return i > thresh_ore21_1 && i <thresh_ore21_2;});
         }
         return edgels_HYPO2;
     }
+
+    Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx_Ore_sted(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
+        Eigen::MatrixXd HYPO2_idx;
+        HYPO2_idx.conservativeResize(2,1);
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto itst = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1](double i){return i > thresh_ore21_1;});
+        HYPO2_idx.row(0) << double(std::distance(std::begin(Ore_List1Bar), itst));
+        auto ited = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_2](double i){return i > thresh_ore21_2;});
+        HYPO2_idx.row(1) << double(std::distance(std::begin(Ore_List1Bar), ited)-1);
+        
+        return HYPO2_idx;
+    }
+
+    Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx_Ore_fixed(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
+        Eigen::MatrixXd HYPO2_idx;
+        HYPO2_idx.conservativeResize(20,1);
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto itst = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1](double i){return i > thresh_ore21_1;});
+        auto ited = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_2](double i){return i > thresh_ore21_2;});
+        int idx_start = std::distance(std::begin(Ore_List1Bar), itst);
+        int idx_end   = std::distance(std::begin(Ore_List1Bar), ited)-1;
+        int midpoint  = std::round((idx_start+idx_end)/2);
+        for(int idx = 0; idx < 20; idx++){
+            HYPO2_idx.row(idx) << double(midpoint-11+idx);
+        }
+        return HYPO2_idx;
+    }
+
+    Eigen::MatrixXd pair_edge_hypothesis::getedgels_HYPO2_Ore_fixed(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
+        Eigen::MatrixXd edgels_HYPO2;
+        edgels_HYPO2.conservativeResize(20,4);
+        std::vector<double> Ore_List1Bar(OreListdegree.data(), OreListdegree.data() + OreListdegree.rows());
+        auto itst = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_1](double i){return i > thresh_ore21_1;});
+        auto ited = std::find_if(std::begin(Ore_List1Bar), std::end(Ore_List1Bar), [thresh_ore21_2](double i){return i > thresh_ore21_2;});
+        int idx_start = std::distance(std::begin(Ore_List1Bar), itst);
+        int idx_end   = std::distance(std::begin(Ore_List1Bar), ited)-1;
+        int midpoint  = std::round((idx_start+idx_end)/2);
+        for(int idx = 0; idx < 20; idx++){
+            edgels_HYPO2.row(idx) = Edges_HYPO2.row(midpoint-11+idx);
+        }        
+        return edgels_HYPO2;
+    }
+
 
 }
 
