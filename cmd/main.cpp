@@ -288,6 +288,34 @@ int main(int argc, char **argv) {
   double range1                    =  angle_range1 * PERCENT_EPIPOLE;
   // std::cout << "angle_range1: " << angle_range1 <<std::endl;
 
+  ///////////////////////////////////////////////////////////////////
+  //> Compute all relative poses and fundamental matrices
+  ///////////////////////////////////////////////////////////////////
+  std::vector<Eigen::Matrix3d> Rel_Rot;
+  std::vector<Eigen::Vector3d> Rel_Transl;
+  std::vector<Eigen::Matrix3d> F31s;
+  Eigen::Matrix3d K_vi;
+  for (int vi = 0; vi < DATASET_NUM_OF_FRAMES; vi++) {
+    if (vi == HYPO1_VIEW_INDX || vi == HYPO2_VIEW_INDX) continue;
+    
+    Eigen::Matrix3d R3  = All_R[ vi ];
+    Eigen::Vector3d T3  = All_T[ vi ];
+    Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
+    Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
+    Rel_Rot.push_back( R31 );
+    Rel_Transl.push_back( T31 );
+
+    if(IF_MULTIPLE_K == 1){
+      K1 = All_K[HYPO1_VIEW_INDX];
+      K_vi = All_K[vi];
+    } else{
+      K1 = K;
+      K_vi = K;
+    }
+    Eigen::Matrix3d F31 = util.getFundamentalMatrix(K_vi.inverse(), K1.inverse(), R31, T31);
+    F31s.push_back(F31);
+  }
+
   /*
   std::vector <int> idx_start;
   std::vector <int> idx_end;
