@@ -6,7 +6,7 @@
 #define OUTPUT_WRITE_FOLDER        std::string("/gpfs/data/bkimia/cchien3/Edge_Based_Reconstruction/outputs_write_files/")
 
 //> CH: Change this number to the number of CPU-cores you want your code to be processed by
-#define NUM_OF_OPENMP_THREADS      (8)
+#define NUM_OF_OPENMP_THREADS      (4)
 
 #define DATASET_NUM_OF_FRAMES      (50)
 
@@ -21,7 +21,7 @@
 #define imgcols                    (400)
 #define imgrows                    (400)
 
-#define PERCENT_EPIPOLE            (0.025)
+#define PERCENT_EPIPOLE            (0.05)   //(0.025)
 
 #define IF_ICLNUIM_DATASET         (0)
 #define IF_MULTIPLE_K              (1)
@@ -34,27 +34,29 @@
 #define NUM_OF_THREADBLOCKS_PREPROCESS          (100)
 #define NUM_OF_WARPS_PER_BLOCK_PREPROCESS       (1)
 #define WARP_SIZE                               (32)      //> Constant. Must not change!
-#define CHECK_PREPROCESS_CONSISTENCY_CPU_GPU    (true)
+#define CHECK_PREPROCESS_CONSISTENCY_CPU_GPU    (false)
 #define PREPROCESS_CONSISTENCY_CPU_GPU_TOL      (1e-5)
 #define USE_DOUBLE_PRECISION                    (false)
+#define RUN_GPU_ONLY                            (true)
 
 //> PART II: PAIRING EDGLES FROM HYPO1 AND HYPO2
 #define NUM_OF_THREADBLOCKS                     (3200)     //> Must be identical to the number of edgels in HYPO1
-#define NUM_OF_THREADS_PER_BLOCK                (32)
+#define NUM_OF_THREADS_PER_BLOCK                (20)
 #define GAMMA_INDEX_RANGE                       (10)
 #define TRUNCATED_WEDGE_RANGE                   (2*GAMMA_INDEX_RANGE)
 
-#define GAMMA3_POS_TOL_PIXEL                    (10)
-#define GAMMA3_TANGENT_DOT_PRODUCT_TOL          (0.9995)
+#define GAMMA3_POS_TOL_PIXEL                    (30)
+#define GAMMA3_TANGENT_DOT_PRODUCT_TOL          (0.99)
 
 #define CALIB_FX                                (1075.65091572)
 #define CALIB_FY                                (1073.90347929)
 
 //> indicies
-#define s_R21(i,j)                              s_R31[ (i)*3 + (j) ]
+#define s_R21(i,j)                              s_R21[ (i)*3 + (j) ]
 #define s_R31(i,j)                              s_R31[ (i)*3 + (j) ]
 
 #define DEBUG_GPU                               (true)
+#define DEBUG_CONSISTENCY_CHECK                 (false)
 #define CONSISTENCY_TOL                         (1e-4)
 
 //> CUDA error check

@@ -38,16 +38,14 @@ using namespace MultiviewGeometryUtil;
 // ========================================================================================================================
 // main function
 //
-// Modifications
-//    Chiang-Heng Chien  23-07-18    Initially create a blank repository with minor multiview geometry utility functions.
-//    Chiang-Heng Chien  23-08-19    Add edited bucketing method from VXL. If this repo is to be integrated under LEMSVPE 
-//                                   scheme, simply use vgl library from VXL. This is very easy to be handled.
-//    Chiang-Heng Chien  23-08-27    Add bucket building and fetching edgels from bucket coordinate code for efficient edgel
-//                                   accessing from buckets inside a given quadrilateral.
+// Change Logs
+//    Chiang-Heng Chien  23-12-04    Create a gpu-main branch from the main branch to include GPU implementation.
+//    Chiang-Heng Chien  23-12-08    Finalize GPU implemnetation
+//    Chiang-Heng Chien  23-12-17    Fix some bugs in the GPU implementation and clean out the CPU version.
 //
 //> (c) LEMS, Brown University
-//> Yilin Zheng (yilin_zheng@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
+//> Yilin Zheng (yilin_zheng@brown.edu)
 // =========================================================================================================================
 
 void getInteriorBuckets(
@@ -105,6 +103,7 @@ void getEdgelsFromInteriorQuadrilateral(
 }
 
 int main(int argc, char **argv) {
+  
   std::fstream Edge_File;
   std::fstream Rmatrix_File;
   std::fstream Tmatrix_File;
@@ -113,17 +112,14 @@ int main(int argc, char **argv) {
   int q = 0;
   int file_idx = 1;
   double rd_data;
-  std::vector<Eigen::MatrixXd> All_Edgels;  
-  //Eigen::MatrixXd Edgels;
+  std::vector<Eigen::MatrixXd> All_Edgels;
   Eigen::Vector4d row_edge;
 
-  //> All_Bucketed_Imgs stores all "bucketed" images
-  //> (A "bucketed image" means that edgels are inserted to the buckets of that image)
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
   std::cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
     std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges_PreProcessed/Edge_"+std::to_string(file_idx)+"to6.txt";
-    file_idx ++;
+    file_idx++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_Path, std::ios_base::in);
     if (!Edge_File) { 
@@ -235,10 +231,8 @@ int main(int argc, char **argv) {
       }
       Kmatrix_File.close();
     }
-  }else{
-    // Cabinet
-    // K<< 537.960322000000, 0, 319.183641000000, 0,	539.597659000000,	247.053820000000,0,	0,	1;
-    // ICL-NUIM_officekt1
+  }
+  else {
     K<< 481.2000000000000, 0, 319.5000000000000, 0,	-480,	239.5000000000000,0,	0,	1;
   }
 
@@ -281,7 +275,8 @@ int main(int argc, char **argv) {
   Eigen::Matrix3d F21 = F;
 
   // Initializations for paired edges between Hypo1 and Hypo 2
-  Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+  //Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+  Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(), 2, -2);
   // Compute epipolar wedges between Hypo1 and Hypo2 and find the angle range 1
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
@@ -289,7 +284,6 @@ int main(int argc, char **argv) {
   double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
   // Calculate the angle range for epipolar wedges (Hypo1 --> Hypo2)
   double range1                    =  angle_range1 * PERCENT_EPIPOLE;
-  // std::cout << "angle_range1: " << angle_range1 <<std::endl;
 
   //> =========================================================================================================
   //> START OF PREPROCESSING
@@ -353,7 +347,6 @@ int main(int argc, char **argv) {
       double thresh_ore21_1_pre            = OreListBardegree_pre(edge_idx,0) - range_pre;
       double thresh_ore21_2_pre            = OreListBardegree_pre(edge_idx,0) + range_pre;
       Eigen::MatrixXd HYPO2_idxsted = PairHypo.getHYPO2_idx_Ore_sted(OreListdegree_pre, thresh_ore21_1_pre, thresh_ore21_2_pre);
-      //std::cout<< "HYPO2_idxsted: \n" << HYPO2_idxsted <<std::endl;
       idx_start_VALID.push_back(int(HYPO2_idxsted(0,0)));
       idx_end_VALID.push_back(int(HYPO2_idxsted(1,0)));
       int truncated_start_idx = round(((int)(HYPO2_idxsted(0,0)) + (int)(HYPO2_idxsted(1,0)))*0.5) - GAMMA_INDEX_RANGE;
@@ -397,12 +390,10 @@ int main(int argc, char **argv) {
 #endif
 
   ///////////////////////////////////////////////////////////////////
-  //> Compute all relative poses and fundamental matrices
+  //> Compute all relative poses
   ///////////////////////////////////////////////////////////////////
   std::vector<Eigen::Matrix3d> Rel_Rot;
   std::vector<Eigen::Vector3d> Rel_Transl;
-  std::vector<Eigen::Matrix3d> F31s;
-  Eigen::Matrix3d K_vi;
   for (int vi = 0; vi < DATASET_NUM_OF_FRAMES; vi++) {
     if (vi == HYPO1_VIEW_INDX || vi == HYPO2_VIEW_INDX) continue;
     
@@ -412,16 +403,6 @@ int main(int argc, char **argv) {
     Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
     Rel_Rot.push_back( R31 );
     Rel_Transl.push_back( T31 );
-
-    if(IF_MULTIPLE_K == 1){
-      K1 = All_K[HYPO1_VIEW_INDX];
-      K_vi = All_K[vi];
-    } else{
-      K1 = K;
-      K_vi = K;
-    }
-    Eigen::Matrix3d F31 = util.getFundamentalMatrix(K_vi.inverse(), K1.inverse(), R31, T31);
-    F31s.push_back(F31);
   }
 
   //> =========================================================================================================
@@ -445,22 +426,27 @@ int main(int argc, char **argv) {
   std::cout << "Number of Total Edgels for All Views = " << Num_Of_Total_Edgels_for_All_Views << std::endl;
 
 #if USE_DOUBLE_PRECISION
+  //> Stage I-2: Preprocessing on CPU (done in a constructor)
   EdgeReconstGPU<double> Parallel_MVW_ER \
                         (device_ID, Num_Of_Total_Edgels_for_All_Views, \
-                         R21, T21, F21, Rel_Rot, Rel_Transl, F31s, All_K, \
+                         R21, T21, Rel_Rot, Rel_Transl, All_K, \
                          All_Edgels, idx_truncated_start_HYPO2, idx_truncated_start_VALID, \
                          Wedge_Angle_Range_from_HYPO2_to_VALID );
 
+  //> Stage I-2: Preprocessing on GPU
   Parallel_MVW_ER.GPU_PreProcess_Edgels_HYPO1( Edges_HYPO1, K1, All_K );
 
+  //> Stage II: Edge Reconstruction on GPU
   Parallel_MVW_ER.GPU_Edge_Reconstruction_Main();
   
+  //> Destructor: free all memory
   Parallel_MVW_ER.~EdgeReconstGPU();
-  exit(1);
+
+  if (RUN_GPU_ONLY) exit(1);
 #else
   EdgeReconstGPU<float> Parallel_MVW_ER \
                         (device_ID, Num_Of_Total_Edgels_for_All_Views, \
-                         R21, T21, F21, Rel_Rot, Rel_Transl, F31s, All_K, \
+                         R21, T21, Rel_Rot, Rel_Transl, All_K, \
                          All_Edgels, idx_truncated_start_HYPO2, idx_truncated_start_VALID, \
                          Wedge_Angle_Range_from_HYPO2_to_VALID );
 
@@ -468,12 +454,14 @@ int main(int argc, char **argv) {
 
   Parallel_MVW_ER.GPU_Edge_Reconstruction_Main();
   
+  //> Destructor: free all memory
   Parallel_MVW_ER.~EdgeReconstGPU();
-  exit(1);
+
+  if (RUN_GPU_ONLY) exit(1);
 #endif
 
 
-  
+  //> CPU Computation Starts Here ...
   //> Set the timer
   clock_t tstart, tend;
   double itime, ftime, exec_time;
@@ -694,21 +682,17 @@ int main(int argc, char **argv) {
       double denomDist = coeffs(0)*coeffs(0) + coeffs(1)*coeffs(1);
       denomDist = sqrt(denomDist);
       Eigen::VectorXd dist = numDist.cwiseAbs()/denomDist;
-      //std::cout << dist <<std::endl;
-      Eigen::VectorXd::Index   minIndex;
+      Eigen::VectorXd::Index minIndex;
       double min_dist = dist.minCoeff(&minIndex);
-      if(min_dist > DIST_THRESH){
-        continue;
-      }
+      if(min_dist > DIST_THRESH) continue;
       finalpair = int(indices_stack_unique[max_index[minIndex]]);
-      // std::cout << "single: " << finalpair <<std::endl;
-    }else{
-      finalpair = int(indices_stack_unique[int(maxIndex)]);
-      // std::cout << finalpair <<std::endl;
     }
-    // linearTriangulation code already exist
+    else {
+      finalpair = int(indices_stack_unique[int(maxIndex)]);
+    }
 
-    paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+    //paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+    paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair);
   } //> End of first loop
 
   #if defined(_OPENMP)
@@ -724,14 +708,13 @@ int main(int argc, char **argv) {
 
   std::cout<< "pipeline finished" <<std::endl;
 
-  //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
-  // .....
   tstart = clock();
   int pair_num = 0;
   Eigen::MatrixXd paired_edge_final;
   for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++){
     if(paired_edge(pair_idx,0) != -2){
-      paired_edge_final.conservativeResize(pair_num+1,50);
+      //paired_edge_final.conservativeResize(pair_num+1,50);
+      paired_edge_final.conservativeResize(pair_num+1,2);
       paired_edge_final.row(pair_num) << paired_edge.row(pair_idx);
       pair_num++;
     }
@@ -744,7 +727,7 @@ int main(int argc, char **argv) {
 
   std::ofstream myfile1;
   //std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n16_T-less_wedge.txt";
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n16_T-less_FixNumofEdge.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "CPU_Final_Result.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();

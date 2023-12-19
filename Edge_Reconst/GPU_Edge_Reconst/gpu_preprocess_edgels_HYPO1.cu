@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <math.h>
-#include "./indices.hpp"
 #include "../definitions.h"
 #include "./gpu_kernels.hpp"
 

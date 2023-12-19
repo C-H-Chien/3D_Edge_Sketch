@@ -34,8 +34,8 @@ gpu_Edge_Reconstruction_Kernel(
     T* s_gamma1_meter       = s_gamma1_pixel + (3);
     T* s_gamma1_normal_vec  = s_gamma1_meter + (2);
     T* s_Calib_HYPO1        = s_gamma1_normal_vec + (3);
-    T* s_Calib_HYPO2        = s_gamma1_normal_vec + (2);
-    T* s_Calib_VALID        = s_gamma1_normal_vec + (2);
+    T* s_Calib_HYPO2        = s_Calib_HYPO1 + (2);
+    T* s_Calib_VALID        = s_Calib_HYPO2 + (2);
     int* s_Num_Of_Supports  = (int*)(s_Calib_VALID + 2);
     int* s_Num_Of_Supports_ = s_Num_Of_Supports + TRUNCATED_WEDGE_RANGE;
     
@@ -66,7 +66,7 @@ gpu_Edge_Reconstruction_Kernel(
 
     //> Get all gamma2 on the truncated epipolar wedge from global memory to shared memory in parallel
     offset_indx_HYPO2 = dev_Edgel_List_Start_Indx[HYPO2_VIEW_INDX] * 3;
-    truncated_wedge_start_idx_HYPO2 = dev_Truncated_Wedge_Start_Indx_HYPO2[bid];
+    truncated_wedge_start_idx_HYPO2 = dev_Truncated_Wedge_Start_Indx_HYPO2[bid] * 3;
     s_gamma_HYPO2[tid*3    ] = dev_All_Edgels_List[ offset_indx_HYPO2 + truncated_wedge_start_idx_HYPO2 + tid*3     ];
     s_gamma_HYPO2[tid*3 + 1] = dev_All_Edgels_List[ offset_indx_HYPO2 + truncated_wedge_start_idx_HYPO2 + tid*3 + 1 ];
     s_gamma_HYPO2[tid*3 + 2] = dev_All_Edgels_List[ offset_indx_HYPO2 + truncated_wedge_start_idx_HYPO2 + tid*3 + 2 ];
@@ -82,13 +82,12 @@ gpu_Edge_Reconstruction_Kernel(
     T tangent_dot_prod = 0.0;
     bool is_Supported_by_VALID = 0;
     s_Num_Of_Supports[tid] = 0;
-    //s_Edgel_Indx_HYPO2[tid] = truncated_wedge_start_idx_HYPO2 + tid;
 
     //> Loop over all validation views
     #pragma unroll
     for (vi = 0; vi < (DATASET_NUM_OF_FRAMES-2); vi++) {
         valid_view_index = dev_Valid_Views_Indices[vi];
-        truncated_wedge_start_indx_VALID = dev_Truncated_Wedge_Start_Indx_VALID[ (bid) + vi*NUM_OF_THREADBLOCKS ];
+        truncated_wedge_start_indx_VALID = dev_Truncated_Wedge_Start_Indx_VALID[ (bid) + vi*NUM_OF_THREADBLOCKS ] * 3;
 
         //> Get the relative pose of VALID w.r.t. HYPO1 and {cx, cy}
         if (tid < 9) s_R31[ tid ] = dev_Rel_Rots[ vi*(9) + tid ];
@@ -121,12 +120,7 @@ gpu_Edge_Reconstruction_Kernel(
                        + (s_gamma_VALID[gi*3+1] - r_mapped_gamma3_pixel[1])*(s_gamma_VALID[gi*3+1] - r_mapped_gamma3_pixel[1]) );
 
             tangent_dot_prod = fabs(s_tangent_VALID[gi*2]*r_mapped_tangent3[0] + s_tangent_VALID[gi*2 + 1]*r_mapped_tangent3[1] );
-            //is_Supported_by_VALID = ( dist <= GAMMA3_POS_TOL_PIXEL && tangent_dot_prod >= GAMMA3_TANGENT_DOT_PRODUCT_TOL ) ? (true) : (false);
-            is_Supported_by_VALID = ( dist <= GAMMA3_POS_TOL_PIXEL ) ? (true) : (false);
-
-            if ( bid == 310 & tid == 10 ) {
-                printf("%f, %f\n", dist, tangent_dot_prod);
-            }
+            is_Supported_by_VALID = ( (dist <= GAMMA3_POS_TOL_PIXEL) && (tangent_dot_prod >= GAMMA3_TANGENT_DOT_PRODUCT_TOL) ) ? (true) : (false);
         }
 
         s_Num_Of_Supports[ tid ] = (is_Supported_by_VALID) ? (s_Num_Of_Supports[ tid ] + 1) : (s_Num_Of_Supports[ tid ]);
@@ -138,7 +132,7 @@ gpu_Edge_Reconstruction_Kernel(
     //> Write the index of the paired edgel in HYPO2 to the global memory
     if ( s_Num_Of_Supports[0] >= MAX_NUM_OF_SUPPORT_VIEWS ) {
         if ( s_Num_Of_Supports[0] == s_Num_Of_Supports_[ tid ] )
-            dev_Hypothesis_Edgel_Pair_Index[ bid ] = truncated_wedge_start_idx_HYPO2 + tid;
+            dev_Hypothesis_Edgel_Pair_Index[ bid ] = dev_Truncated_Wedge_Start_Indx_HYPO2[bid] + tid;
     }
     else {
         dev_Hypothesis_Edgel_Pair_Index[ bid ] = -2;

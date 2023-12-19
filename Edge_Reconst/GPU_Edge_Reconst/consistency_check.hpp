@@ -48,6 +48,7 @@ bool Check_PreProcess_Edgels_in_HYPO1( Eigen::MatrixXd Edges_HYPO1, Eigen::Matri
         GPU_Computed_normal_vec(1) = host_check_Edgel_H1_Normal_Vectors[ 3*edge_idx + 1 ];
         GPU_Computed_normal_vec(2) = host_check_Edgel_H1_Normal_Vectors[ 3*edge_idx + 2 ];
 
+        //> Compute the error
         T gamma1_err     = (Gamma1 - GPU_Computed_gamma).norm();
         T normal_vec_err = (n1 - GPU_Computed_normal_vec).norm();
         gamma1_valid_counter = ( gamma1_err <= PREPROCESS_CONSISTENCY_CPU_GPU_TOL ) ? (gamma1_valid_counter + 1) : (gamma1_valid_counter);
@@ -66,14 +67,14 @@ bool Check_PreProcess_Edgels_in_HYPO1( Eigen::MatrixXd Edges_HYPO1, Eigen::Matri
     }
     if (gamma1_valid_counter != Edges_HYPO1.rows())     std::cout << "FAILURE TO PASS CONCSISTENCY CHECK: Preprocessing stage for computing gamma1 in GPU!" << std::endl;
     if (normal_vec_valid_counter != Edges_HYPO1.rows()) std::cout << "FAILURE TO PASS CONCSISTENCY CHECK: Preprocessing stage for computing normal vectors in GPU!" << std::endl;
-/*
-#if DEBUG_GPU
+
+#if DEBUG_CONSISTENCY_CHECK
     std::cout << "Average gamma1 consistency error: " << avg_gamma1_err / (T)Edges_HYPO1.rows() << std::endl;
     std::cout << "Average normal vec consistency error: " << avg_normal_vec_err / (T)Edges_HYPO1.rows() << std::endl;
     std::cout << std::endl;
     std::cout << max_gamma1_err << ", " << max_gamma1_err_indx << std::endl;
     std::cout << max_normal_vec_err << ", " << max_normal_vec_err_indx << std::endl;
-#endif*/
+#endif
 
     return ((gamma1_valid_counter == Edges_HYPO1.rows()) && (normal_vec_valid_counter == Edges_HYPO1.rows())) ? (true) : (false);
 }
@@ -83,6 +84,21 @@ bool Check_Hypothesis_Edgels_Pairs( int* host_Hypothesis_Edgel_Pair_Index )
     for (int i = 100; i < 110; i++) {
         std::cout << host_Hypothesis_Edgel_Pair_Index[i] << std::endl;
     }
+}
+
+void Write_Final_Edge_Pair_Results( int Num_Of_Edgles_HYPO1, int* host_Hypothesis_Edgel_Pair_Index ) 
+{
+  std::ofstream GPU_Result_File;
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "GPU_Final_Result.txt";
+  GPU_Result_File.open(Output_File_Path);
+  if (!GPU_Result_File) {
+    std::cerr << "Unable to open GPU_Final_Result file!\n";
+  }
+  else {
+    for (int i = 0; i < Num_Of_Edgles_HYPO1; i++)
+        GPU_Result_File << i << "\t" << host_Hypothesis_Edgel_Pair_Index[i] << "\n";
+  }
+  GPU_Result_File.close();
 }
 
 /*
