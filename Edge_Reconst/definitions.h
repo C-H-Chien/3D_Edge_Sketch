@@ -6,19 +6,19 @@
 #define OUTPUT_WRITE_FOLDER        std::string("/users/yzhen105/Edge_Based_Reconstruction/outputs_write_files/")
 
 //> CH: Change this number to the number of CPU-cores you want your code to be processed by
-#define NUM_OF_OPENMP_THREADS      (8)
+#define NUM_OF_OPENMP_THREADS      (32)
 
 #define DEBUG                      (0)
 
 #define DATASET_NUM_OF_FRAMES      (50)
 
-#define HYPO1_VIEW_INDX            (5)
+#define HYPO1_VIEW_INDX            (6)
 
-#define HYPO2_VIEW_INDX            (15) 
+#define HYPO2_VIEW_INDX            (12) 
 
 #define DIST_THRESH                (2)
 
-#define OREN_THRESH                (0.99)
+#define OREN_THRESH                (15)
 
 #define MAX_NUM_OF_SUPPORT_VIEWS   (4)
 
@@ -26,12 +26,16 @@
 
 #define imgrows                    (400)
 
-#define PERCENT_EPIPOLE            (0.025)
-
 #define IF_ICLNUIM_DATASET         (0)
 
 #define IF_MULTIPLE_K              (1)
 
 #define PI                         (3.1415926)
+
+#define delta                      (0.3)
+
+#define parallelangle              (15)
+
+#define circleR                    (55)
 
 #endif

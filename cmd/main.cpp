@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
   std::cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
-    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges/Edge_"+std::to_string(file_idx)+"to6.txt";
+    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/Edges/Edge_"+std::to_string(file_idx)+".txt"; 
     file_idx ++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_Path, std::ios_base::in);
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
   std::vector<Eigen::Matrix3d> All_R;
   Eigen::Matrix3d R_matrix;
   Eigen::Vector3d row_R;
-  std::string Rmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/R_matrix.txt";
+  std::string Rmatrix_File_Path = REPO_DIR + "datasets/T-Less/RnT/R_matrix.txt";
   Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
   if (!Rmatrix_File) { 
     std::cerr << "R_matrix file not existed!\n"; exit(1); 
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
 
   std::vector<Eigen::Vector3d> All_T;
   Eigen::Vector3d T_matrix;
-  std::string Tmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/T_matrix.txt";
+  std::string Tmatrix_File_Path = REPO_DIR + "datasets/T-Less/RnT/T_matrix.txt";
   Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
   if (!Tmatrix_File) { 
     std::cerr << "T_matrix file not existed!\n"; exit(1); 
@@ -245,6 +245,8 @@ int main(int argc, char **argv) {
 
 
   //<<<<<<<<< Pipeline start >>>>>>>>>//
+  clock_t tstart_pre, tend_pre;
+  tstart_pre = clock();
   ////////PREPROCESSING/////////
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
@@ -283,14 +285,21 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   // Calculate the angle range for epipolar lines (Hypo1 --> Hypo2)
-  double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
+  // double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
   // Calculate the angle range for epipolar wedges (Hypo1 --> Hypo2)
-  double range1                    =  angle_range1 * PERCENT_EPIPOLE;
+  // double range1                    =  angle_range1;
+
+  std::cout<< "OreListBardegree: \n" << OreListBardegree <<std::endl;
+
+  if (DEBUG == 1) {
+      std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
+    }
   // std::cout << "angle_range1: " << angle_range1 <<std::endl;
 
   ///////////////////////////////////////////////////////////////////
   //> Compute all relative poses and fundamental matrices
   ///////////////////////////////////////////////////////////////////
+  /*
   std::vector<Eigen::Matrix3d> Rel_Rot;
   std::vector<Eigen::Vector3d> Rel_Transl;
   std::vector<Eigen::Matrix3d> F31s;
@@ -316,7 +325,7 @@ int main(int argc, char **argv) {
     F31s.push_back(F31);
   }
 
-  /*
+  
   std::vector <int> idx_start;
   std::vector <int> idx_end;
   for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
@@ -357,6 +366,7 @@ int main(int argc, char **argv) {
     }
   }
   */
+
   /*
   for (int i = 0; i < idx_start.size(); i++) {
     std::cout << idx_start[i] << " ";
@@ -367,6 +377,11 @@ int main(int argc, char **argv) {
   }
   std::cout << std::endl;
   std::cout << idx_end.size() << std::endl;
+  */
+
+  /*
+  tend_pre = clock() - tstart_pre; 
+  std::cout << "It took "<< double(tend_pre)/double(CLOCKS_PER_SEC) <<" second(s) to finish preprocessing."<<std::endl;
   */
 
   //<<<<<<<<< Core of the pipeline starts here >>>>>>>>>//
@@ -389,7 +404,7 @@ int main(int argc, char **argv) {
 
   //> First loop: loop over all edgels from hypothesis view 1
   
-  for(int edge_idx = 28; edge_idx < Edges_HYPO1.rows(); edge_idx++){
+  for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
       continue;
     }
@@ -399,16 +414,17 @@ int main(int argc, char **argv) {
 
     // Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
     // Get the range of epipolar wedge for the current edge (Hypo1 --> Hypo2)
-    double thresh_ore21_1 = OreListBardegree(edge_idx,0) - range1;
-    double thresh_ore21_2 = OreListBardegree(edge_idx,0) + range1;
+    double thresh_ore21_1 = OreListBardegree(edge_idx,0);
+    double thresh_ore21_2 = OreListBardegree(edge_idx,1);
     // std::cout << "thresh_ore21_1: " << thresh_ore21_1 <<std::endl;
     // std::cout << "thresh_ore21_2: " << thresh_ore21_2 <<std::endl;
 
-    Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore_fixed(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    Eigen::MatrixXd HYPO2_idx    = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    // std::cout << "edge_idx: " << edge_idx <<std::endl;
     // std::cout << "HYPO2_idx: \n" << HYPO2_idx <<std::endl;
     
     // std::cout << "HYPO2_idxsted: \n" << HYPO2_idxsted <<std::endl;
-    Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore_fixed(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
 
     // Initializations for all validation views
     int VALID_idx = 0;
@@ -452,18 +468,18 @@ int main(int argc, char **argv) {
       Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(pt_edge, edgels_HYPO2, All_R, All_T, VALID_INDX, K1, K2);
       Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBarVali(pt_edge, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
       Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
-      double angle_range2   = OreListdegree31.maxCoeff() - OreListdegree31.minCoeff();
+      // double angle_range2   = OreListdegree31.maxCoeff() - OreListdegree31.minCoeff();
       // Calculate the angle range for epipolar wedges (Hypo1 --> Vali)
-      double range2         =  angle_range2 * PERCENT_EPIPOLE;
+      // double range2         =  angle_range2; // * PERCENT_EPIPOLE;
       // Get the range of epipolar wedge for the current edge (Hypo1 --> Vali)
-      double thresh_ore31_1 = OreListBardegree31(0,0) - range2;
-      double thresh_ore31_2 = OreListBardegree31(0,0) + range2;
+      double thresh_ore31_1 = OreListBardegree31(0,0);
+      double thresh_ore31_2 = OreListBardegree31(0,1);
       // std::cout << "thresh_ore31_1: " << thresh_ore31_1 <<std::endl;
       // std::cout << "thresh_ore31_2: " << thresh_ore31_2 <<std::endl;
 
       // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
-      Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore_fixed(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-      Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore_fixed(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+      Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+      Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
       // std::cout<<"vali_idx31: \n"<<vali_idx31<<std::endl;
       // std::cout<<"edgels_31: \n"<<edgels_31<<std::endl;
 
@@ -473,12 +489,12 @@ int main(int argc, char **argv) {
 
       for (int idx_pair = 0; idx_pair < edgels_HYPO2.rows(); idx_pair++){
         // Calculate the angle range for epipolar lines (Hypo2 --> Vali)
-        double angle_range3   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
+        // double angle_range3   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
         // Calculate the angle range for epipolar wedges (Hypo2 --> Vali)
-        double range3         =  angle_range3 * PERCENT_EPIPOLE;
+        // double range3         =  angle_range3;// * PERCENT_EPIPOLE;
         // Get the range of epipolar wedge for the current edge (Hypo2 --> Vali)
-        double thresh_ore32_1 = OreListBardegree32(idx_pair,0) - range3;
-        double thresh_ore32_2 = OreListBardegree32(idx_pair,0) + range3;
+        double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
+        double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
         // std::cout << "thresh_ore32_1: " << thresh_ore32_1 <<std::endl;
         // std::cout << "thresh_ore32_2: " << thresh_ore32_2 <<std::endl;
         
@@ -496,7 +512,7 @@ int main(int argc, char **argv) {
                      fabs(thresh_ore31_2 - thresh_ore32_2);
         // std::cout<<"anglediff: \n"<<anglediff<<std::endl;
         // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
-        if(anglediff.maxCoeff() <= 30){
+        if(anglediff.maxCoeff() <= parallelangle){
           isparallel.row(idx_pair) << 0;
         }
 
@@ -536,7 +552,8 @@ int main(int argc, char **argv) {
       
     } //> End of second loop
     
-    // std::cout << "supported_indices: " << supported_indices <<std::endl;
+    //std::cout << "supported_indices: " << supported_indices <<std::endl;
+    
 
     //tend = clock() - tstart; 
     //std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from validation views."<<std::endl;
@@ -607,11 +624,12 @@ int main(int argc, char **argv) {
     }
     // linearTriangulation code already exist
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+    //std::cout << "paired_edge.row(edge_idx): \n" << paired_edge.row(edge_idx) <<std::endl;
 
     if (DEBUG == 1) {
       std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
     }
-  } //> End of first loop
+  } //> End of first loop4
 
 
   #if defined(_OPENMP)
@@ -645,7 +663,7 @@ int main(int argc, char **argv) {
 
 
   std::ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge6n16_T-less_FixNumofEdge.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge45n42_ICL-NUIM_thinwedge.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();
