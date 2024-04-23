@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
   std::cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
-    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/Edges/Edge_"+std::to_string(file_idx)+".txt"; 
+    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges/Edge_"+std::to_string(file_idx)+".txt"; 
     file_idx ++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_Path, std::ios_base::in);
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
   std::vector<Eigen::Matrix3d> All_R;
   Eigen::Matrix3d R_matrix;
   Eigen::Vector3d row_R;
-  std::string Rmatrix_File_Path = REPO_DIR + "datasets/T-Less/RnT/R_matrix.txt";
+  std::string Rmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/R_matrix.txt";
   Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
   if (!Rmatrix_File) { 
     std::cerr << "R_matrix file not existed!\n"; exit(1); 
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
 
   std::vector<Eigen::Vector3d> All_T;
   Eigen::Vector3d T_matrix;
-  std::string Tmatrix_File_Path = REPO_DIR + "datasets/T-Less/RnT/T_matrix.txt";
+  std::string Tmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/T_matrix.txt";
   Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
   if (!Tmatrix_File) { 
     std::cerr << "T_matrix file not existed!\n"; exit(1); 
@@ -282,8 +282,18 @@ int main(int argc, char **argv) {
   // Initializations for paired edges between Hypo1 and Hypo 2
   Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
   // Compute epipolar wedges between Hypo1 and Hypo2 and find the angle range 1
-  Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2);
+  std::cout<< "Here" <<std::endl;
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
+  
+  Eigen::MatrixXd Edges_HYPO1_1;
+  Edges_HYPO1_1.conservativeResize(3,4);
+  Edges_HYPO1_1.row(0) << 100, 100, 100, 100;
+  Edges_HYPO1_1.row(1) << 150, 100, 100, 100;
+  Edges_HYPO1_1.row(2) << 50, 100, 100, 100;
+  std::cout<< "Edges_HYPO1_1: " << Edges_HYPO1_1 << std::endl;
+  Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1_1, All_R, All_T, K1, K2);
+  std::cout<< "OreListBardegree: " << OreListBardegree << std::endl;
+  //Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   // Calculate the angle range for epipolar lines (Hypo1 --> Hypo2)
   // double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
   // Calculate the angle range for epipolar wedges (Hypo1 --> Hypo2)

@@ -46,7 +46,7 @@ namespace GetOrientationList {
         Eigen::Vector3d T2  = All_T[HYPO2_VIEW_INDX];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
         Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
-        Eigen::Matrix3d F   = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R21, T21);
+        Eigen::Matrix3d F   = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
         //
         Eigen::Vector3d epipole_met_view1 = {double(e1.transpose() * R21.transpose() *T21) / double(e3.transpose()*R21.transpose()*T21), double(e2.transpose()*R21.transpose()*T21) / double(e3.transpose()*R21.transpose()*T21), 1};
         Eigen::Vector3d epipole_met_view2 = {double(e1.transpose()*T21) / double(e3.transpose()*T21), double(e2.transpose()*T21) / double(e3.transpose()*T21), 1};
@@ -63,7 +63,7 @@ namespace GetOrientationList {
         Eigen::MatrixXd dist_hypo1pt12_epipoleallsquare = dist_hypo1pt_epipoleall.col(0) - Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*delta*delta;
         Eigen::MatrixXd dist_hypo1pt12_epipoleall       = dist_hypo1pt12_epipoleallsquare.array().sqrt();
         //
-        Eigen::MatrixXd thetahypo1all        = ((Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*delta).array() / (dist_hypo1pt_epipoleall.col(0).array())).array().asin();
+        Eigen::MatrixXd thetahypo1all        = ((Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*delta).array() / (dist_hypo1pt12_epipoleall.col(0).array())).array().asin();
         Eigen::MatrixXd anglehypo1all        = slope_hypo1.col(0).array().atan();
         Eigen::MatrixXd angle_theta_hypo1all;
         angle_theta_hypo1all.conservativeResize(Edges_HYPO1.rows(),2);
@@ -78,6 +78,7 @@ namespace GetOrientationList {
         dxdyhypo1.col(1) = (angle_theta_hypo1all.col(0).array().sin()*dist_hypo1pt12_epipoleall.col(0).array()).array().abs();
         dxdyhypo2.col(0) = (angle_theta_hypo1all.col(1).array().cos()*dist_hypo1pt12_epipoleall.col(0).array()).array().abs();
         dxdyhypo2.col(1) = (angle_theta_hypo1all.col(1).array().sin()*dist_hypo1pt12_epipoleall.col(0).array()).array().abs();
+
         //
         for(int idx_dxdy = 0; idx_dxdy < dxdyhypo1.rows(); idx_dxdy++){
             double dxall = DyDx(idx_dxdy,1);
@@ -97,35 +98,34 @@ namespace GetOrientationList {
                 dxdyhypo2(idx_dxdy,1) = -dy2;
             }
         }
+
         Eigen::MatrixXd hypo1_pt_1all;
         Eigen::MatrixXd hypo1_pt_2all;
         hypo1_pt_1all.conservativeResize(Edges_HYPO1.rows(),3);
         hypo1_pt_2all.conservativeResize(Edges_HYPO1.rows(),3);
-        hypo1_pt_1all.col(0) = dxdyhypo1.col(0) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_met_view1(0);
-        hypo1_pt_1all.col(1) = dxdyhypo1.col(1) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_met_view1(1);
+        hypo1_pt_1all.col(0) = dxdyhypo1.col(0) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_pix_view1(0);
+        hypo1_pt_1all.col(1) = dxdyhypo1.col(1) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_pix_view1(1);
         hypo1_pt_1all.col(2) = Eigen::VectorXd::Ones(dxdyhypo1.rows());
-        hypo1_pt_2all.col(0) = dxdyhypo2.col(0) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_met_view1(0);
-        hypo1_pt_2all.col(1) = dxdyhypo2.col(1) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_met_view1(1);
+        hypo1_pt_2all.col(0) = dxdyhypo2.col(0) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_pix_view1(0);
+        hypo1_pt_2all.col(1) = dxdyhypo2.col(1) + Eigen::VectorXd::Ones(dxdyhypo1.rows())* epipole_pix_view1(1);
         hypo1_pt_2all.col(2) = Eigen::VectorXd::Ones(dxdyhypo1.rows());
         
-        Eigen::MatrixXd coeffspt1T = F * hypo1_pt_1all;
+        Eigen::MatrixXd coeffspt1T = F * hypo1_pt_1all.transpose();
         Eigen::MatrixXd coeffspt1  = coeffspt1T.transpose();
         Eigen::MatrixXd Apixel_1 = coeffspt1.col(0);
         Eigen::MatrixXd Bpixel_1 = coeffspt1.col(1);
         Eigen::MatrixXd Cpixel_1 = coeffspt1.col(2);
 
-        Eigen::MatrixXd coeffspt2T = F * hypo1_pt_2all;
+        Eigen::MatrixXd coeffspt2T = F * hypo1_pt_2all.transpose();
         Eigen::MatrixXd coeffspt2  = coeffspt2T.transpose();
         Eigen::MatrixXd Apixel_2 = coeffspt2.col(0);
         Eigen::MatrixXd Bpixel_2 = coeffspt2.col(1);
         Eigen::MatrixXd Cpixel_2 = coeffspt2.col(2);
-        
         Eigen::MatrixXd slope_hypo_pt1 = Bpixel_1.col(0).array()/Apixel_1.col(0).array();
         Eigen::MatrixXd ore_list1bar_1 = slope_hypo_pt1.col(0).array().atan()/PI*180;
 
         Eigen::MatrixXd slope_hypo_pt2 = Bpixel_2.col(0).array()/Apixel_2.col(0).array();
         Eigen::MatrixXd ore_list1bar_2 = slope_hypo_pt2.col(0).array().atan()/PI*180;
-        
         Eigen::MatrixXd ore_list1bar_all;
         ore_list1bar_all.conservativeResize(ore_list1bar_1.rows(),2);
         for(int idx_ore12 = 0; idx_ore12 < slope_hypo_pt1.rows(); idx_ore12++){
@@ -142,6 +142,7 @@ namespace GetOrientationList {
                 ore_list1bar_all.row(idx_ore12) << ore_list1bar_2(idx_ore12,0) , ore_list1bar_1(idx_ore12,0);
             }
         }
+
         // a_hypo2_all = tan(deg2rad(ore_list1bar_all));
         // c_hypo2_all = epipole_pix_view2(2,1) - a_hypo2_all*epipole_pix_view2(1,1);
         Eigen::MatrixXd p1x_hypo_all;
@@ -201,29 +202,32 @@ namespace GetOrientationList {
         Eigen::MatrixXd slope12all;
         slope12all.conservativeResize(4,1);
         for(int idx_pt12 = 0; idx_pt12 < p1_all.rows(); idx_pt12++){
-            int column = 0;
+            int column     = 0;
+            int columndist = 0;
             if(p1y_hypo_all(idx_pt12,0) >= 0 && p1y_hypo_all(idx_pt12,0) <= imgrows ){
                 p1_all(idx_pt12, 0)  = p1x_hypo_all(idx_pt12,0);
                 p1_dxdy(idx_pt12, 0) = p1x_hypo_all(idx_pt12,0) - epipole_pix_view2(0);
                 p1_all(idx_pt12, 1)  = p1y_hypo_all(idx_pt12,0);
                 p1_dxdy(idx_pt12, 1) = p1y_hypo_all(idx_pt12,0) - epipole_pix_view2(1);
                 p1_dist(0, 0)        = p1_dxdy(idx_pt12, 0)*p1_dxdy(idx_pt12, 0) + p1_dxdy(idx_pt12, 1)*p1_dxdy(idx_pt12, 1);
-                column += 2;
+                column     += 2;
+                columndist += 1;
             }
             if(p1y_hypo_all(idx_pt12,1) >= 0 && p1y_hypo_all(idx_pt12,1) <= imgrows ){
                 p1_all(idx_pt12, column)    = p1x_hypo_all(idx_pt12,1);
                 p1_dxdy(idx_pt12, column)   = p1x_hypo_all(idx_pt12,1) - epipole_pix_view2(0);
                 p1_all(idx_pt12, column+1)  = p1y_hypo_all(idx_pt12,1);
                 p1_dxdy(idx_pt12, column+1) = p1y_hypo_all(idx_pt12,1) - epipole_pix_view2(1);
-                p1_dist(0, column-1)        = p1_dxdy(idx_pt12, column)*p1_dxdy(idx_pt12, column) + p1_dxdy(idx_pt12, column+1)*p1_dxdy(idx_pt12, column+1);
-                column += 2;
+                p1_dist(0, columndist)      = p1_dxdy(idx_pt12, column)*p1_dxdy(idx_pt12, column) + p1_dxdy(idx_pt12, column+1)*p1_dxdy(idx_pt12, column+1);
+                column     += 2;
+                columndist += 1;
             }
             if(p1x_hypo_all(idx_pt12,2) >= 0 && p1x_hypo_all(idx_pt12,2) <= imgcols ){
                 p1_all(idx_pt12, column)    = p1x_hypo_all(idx_pt12,2);
                 p1_dxdy(idx_pt12, column)   = p1x_hypo_all(idx_pt12,2) - epipole_pix_view2(0);
-                p1_all(idx_pt12, column+1)  = p1y_hypo_all(idx_pt12,3);
-                p1_dxdy(idx_pt12, column+1) = p1y_hypo_all(idx_pt12,3) - epipole_pix_view2(1);
-                p1_dist(0, column-1)        = p1_dxdy(idx_pt12, column)*p1_dxdy(idx_pt12, column) + p1_dxdy(idx_pt12, column+1)*p1_dxdy(idx_pt12, column+1);
+                p1_all(idx_pt12, column+1)  = p1y_hypo_all(idx_pt12,2);
+                p1_dxdy(idx_pt12, column+1) = p1y_hypo_all(idx_pt12,2) - epipole_pix_view2(1);
+                p1_dist(0, columndist)        = p1_dxdy(idx_pt12, column)*p1_dxdy(idx_pt12, column) + p1_dxdy(idx_pt12, column+1)*p1_dxdy(idx_pt12, column+1);
                 column += 2;
             }
             if(p1x_hypo_all(idx_pt12,3) >= 0 && p1x_hypo_all(idx_pt12,3) <= imgcols ){
@@ -233,59 +237,64 @@ namespace GetOrientationList {
                 p1_dxdy(idx_pt12, 3) = p1y_hypo_all(idx_pt12,3) - epipole_pix_view2(1);
                 p1_dist(0, 1)        = p1_dxdy(idx_pt12, 2)*p1_dxdy(idx_pt12, 2) + p1_dxdy(idx_pt12, 3)*p1_dxdy(idx_pt12, 3);
             }
+            
             if(p1_dist(0, 0) < p1_dist(0, 1)){
                 p1_xy.row(idx_pt12) << p1_all(idx_pt12, 0), p1_all(idx_pt12, 1);
             }else{
                 p1_xy.row(idx_pt12) << p1_all(idx_pt12, 2), p1_all(idx_pt12, 3);
             }
-
+            
             double delta_x1 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*PI)*delta); 
             double slope1_p = 0;
             double slope1_n = 0;
             if(p1_all(idx_pt12, 0) == 0 || p1_all(idx_pt12, 0) == imgcols){
-                p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_met_view2(0);
-                p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_met_view2(1) - delta_x1;
-                p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_met_view2(0);
-                p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_met_view2(1) + delta_x1;
+                p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
+                p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x1;
+                p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
+                p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) + delta_x1;
                 slope1_p                    = p1_final_dxdyp(idx_pt12, 1)/p1_final_dxdyp(idx_pt12, 0);
                 slope1_n                    = p1_final_dxdyn(idx_pt12, 1)/p1_final_dxdyn(idx_pt12, 0);
                 slope12all(0,0)             = slope1_p;
                 slope12all(1,0)             = slope1_n;
             }else{
-                p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_met_view2(0) - delta_x1;
-                p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_met_view2(1);
-                p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_met_view2(0) + delta_x1;
-                p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_met_view2(1);
+                p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) - delta_x1;
+                p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1);
+                p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) + delta_x1;
+                p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1);
                 slope1_p                    = p1_final_dxdyp(idx_pt12, 1)/p1_final_dxdyp(idx_pt12, 0);
                 slope1_n                    = p1_final_dxdyn(idx_pt12, 1)/p1_final_dxdyn(idx_pt12, 0);
                 slope12all(0,0)             = slope1_p;
                 slope12all(1,0)             = slope1_n;
             }
             //
-            column = 0;
+            column     = 0;
+            columndist = 0;
             if(p2y_hypo_all(idx_pt12,0) >= 0 && p2y_hypo_all(idx_pt12,0) <= imgrows ){
                 p2_all(idx_pt12, 0)  = p2x_hypo_all(idx_pt12,0);
                 p2_dxdy(idx_pt12, 0) = p2x_hypo_all(idx_pt12,0) - epipole_pix_view2(0);
                 p2_all(idx_pt12, 1)  = p2y_hypo_all(idx_pt12,0);
                 p2_dxdy(idx_pt12, 1) = p2y_hypo_all(idx_pt12,0) - epipole_pix_view2(1);
                 p2_dist(0, 0)        = p2_dxdy(idx_pt12, 0)*p2_dxdy(idx_pt12, 0) + p2_dxdy(idx_pt12, 1)*p2_dxdy(idx_pt12, 1);
-                column += 2;
+                column     += 2;
+                columndist += 1;
             }
             if(p2y_hypo_all(idx_pt12,1) >= 0 && p2y_hypo_all(idx_pt12,1) <= imgrows ){
                 p2_all(idx_pt12, column)    = p2x_hypo_all(idx_pt12,1);
                 p2_dxdy(idx_pt12, column)   = p2x_hypo_all(idx_pt12,1) - epipole_pix_view2(0);
                 p2_all(idx_pt12, column+1)  = p2y_hypo_all(idx_pt12,1);
                 p2_dxdy(idx_pt12, column+1) = p2y_hypo_all(idx_pt12,1) - epipole_pix_view2(1);
-                p2_dist(0, column-1)        = p2_dxdy(idx_pt12, column)*p2_dxdy(idx_pt12, column) + p2_dxdy(idx_pt12, column+1)*p2_dxdy(idx_pt12, column+1);
-                column += 2;
+                p2_dist(0, columndist)      = p2_dxdy(idx_pt12, column)*p2_dxdy(idx_pt12, column) + p2_dxdy(idx_pt12, column+1)*p2_dxdy(idx_pt12, column+1);
+                column     += 2;
+                columndist += 1;
             }
             if(p2x_hypo_all(idx_pt12,2) >= 0 && p2x_hypo_all(idx_pt12,2) <= imgcols ){
                 p2_all(idx_pt12, column)    = p2x_hypo_all(idx_pt12,2);
                 p2_dxdy(idx_pt12, column)   = p2x_hypo_all(idx_pt12,2) - epipole_pix_view2(0);
-                p2_all(idx_pt12, column+1)  = p2y_hypo_all(idx_pt12,3);
-                p2_dxdy(idx_pt12, column+1) = p2y_hypo_all(idx_pt12,3) - epipole_pix_view2(1);
-                p2_dist(0, column-1)        = p2_dxdy(idx_pt12, column)*p2_dxdy(idx_pt12, column) + p2_dxdy(idx_pt12, column+1)*p2_dxdy(idx_pt12, column+1);
-                column += 2;
+                p2_all(idx_pt12, column+1)  = p2y_hypo_all(idx_pt12,2);
+                p2_dxdy(idx_pt12, column+1) = p2y_hypo_all(idx_pt12,2) - epipole_pix_view2(1);
+                p2_dist(0, columndist)      = p2_dxdy(idx_pt12, column)*p2_dxdy(idx_pt12, column) + p2_dxdy(idx_pt12, column+1)*p2_dxdy(idx_pt12, column+1);
+                column     += 2;
+                columndist += 1;
             }
             if(p2x_hypo_all(idx_pt12,3) >= 0 && p2x_hypo_all(idx_pt12,3) <= imgcols ){
                 p2_all(idx_pt12, 2)  = p2x_hypo_all(idx_pt12,3);
@@ -294,24 +303,30 @@ namespace GetOrientationList {
                 p2_dxdy(idx_pt12, 3) = p2y_hypo_all(idx_pt12,3) - epipole_pix_view2(1);
                 p2_dist(0, 1)        = p2_dxdy(idx_pt12, 2)*p2_dxdy(idx_pt12, 2) + p2_dxdy(idx_pt12, 3)*p2_dxdy(idx_pt12, 3);
             }
+
+            if(p2_dist(0, 0) < p2_dist(0, 1)){
+                p2_xy.row(idx_pt12) << p2_all(idx_pt12, 0), p2_all(idx_pt12, 1);
+            }else{
+                p2_xy.row(idx_pt12) << p2_all(idx_pt12, 2), p2_all(idx_pt12, 3);
+            }
             
             double delta_x2 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*PI)*delta); 
             double slope2_p = 0;
             double slope2_n = 0;
             if(p2_all(idx_pt12, 0) == 0 || p2_all(idx_pt12, 0) == imgcols){
-                p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_met_view2(0);
-                p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_met_view2(1) - delta_x2;
-                p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_met_view2(0);
-                p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_met_view2(1) + delta_x2;
+                p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
+                p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x2;
+                p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
+                p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) + delta_x2;
                 slope2_p                    = p2_final_dxdyp(idx_pt12, 1)/p2_final_dxdyp(idx_pt12, 0);
                 slope2_n                    = p2_final_dxdyn(idx_pt12, 1)/p2_final_dxdyn(idx_pt12, 0);
                 slope12all(2,0)             = slope2_p;
                 slope12all(3,0)             = slope2_n;
             }else{
-                p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_met_view2(0) - delta_x2;
-                p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_met_view2(1);
-                p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_met_view2(0) + delta_x2;
-                p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_met_view2(1);
+                p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) - delta_x2;
+                p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1);
+                p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) + delta_x2;
+                p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1);
                 slope2_p                    = p2_final_dxdyp(idx_pt12, 1)/p2_final_dxdyp(idx_pt12, 0);
                 slope2_n                    = p2_final_dxdyn(idx_pt12, 1)/p2_final_dxdyn(idx_pt12, 0);
                 slope12all(2,0)             = slope2_p;

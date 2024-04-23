@@ -8,13 +8,13 @@
 //> CH: Change this number to the number of CPU-cores you want your code to be processed by
 #define NUM_OF_OPENMP_THREADS      (32)
 
-#define DEBUG                      (0)
+#define DEBUG                      (1)
 
 #define DATASET_NUM_OF_FRAMES      (50)
 
-#define HYPO1_VIEW_INDX            (6)
+#define HYPO1_VIEW_INDX            (5)
 
-#define HYPO2_VIEW_INDX            (12) 
+#define HYPO2_VIEW_INDX            (11) 
 
 #define DIST_THRESH                (2)
 
