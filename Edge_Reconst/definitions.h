@@ -6,9 +6,9 @@
 #define OUTPUT_WRITE_FOLDER        std::string("/users/yzhen105/Edge_Based_Reconstruction/outputs_write_files/")
 
 //> CH: Change this number to the number of CPU-cores you want your code to be processed by
-#define NUM_OF_OPENMP_THREADS      (32)
+#define NUM_OF_OPENMP_THREADS      (8)
 
-#define DEBUG                      (1)
+#define DEBUG                      (0)
 
 #define DATASET_NUM_OF_FRAMES      (50)
 

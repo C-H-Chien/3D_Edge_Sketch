@@ -22,6 +22,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 //using namespace std;
 
 namespace PairEdgeHypothesis {
@@ -148,6 +151,62 @@ namespace PairEdgeHypothesis {
             edgels_HYPO2.row(idx) = Edges_HYPO2.row(midpoint-11+idx);
         }        
         return edgels_HYPO2;
+    }
+
+    Eigen::MatrixXd pair_edge_hypothesis::edgelsHYPO2correct(Eigen::MatrixXd edgels_HYPO2,  Eigen::MatrixXd edgel_HYPO1, Eigen::Matrix3d F21, Eigen::Matrix3d F12, Eigen::MatrixXd HYPO2_idx_raw){
+        Eigen::MatrixXd edgels_HYPO2_corrected;
+        Eigen::MatrixXd xy1_H1;
+        xy1_H1.conservativeResize(1,3);
+        xy1_H1(0,0) = edgel_HYPO1(0,0);
+        xy1_H1(0,1) = edgel_HYPO1(0,1);
+        xy1_H1(0,2) = 1;
+        Eigen::MatrixXd coeffspt1T = F21 * xy1_H1.transpose();
+        Eigen::MatrixXd coeffspt1  = coeffspt1T.transpose();
+        Eigen::MatrixXd Apixel_1   = coeffspt1.col(0);
+        Eigen::MatrixXd Bpixel_1   = coeffspt1.col(1);
+        Eigen::MatrixXd Cpixel_1   = coeffspt1.col(2);
+        double a1_line  = -Apixel_1(0,0)/Bpixel_1(0,0);
+        double b1_line  = -1;
+        double c1_line  = -Cpixel_1(0,0)/Bpixel_1(0,0);
+        double a_edgeH1    = tan(edgel_HYPO1(0,2));
+        double b_edgeH1    = -1;
+        double c_edgeH1    = -(a_edgeH1*edgel_HYPO1(0,0)-edgel_HYPO1(0,1));
+        // std::cout << "a1_line: " << a1_line <<std::endl;
+        // std::cout << "c1_line: " << c1_line <<std::endl;
+        // std::cout << "a_edgeH1: " << a_edgeH1 <<std::endl;
+        // std::cout << "c_edgeH1: " << c_edgeH1 <<std::endl;
+        double idx_correct = 0;
+        for(int idx_hypo2 = 0; idx_hypo2 < edgels_HYPO2.rows(); idx_hypo2++){
+            double a_edgeH2 = tan(edgels_HYPO2(idx_hypo2,2));
+            double b_edgeH2 = -1;
+            double c_edgeH2 = -(a_edgeH2*edgels_HYPO2(idx_hypo2,0)-edgels_HYPO2(idx_hypo2,1));
+            double x_currH2 = ((b1_line*c_edgeH2-b_edgeH2*c1_line)/(a1_line*b_edgeH2-a_edgeH2*b1_line) + edgels_HYPO2(idx_hypo2,0))/2;
+            double y_currH2 = ((c1_line*a_edgeH2-c_edgeH2*a1_line)/(a1_line*b_edgeH2-a_edgeH2*b1_line) + edgels_HYPO2(idx_hypo2,1))/2;
+            double dist2    = sqrt((x_currH2 - edgels_HYPO2(idx_hypo2,0))*(x_currH2 - edgels_HYPO2(idx_hypo2,0))+(y_currH2 - edgels_HYPO2(idx_hypo2,1))*(y_currH2 - edgels_HYPO2(idx_hypo2,1)));
+
+            Eigen::MatrixXd xy1_H2;
+            xy1_H2.conservativeResize(1,3);
+            xy1_H2(0,0) = x_currH2;
+            xy1_H2(0,1) = y_currH2;
+            xy1_H2(0,2) = 1;
+            Eigen::MatrixXd coeffspt2T = F12 * xy1_H2.transpose();
+            Eigen::MatrixXd coeffspt2  = coeffspt2T.transpose();
+            Eigen::MatrixXd Apixel_2   = coeffspt2.col(0);
+            Eigen::MatrixXd Bpixel_2   = coeffspt2.col(1);
+            Eigen::MatrixXd Cpixel_2   = coeffspt2.col(2);
+            double a2_line  = -Apixel_2(0,0)/Bpixel_2(0,0);
+            double b2_line  = -1;
+            double c2_line  = -Cpixel_2(0,0)/Bpixel_2(0,0);
+            double x_currH1 = (b2_line*c_edgeH1-b_edgeH1*c2_line)/(a2_line*b_edgeH1-a_edgeH1*b2_line);
+            double y_currH1 = (c2_line*a_edgeH1-c_edgeH1*a2_line)/(a2_line*b_edgeH1-a_edgeH1*b2_line);
+            double dist1    = sqrt((x_currH1 - edgel_HYPO1(0,0))*(x_currH1 - edgel_HYPO1(0,0))+(y_currH1 - edgel_HYPO1(0,1))*(y_currH1 - edgel_HYPO1(0,1)));
+            if(dist1 < circleR && dist2 < circleR){
+                edgels_HYPO2_corrected.conservativeResize(idx_correct+1,10);
+                edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), x_currH2, y_currH2,  edgels_HYPO2(idx_hypo2,2),  edgels_HYPO2(idx_hypo2,3), HYPO2_idx_raw(idx_hypo2), idx_hypo2;
+                idx_correct +=1;
+            }
+        }
+        return edgels_HYPO2_corrected;
     }
 
 

@@ -19,6 +19,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 namespace PairEdgeHypothesis {
     
     class pair_edge_hypothesis {
@@ -35,6 +38,7 @@ namespace PairEdgeHypothesis {
         Eigen::MatrixXd getHYPO2_idx_Ore_sted(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2);
         Eigen::MatrixXd getHYPO2_idx_Ore_fixed(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2);
         Eigen::MatrixXd getedgels_HYPO2_Ore_fixed(Eigen::MatrixXd Edges_HYPO2, Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2);
+        Eigen::MatrixXd edgelsHYPO2correct(Eigen::MatrixXd edgels_HYPO2,  Eigen::MatrixXd edgel_HYPO1, Eigen::Matrix3d F21, Eigen::Matrix3d F12, Eigen::MatrixXd HYPO2_idx_raw);
 
     private:
         

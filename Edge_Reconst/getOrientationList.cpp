@@ -31,7 +31,7 @@ namespace GetOrientationList {
     
     get_OrientationList::get_OrientationList( ) { }
     
-    Eigen::MatrixXd get_OrientationList::getOreListBar(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2) {
+    Eigen::MatrixXd get_OrientationList::getOreListBar(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::MatrixXd OreListBar_raw;
         OreListBar_raw.conservativeResize(Edges_HYPO1.rows(),2);
@@ -40,10 +40,10 @@ namespace GetOrientationList {
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e2  = {0,1,0};
         Eigen::Vector3d e3  = {0,0,1};
-        Eigen::Matrix3d R1  = All_R[HYPO1_VIEW_INDX];
-        Eigen::Vector3d T1  = All_T[HYPO1_VIEW_INDX];
-        Eigen::Matrix3d R2  = All_R[HYPO2_VIEW_INDX];
-        Eigen::Vector3d T2  = All_T[HYPO2_VIEW_INDX];
+        Eigen::Matrix3d R1  = All_R[REFIDX];
+        Eigen::Vector3d T1  = All_T[REFIDX];
+        Eigen::Matrix3d R2  = All_R[VALID_INDX];
+        Eigen::Vector3d T2  = All_T[VALID_INDX];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
         Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
         Eigen::Matrix3d F   = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
@@ -340,14 +340,20 @@ namespace GetOrientationList {
             */
             OreListBar_raw(idx_pt12,0) = atan(slope12all.minCoeff())/PI*180;
             OreListBar_raw(idx_pt12,1) = atan(slope12all.maxCoeff())/PI*180;
+            
             /*
-            if(OreListBardegree(idx_pt12,0) < 0){
-                OreListBardegree(idx_pt12,0) = ore_list1bar_2(idx_pt12,0)+180;
+            if(OreListBar_raw(idx_pt12,0) <= 0){
+                OreListBardegree(idx_pt12,0) = OreListBar_raw(idx_pt12,0)+180;
+            }else{
+                OreListBardegree(idx_pt12,0) = OreListBar_raw(idx_pt12,0);
             }
-            if(OreListBardegree(idx_pt12,1) < 0){
-                OreListBardegree(idx_pt12,1) = ore_list1bar_2(idx_pt12,1)+180;
+            if(OreListBar_raw(idx_pt12,1) <= 0){
+                OreListBardegree(idx_pt12,1) = OreListBar_raw(idx_pt12,1)+180;
+            }else{
+                OreListBardegree(idx_pt12,1) = OreListBar_raw(idx_pt12,1);
             }
             */
+            
         }
         
         //OreListBar_raw.col(0) = -1*(Eigen::VectorXd::Ones(Edges_HYPO1.rows())*F(0,0)+F(0,1)*slope_hypo1.col(0));
@@ -357,11 +363,13 @@ namespace GetOrientationList {
         //Eigen::MatrixXd OreListBarAtan = OreListBar.col(0).array().atan();
         //
         
+        
         Eigen::MatrixXd OreListBar_rawp1 = OreListBar_raw.col(0) + Eigen::VectorXd::Ones(OreListBar_raw.rows())*180;
         Eigen::MatrixXd OreListBar_rawp2 = OreListBar_raw.col(1) + Eigen::VectorXd::Ones(OreListBar_raw.rows())*180;
-        OreListBardegree.col(0) = (OreListBardegree.array() < 0).select(OreListBar_rawp1, OreListBar_raw.col(0));
-        OreListBardegree.col(1) = (OreListBardegree.array() < 0).select(OreListBar_rawp2, OreListBar_raw.col(1));
+        OreListBardegree.col(0) = (OreListBar_raw.col(0).array() < 0).select(OreListBar_rawp1, OreListBar_raw.col(0));
+        OreListBardegree.col(1) = (OreListBar_raw.col(1).array() < 0).select(OreListBar_rawp2, OreListBar_raw.col(1));
         
+
         return OreListBardegree;
     }
 

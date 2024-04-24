@@ -33,11 +33,13 @@ namespace GetSupportedEdgels {
     double get_SupportedEdgels::getSupportIdx(Eigen::Vector2d edgels_tgt_reproj, Eigen::MatrixXd Tangents_VALID, Eigen::MatrixXd inliner) {
         double prev_prod = 0;
         double supported_link_indx = -2;
+        double ore_threshold       = cos(double(OREN_THRESH)/180*PI);
+        // std::cout << "ore_threshold: " << cos(double(OREN_THRESH)/180*PI) <<std::endl;
         for (int idx_inline = 0; idx_inline < inliner.rows(); idx_inline++){
             Eigen::Vector2d target_edges = {Tangents_VALID(inliner(idx_inline),0), Tangents_VALID(inliner(idx_inline),1)};
             double abs_dot_prod = fabs(edgels_tgt_reproj(0)*target_edges(0) + edgels_tgt_reproj(1)*target_edges(1));
             // std::cout << "abs_dot_prod: " << abs_dot_prod <<std::endl;
-            if(abs_dot_prod > OREN_THRESH && abs_dot_prod > prev_prod){
+            if(abs_dot_prod > ore_threshold && abs_dot_prod > prev_prod){
                 //cout << "prev_prod: "<< prev_prod << endl;
                 prev_prod = abs_dot_prod;
                 supported_link_indx = inliner(idx_inline); 
