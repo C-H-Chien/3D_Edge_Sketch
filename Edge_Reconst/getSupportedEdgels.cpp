@@ -39,7 +39,7 @@ namespace GetSupportedEdgels {
             Eigen::Vector2d target_edges = {Tangents_VALID(inliner(idx_inline),0), Tangents_VALID(inliner(idx_inline),1)};
             double abs_dot_prod = fabs(edgels_tgt_reproj(0)*target_edges(0) + edgels_tgt_reproj(1)*target_edges(1));
             // std::cout << "abs_dot_prod: " << abs_dot_prod <<std::endl;
-            if(abs_dot_prod > ore_threshold && abs_dot_prod > prev_prod){
+            if(abs_dot_prod >= ore_threshold && abs_dot_prod > prev_prod){
                 //cout << "prev_prod: "<< prev_prod << endl;
                 prev_prod = abs_dot_prod;
                 supported_link_indx = inliner(idx_inline); 

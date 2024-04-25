@@ -122,10 +122,10 @@ namespace GetOrientationList {
         Eigen::MatrixXd Bpixel_2 = coeffspt2.col(1);
         Eigen::MatrixXd Cpixel_2 = coeffspt2.col(2);
         Eigen::MatrixXd slope_hypo_pt1 = Bpixel_1.col(0).array()/Apixel_1.col(0).array();
-        Eigen::MatrixXd ore_list1bar_1 = slope_hypo_pt1.col(0).array().atan()/PI*180;
+        Eigen::MatrixXd ore_list1bar_1 = slope_hypo_pt1.col(0).array().atan()/M_PI*180;
 
         Eigen::MatrixXd slope_hypo_pt2 = Bpixel_2.col(0).array()/Apixel_2.col(0).array();
-        Eigen::MatrixXd ore_list1bar_2 = slope_hypo_pt2.col(0).array().atan()/PI*180;
+        Eigen::MatrixXd ore_list1bar_2 = slope_hypo_pt2.col(0).array().atan()/M_PI*180;
         Eigen::MatrixXd ore_list1bar_all;
         ore_list1bar_all.conservativeResize(ore_list1bar_1.rows(),2);
         for(int idx_ore12 = 0; idx_ore12 < slope_hypo_pt1.rows(); idx_ore12++){
@@ -244,18 +244,18 @@ namespace GetOrientationList {
                 p1_xy.row(idx_pt12) << p1_all(idx_pt12, 2), p1_all(idx_pt12, 3);
             }
             
-            double delta_x1 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*PI)*delta); 
+            double delta_x1 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*M_PI)*delta); 
             double slope1_p = 0;
             double slope1_n = 0;
-            if(p1_all(idx_pt12, 0) == 0 || p1_all(idx_pt12, 0) == imgcols){
+            if(p1_xy(idx_pt12, 0) == 0 || p1_xy(idx_pt12, 0) == imgcols){
                 p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
                 p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x1;
                 p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
                 p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) + delta_x1;
                 slope1_p                    = p1_final_dxdyp(idx_pt12, 1)/p1_final_dxdyp(idx_pt12, 0);
                 slope1_n                    = p1_final_dxdyn(idx_pt12, 1)/p1_final_dxdyn(idx_pt12, 0);
-                slope12all(0,0)             = slope1_p;
-                slope12all(1,0)             = slope1_n;
+                slope12all(0,0)             = atan(slope1_p)/M_PI*180;
+                slope12all(1,0)             = atan(slope1_n)/M_PI*180;
             }else{
                 p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) - delta_x1;
                 p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1);
@@ -263,8 +263,8 @@ namespace GetOrientationList {
                 p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1);
                 slope1_p                    = p1_final_dxdyp(idx_pt12, 1)/p1_final_dxdyp(idx_pt12, 0);
                 slope1_n                    = p1_final_dxdyn(idx_pt12, 1)/p1_final_dxdyn(idx_pt12, 0);
-                slope12all(0,0)             = slope1_p;
-                slope12all(1,0)             = slope1_n;
+                slope12all(0,0)             = atan(slope1_p)/M_PI*180;
+                slope12all(1,0)             = atan(slope1_n)/M_PI*180;
             }
             //
             column     = 0;
@@ -310,18 +310,18 @@ namespace GetOrientationList {
                 p2_xy.row(idx_pt12) << p2_all(idx_pt12, 2), p2_all(idx_pt12, 3);
             }
             
-            double delta_x2 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*PI)*delta); 
+            double delta_x2 = abs(cos(ore_list1bar_all(idx_pt12,1)/180*M_PI)*delta); 
             double slope2_p = 0;
             double slope2_n = 0;
-            if(p2_all(idx_pt12, 0) == 0 || p2_all(idx_pt12, 0) == imgcols){
+            if(p2_xy(idx_pt12, 0) == 0 || p2_xy(idx_pt12, 0) == imgcols){
                 p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
                 p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x2;
                 p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
                 p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) + delta_x2;
                 slope2_p                    = p2_final_dxdyp(idx_pt12, 1)/p2_final_dxdyp(idx_pt12, 0);
                 slope2_n                    = p2_final_dxdyn(idx_pt12, 1)/p2_final_dxdyn(idx_pt12, 0);
-                slope12all(2,0)             = slope2_p;
-                slope12all(3,0)             = slope2_n;
+                slope12all(2,0)             = atan(slope2_p)/M_PI*180;
+                slope12all(3,0)             = atan(slope2_n)/M_PI*180;
             }else{
                 p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) - delta_x2;
                 p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1);
@@ -329,8 +329,8 @@ namespace GetOrientationList {
                 p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1);
                 slope2_p                    = p2_final_dxdyp(idx_pt12, 1)/p2_final_dxdyp(idx_pt12, 0);
                 slope2_n                    = p2_final_dxdyn(idx_pt12, 1)/p2_final_dxdyn(idx_pt12, 0);
-                slope12all(2,0)             = slope2_p;
-                slope12all(3,0)             = slope2_n;
+                slope12all(2,0)             = atan(slope2_p)/M_PI*180;
+                slope12all(3,0)             = atan(slope2_n)/M_PI*180;
             }
             /*
             auto itmin = std::min_element(std::begin(slope12all), std::end(slope12all));
@@ -338,8 +338,38 @@ namespace GetOrientationList {
             auto itmax = std::max_element(std::begin(slope12all), std::end(slope12all));
             auto const posmax = std::distance(std::begin(slope12all), itmax);
             */
-            OreListBar_raw(idx_pt12,0) = atan(slope12all.minCoeff())/PI*180;
-            OreListBar_raw(idx_pt12,1) = atan(slope12all.maxCoeff())/PI*180;
+            if(slope12all(0,0) < 0){
+                slope12all(0,0) = slope12all(0,0)+180;
+            }
+            if(slope12all(1,0) < 0){
+                slope12all(1,0) = slope12all(1,0)+180;
+            }
+            if(slope12all(2,0) < 0){
+                slope12all(2,0) = slope12all(2,0)+180;
+            }
+            if(slope12all(3,0) < 0){
+                slope12all(3,0) = slope12all(3,0)+180;
+            }
+            
+            /*
+            if(VALID_INDX == 39 && REFIDX == HYPO2_VIEW_INDX){
+                std::cout << "VALID_INDX: \n" << VALID_INDX <<std::endl;
+                std::cout << "p1_xy: \n" << p1_xy.row(idx_pt12) <<std::endl;
+                std::cout << "p2_xy: \n" << p2_xy.row(idx_pt12) <<std::endl;
+                std::cout << "p1_dxdy: \n" << p1_dxdy.row(idx_pt12) <<std::endl;
+                std::cout << "p1_final_dxdyp: \n" << p1_final_dxdyp.row(idx_pt12) <<std::endl;
+                std::cout << "p1_final_dxdyn: \n" << p1_final_dxdyn.row(idx_pt12) <<std::endl;
+                std::cout << "p2_dxdy: \n" << p2_dxdy.row(idx_pt12) <<std::endl;
+                std::cout << "p2_final_dxdyp: \n" << p2_final_dxdyp.row(idx_pt12) <<std::endl;
+                std::cout << "p2_final_dxdyn: \n" << p2_final_dxdyn.row(idx_pt12) <<std::endl;
+                std::cout << "delta_x1: \n" << delta_x1 <<std::endl;
+                std::cout << "delta_x2: \n" << delta_x2 <<std::endl;
+                std::cout << "slope12all: \n" << slope12all <<std::endl;
+                if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+            }
+            */
+            OreListBar_raw(idx_pt12,0) = slope12all.minCoeff();
+            OreListBar_raw(idx_pt12,1) = slope12all.maxCoeff();
             
             /*
             if(OreListBar_raw(idx_pt12,0) <= 0){
@@ -363,14 +393,14 @@ namespace GetOrientationList {
         //Eigen::MatrixXd OreListBarAtan = OreListBar.col(0).array().atan();
         //
         
-        
+        /*
         Eigen::MatrixXd OreListBar_rawp1 = OreListBar_raw.col(0) + Eigen::VectorXd::Ones(OreListBar_raw.rows())*180;
         Eigen::MatrixXd OreListBar_rawp2 = OreListBar_raw.col(1) + Eigen::VectorXd::Ones(OreListBar_raw.rows())*180;
         OreListBardegree.col(0) = (OreListBar_raw.col(0).array() < 0).select(OreListBar_rawp1, OreListBar_raw.col(0));
         OreListBardegree.col(1) = (OreListBar_raw.col(1).array() < 0).select(OreListBar_rawp2, OreListBar_raw.col(1));
-        
+        */
 
-        return OreListBardegree;
+        return OreListBar_raw;
     }
 
     Eigen::MatrixXd get_OrientationList::getOreListBarVali(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX) {

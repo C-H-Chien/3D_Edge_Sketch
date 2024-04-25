@@ -411,7 +411,8 @@ int main(int argc, char **argv) {
     }
     // Get the current edge from Hypo1
     Eigen::Vector3d pt_edgel_HYPO1;
-    std::cout << "edge_idx: " << edge_idx <<std::endl;
+    pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
+    // std::cout << "edge_idx: " << edge_idx <<std::endl;
     // Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
     // Get the range of epipolar wedge for the current edge (Hypo1 --> Hypo2)
     double thresh_ore21_1 = OreListBardegree(edge_idx,0);
@@ -488,14 +489,13 @@ int main(int argc, char **argv) {
       // Calculate the angle range for epipolar wedges (Hypo1 --> Vali)
       // double range2         =  angle_range2; // * PERCENT_EPIPOLE;
       // Get the range of epipolar wedge for the current edge (Hypo1 --> Vali)
+      // std::cout << "edge_tgt_gamma3: \n" << edge_tgt_gamma3 <<std::endl;
 
       // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
       
-
       Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
       Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
       Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
-
       for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++){
         // Calculate the angle range for epipolar lines (Hypo2 --> Vali)
         // double angle_range3   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
@@ -550,6 +550,8 @@ int main(int argc, char **argv) {
         // Get support from validation view for this gamma 3
         double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
         // std::cout << "supported_link_indx: " << supported_link_indx <<std::endl;
+        // std::cout << "inliner: " << inliner <<std::endl;
+        if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
 
         // Get the supporting edge idx from this validation view (if isnotparallel)
         if (isparallel(idx_pair,0) != 0){
@@ -571,8 +573,9 @@ int main(int argc, char **argv) {
       
     } //> End of second loop
     
-    // std::cout << "supported_indices: " << supported_indices <<std::endl;
-    
+    // std::cout << "supported_indices_stack: " << supported_indices_stack.rows() <<std::endl;
+    // std::cout << "supported_indices_stack: \n" << supported_indices_stack <<std::endl;
+    if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
 
     //tend = clock() - tstart; 
     //std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from validation views."<<std::endl;
@@ -637,6 +640,7 @@ int main(int argc, char **argv) {
       }
       finalpair = int(indices_stack_unique[max_index[minIndex]]);
       // std::cout << "Multi: " << finalpair <<std::endl;
+      // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
     }else{
       finalpair = int(indices_stack_unique[int(maxIndex)]);
       // std::cout << "single: " << finalpair <<std::endl;
@@ -645,9 +649,7 @@ int main(int argc, char **argv) {
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
     // std::cout << "paired_edge.row(edge_idx): \n" << paired_edge.row(edge_idx) <<std::endl;
 
-    if (DEBUG == 1) {
-      std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); 
-    }
+    if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
   } //> End of first loop4
 
 
@@ -682,7 +684,7 @@ int main(int argc, char **argv) {
 
 
   std::ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_Tless10.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_Tless10_9n15.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();

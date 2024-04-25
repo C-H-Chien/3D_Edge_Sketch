@@ -23,6 +23,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 namespace GetReprojectedEdgel {
     
     get_Reprojected_Edgel::get_Reprojected_Edgel( ) { }
@@ -85,8 +88,8 @@ namespace GetReprojectedEdgel {
     Eigen::MatrixXd get_Reprojected_Edgel::getGamma3Tgt(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::Vector3d pt_edgel_HYPO1;
-        pt_edgel_HYPO1 << pt_edge_HYPO1(0,0), pt_edge_HYPO1(0,1), 1;
-        Eigen::Vector3d Gamma1 = K1.inverse() * pt_edgel_HYPO1;
+        // pt_edgel_HYPO1 << pt_edge_HYPO1(0,0), pt_edge_HYPO1(0,1), 1;
+        // Eigen::Vector3d Gamma1 = K1.inverse() * pt_edgel_HYPO1;
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e3  = {0,0,1};
         Eigen::Matrix3d R1  = All_R[HYPO1_VIEW_INDX];
@@ -99,10 +102,12 @@ namespace GetReprojectedEdgel {
         Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
         Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
         Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
-        Eigen::Vector3d tgt1_meters = getTGT_Meters(pt_edge_HYPO1, K1);
         Eigen::MatrixXd edge_tgt_gamma3;
         edge_tgt_gamma3.conservativeResize(edgels_HYPO2.rows(),2);
         for (int idx_HYPO2 = 0; idx_HYPO2 < edgels_HYPO2.rows(); idx_HYPO2++){
+            pt_edgel_HYPO1 << pt_edge_HYPO1(idx_HYPO2,0), pt_edge_HYPO1(idx_HYPO2,1), 1;
+            Eigen::Vector3d Gamma1 = K1.inverse() * pt_edgel_HYPO1;
+            Eigen::Vector3d tgt1_meters = getTGT_Meters(pt_edge_HYPO1, K1);
             Eigen::MatrixXd pt_edge_HYPO2 = edgels_HYPO2.row(idx_HYPO2);
             Eigen::Vector3d pt_edgel_HYPO2;
             pt_edgel_HYPO2 << pt_edge_HYPO2(0,0), pt_edge_HYPO2(0,1), 1;

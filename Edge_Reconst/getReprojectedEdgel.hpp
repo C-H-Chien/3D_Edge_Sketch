@@ -19,6 +19,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <stdio.h>
+#include <stdlib.h>
 namespace GetReprojectedEdgel {
     
     class get_Reprojected_Edgel {
