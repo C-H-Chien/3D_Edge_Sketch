@@ -104,6 +104,7 @@ void getEdgelsFromInteriorQuadrilateral(
 
 int main(int argc, char **argv) {
   std::fstream Edge_File;
+  std::fstream Edge_File_H12;
   std::fstream Rmatrix_File;
   std::fstream Tmatrix_File;
   std::fstream Kmatrix_File;
@@ -111,7 +112,8 @@ int main(int argc, char **argv) {
   int q = 0;
   int file_idx = 1;
   double rd_data;
-  std::vector<Eigen::MatrixXd> All_Edgels;  
+  std::vector<Eigen::MatrixXd> All_Edgels; 
+  std::vector<Eigen::MatrixXd> All_Edgels_H12;  
   //Eigen::MatrixXd Edgels;
   Eigen::Vector4d row_edge;
 
@@ -154,6 +156,43 @@ int main(int argc, char **argv) {
   }
   
   std::cout<< "Edge file loading finished" <<std::endl;
+
+  file_idx = 1;
+  int H_idx = 0;
+  while(file_idx < 3) {
+    if(file_idx == 1){
+      H_idx = HYPO1_VIEW_INDX;
+    }else{
+      H_idx = HYPO2_VIEW_INDX;
+    }
+    std::string Edge_File_PathH12 = REPO_DIR + "datasets/T-Less/10/Edges/thresh/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(threshEDG)+".txt"; 
+    file_idx ++;
+    Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
+    Edge_File.open(Edge_File_PathH12, std::ios_base::in);
+    if (!Edge_File) { 
+       std::cerr << "Edge file not existed!\n"; exit(1); 
+    }
+    else {
+      Edgels.resize(1,4);
+      while (Edge_File >> rd_data) {
+        row_edge(q) = rd_data;
+        q++;
+        if(q>3){
+          Edgels.conservativeResize(d+1,4);
+          Edgels.row(d) = row_edge;
+          q = 0;
+          d++;
+        }
+      }
+      Edge_File.close();
+      All_Edgels_H12.push_back(Edgels);
+      //Edgels = {};
+      d = 0;
+      q = 0;
+    }
+  }
+  file_idx = 1;
+  std::cout<< "HYPO1 and HYPO2 Edge file loading finished" <<std::endl;
 
   std::vector<Eigen::Matrix3d> All_R;
   Eigen::Matrix3d R_matrix;
@@ -256,10 +295,11 @@ int main(int argc, char **argv) {
   GetOrientationList::get_OrientationList        getOre;
   
   // Assign variables required for Hypo1 and Hypo2
-  Eigen::MatrixXd Edges_HYPO1 = All_Edgels[HYPO1_VIEW_INDX];
+  Eigen::MatrixXd Edges_HYPO1 = All_Edgels_H12[0];
+  Eigen::MatrixXd Edges_pairs = All_Edgels[HYPO1_VIEW_INDX];
   Eigen::Matrix3d R1          = All_R[HYPO1_VIEW_INDX];
   Eigen::Vector3d T1          = All_T[HYPO1_VIEW_INDX];
-  Eigen::MatrixXd Edges_HYPO2 = All_Edgels[HYPO2_VIEW_INDX];
+  Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
   Eigen::Matrix3d R2          = All_R[HYPO2_VIEW_INDX];
   Eigen::Vector3d T2          = All_T[HYPO2_VIEW_INDX];
   // deal with multiple K scenario
@@ -282,14 +322,14 @@ int main(int argc, char **argv) {
   Eigen::Vector3d T12 = util.getRelativePose_T21(R2, R1, T2, T1);  
   Eigen::Matrix3d F12 = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R12, T12);  
   // Initializations for paired edges between Hypo1 and Hypo 2
-  Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+  Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_pairs.rows(),50,-2);
   // Compute epipolar wedges between Hypo1 and Hypo2 and find the angle range 1
   // std::cout<< "Here" <<std::endl;
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
   // std::cout<< "Edges_HYPO1: \n" << Edges_HYPO1.block(0,0,10,2) << std::endl;
-  std::cout<< "OreListBardegree: \n" << OreListBardegree.block(0,0,10,2) << std::endl;
+  // std::cout<< "OreListBardegree: \n" << OreListBardegree.block(0,0,10,2) << std::endl;
   // Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   // Calculate the angle range for epipolar lines (Hypo1 --> Hypo2)
   // double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
@@ -390,8 +430,13 @@ int main(int argc, char **argv) {
   
   //clock_t tstart, tstart1, tend;
   clock_t tstart, tend;
-  double itime, ftime, exec_time;
-
+  double itime, ftime, exec_time, totaltime;
+  totaltime = 0;
+  int thresh_EDG = threshEDG;
+  while(thresh_EDG >=1){
+  // std::cout<< "Edges_HYPO1: " << Edges_HYPO1.rows() << std::endl;
+  Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
+  Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
@@ -405,8 +450,12 @@ int main(int argc, char **argv) {
 
   //> First loop: loop over all edgels from hypothesis view 1
   
+  
   for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++){
     if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
+      continue;
+    }
+    if(paired_edge(edge_idx,0) != -2){
       continue;
     }
     // Get the current edge from Hypo1
@@ -551,7 +600,7 @@ int main(int argc, char **argv) {
         double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
         // std::cout << "supported_link_indx: " << supported_link_indx <<std::endl;
         // std::cout << "inliner: " << inliner <<std::endl;
-        if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+        // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
 
         // Get the supporting edge idx from this validation view (if isnotparallel)
         if (isparallel(idx_pair,0) != 0){
@@ -575,7 +624,7 @@ int main(int argc, char **argv) {
     
     // std::cout << "supported_indices_stack: " << supported_indices_stack.rows() <<std::endl;
     // std::cout << "supported_indices_stack: \n" << supported_indices_stack <<std::endl;
-    if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+    // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
 
     //tend = clock() - tstart; 
     //std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to get support from validation views."<<std::endl;
@@ -649,19 +698,28 @@ int main(int argc, char **argv) {
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
     // std::cout << "paired_edge.row(edge_idx): \n" << paired_edge.row(edge_idx) <<std::endl;
 
-    if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
-  } //> End of first loop4
-
+    // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+  }
+  //> End of first loop4
 
   #if defined(_OPENMP)
+    ftime = omp_get_wtime();
+    exec_time = ftime - itime;
+    totaltime += exec_time;
+    std::cout << "It took "<< exec_time <<" second(s) to finish this round."<<std::endl;
+    std::cout << "End of using OpenMP parallelization." << std::endl;
+  #endif
+  // std::cout<< "Edges_HYPO1: " << Edges_HYPO1.rows() << std::endl;
+
+
+/*
+ #if defined(_OPENMP)
     ftime = omp_get_wtime();
     exec_time = ftime - itime;
     std::cout << "It took "<< exec_time <<" second(s) to finish the whole pipeline."<<std::endl;
     std::cout << "End of using OpenMP parallelization." << std::endl;
   #endif
-
-
-  std::cout<< "pipeline finished" <<std::endl;
+*/
 
   //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
   // .....
@@ -679,15 +737,75 @@ int main(int argc, char **argv) {
   //std::cout<< "pipeline finished" <<std::endl;
   tend = clock() - tstart; 
   std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to generate the final edge pair for output file."<<std::endl;
-  std::cout << "Number of pairs found: " << paired_edge_final.rows()<<std::endl;
+  std::cout << "Number of pairs found till this round: " << paired_edge_final.rows()<<std::endl;
 
 
 
   std::ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_Tless10_9n15.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_Tless10_6n12_t32to"+std::to_string(thresh_EDG)+"excludehypo1n2.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();
+
+  thresh_EDG = thresh_EDG/2;
+  std::vector<Eigen::MatrixXd> All_Edgels_H12_1;  
+  if(thresh_EDG >=1){
+  while(file_idx < 3) {
+    if(file_idx == 1){
+      H_idx = HYPO1_VIEW_INDX;
+    }else{
+      H_idx = HYPO2_VIEW_INDX;
+    }
+    
+    // std::cout<< "thresh_EDG: " << thresh_EDG << std::endl;
+    std::string Edge_File_PathH12 = REPO_DIR + "datasets/T-Less/10/Edges/thresh/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(thresh_EDG)+".txt"; 
+    file_idx ++;
+    Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
+    Edge_File.open(Edge_File_PathH12, std::ios_base::in);
+    if (!Edge_File) { 
+       std::cerr << "Edge file not existed!\n"; exit(1); 
+    }
+    else {
+      Edgels.resize(1,4);
+      while (Edge_File >> rd_data) {
+        row_edge(q) = rd_data;
+        q++;
+        if(q>3){
+          Edgels.conservativeResize(d+1,4);
+          Edgels.row(d) = row_edge;
+          q = 0;
+          d++;
+        }
+      }
+      Edge_File.close();
+      All_Edgels_H12_1.push_back(Edgels);
+      //Edgels = {};
+      d = 0;
+      q = 0;
+    }
+  }
+  file_idx = 1;
+  // std::cout<< "HYPO1 and HYPO2 Edge file loading finished" <<std::endl;
+
+  Edges_HYPO1 = All_Edgels_H12_1[0];
+  Edges_HYPO2 = All_Edgels_H12_1[1];
+
+  //*
+  for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++){
+    if(paired_edge(pair_idx,0) != -2){
+      Edges_HYPO2.row(int(paired_edge(pair_idx,1))) << 0,0,0,0;
+      pair_num++;
+    }
+  }
+  //*/
+  // std::cout<< "Edges_HYPO2: \n" << Edges_HYPO2.block(0,0,100,2) << std::endl;
+  if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+  }else{
+    std::cout<< "pipeline finished" <<std::endl;
+    std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
+  }
+
+  }
 
 
 }

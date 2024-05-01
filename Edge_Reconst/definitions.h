@@ -38,4 +38,6 @@
 
 #define circleR                    (55)
 
+#define threshEDG                  (32)
+
 #endif
