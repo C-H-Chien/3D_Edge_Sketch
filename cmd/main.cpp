@@ -23,6 +23,7 @@
 #include "../Edge_Reconst/getQuadrilateral.hpp"
 #include "../Edge_Reconst/getSupportedEdgels.hpp"
 #include "../Edge_Reconst/getOrientationList.hpp"
+#include "../Edge_Reconst/linearTriangulationUtil.hpp"
 #include "../Edge_Reconst/definitions.h"
 
 //> Added by CH: Efficient Bucketing Method
@@ -108,6 +109,8 @@ int main(int argc, char **argv) {
   std::fstream Rmatrix_File;
   std::fstream Tmatrix_File;
   std::fstream Kmatrix_File;
+  std::fstream H1remove_File;
+  std::fstream H2remove_File;
   int d = 0;
   int q = 0;
   int file_idx = 1;
@@ -122,7 +125,8 @@ int main(int argc, char **argv) {
   std::vector< subpixel_point_set > All_Bucketed_Imgs;
   std::cout << "read edges file now\n";
   while(file_idx < DATASET_NUM_OF_FRAMES+1) {
-    std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges/Edge_"+std::to_string(file_idx)+".txt"; 
+    // std::string Edge_File_Path = REPO_DIR + "datasets/T-Less/10/Edges/thresh/Edge_"+std::to_string(file_idx)+"_t"+std::to_string(threshEDGforall)+".txt"; 
+    std::string Edge_File_Path = REPO_DIR + "datasets/ABC-NEF/00000006/Edges/Edge_"+std::to_string(file_idx)+"_t"+std::to_string(threshEDGforall)+".txt";
     file_idx ++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_Path, std::ios_base::in);
@@ -165,7 +169,9 @@ int main(int argc, char **argv) {
     }else{
       H_idx = HYPO2_VIEW_INDX;
     }
-    std::string Edge_File_PathH12 = REPO_DIR + "datasets/T-Less/10/Edges/thresh/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(threshEDG)+".txt"; 
+    // std::string Edge_File_PathH12 = REPO_DIR + "datasets/T-Less/10/Edges/thresh/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(threshEDG)+".txt"; 
+    std::string Edge_File_PathH12 = REPO_DIR + "datasets/ABC-NEF/00000006/Edges/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(threshEDG)+".txt"; 
+    
     file_idx ++;
     Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_PathH12, std::ios_base::in);
@@ -197,7 +203,7 @@ int main(int argc, char **argv) {
   std::vector<Eigen::Matrix3d> All_R;
   Eigen::Matrix3d R_matrix;
   Eigen::Vector3d row_R;
-  std::string Rmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/R_matrix.txt";
+  std::string Rmatrix_File_Path = REPO_DIR + "datasets/ABC-NEF/00000006/RnT/R_matrix.txt";
   Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
   if (!Rmatrix_File) { 
     std::cerr << "R_matrix file not existed!\n"; exit(1); 
@@ -225,7 +231,7 @@ int main(int argc, char **argv) {
 
   std::vector<Eigen::Vector3d> All_T;
   Eigen::Vector3d T_matrix;
-  std::string Tmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/T_matrix.txt";
+  std::string Tmatrix_File_Path = REPO_DIR + "datasets/ABC-NEF/00000006/RnT/T_matrix.txt";
   Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
   if (!Tmatrix_File) { 
     std::cerr << "T_matrix file not existed!\n"; exit(1); 
@@ -250,7 +256,7 @@ int main(int argc, char **argv) {
   if(IF_MULTIPLE_K == 1){
     Eigen::Matrix3d K_matrix;
     Eigen::Vector3d row_K;
-    std::string Kmatrix_File_Path = REPO_DIR + "datasets/T-Less/10/RnT/K_matrix.txt";
+    std::string Kmatrix_File_Path = REPO_DIR + "datasets/ABC-NEF/00000006/RnT/K_matrix.txt";
     Kmatrix_File.open(Kmatrix_File_Path, std::ios_base::in);
     if (!Kmatrix_File) { 
       std::cerr << "K_matrix file not existed!\n"; exit(1);
@@ -281,6 +287,43 @@ int main(int argc, char **argv) {
 
   std::cout<< "K matrix loading finished" <<std::endl;
 
+  std::vector<int> edge_idx_H1;
+  std::vector<int> edge_idx_H2;
+  int removeH1idx;
+  int removeH2idx;
+  std::string H1remove_File_Path = REPO_DIR + "datasets/ABC-NEF/00000006/removeidx/H1remove_idx3.txt";
+  std::string H2remove_File_Path = REPO_DIR + "datasets/ABC-NEF/00000006/removeidx/H2remove_idx3.txt";
+  if(NOT1STROUND == 1){  
+    H1remove_File.open(H1remove_File_Path, std::ios_base::in);
+    if (!H1remove_File) {
+      std::cerr << "H1remove file not existed!\n"; exit(1); 
+    }else {
+      while (H1remove_File >> rd_data) {
+        removeH1idx = rd_data;
+        edge_idx_H1.push_back(removeH1idx);
+        }
+    }
+    H1remove_File.close();
+
+    H2remove_File.open(H2remove_File_Path, std::ios_base::in);
+    if (!H2remove_File) {
+      std::cerr << "H2remove file not existed!\n"; exit(1); 
+    }else {
+      while (H2remove_File >> rd_data) {
+        removeH2idx = rd_data;
+        edge_idx_H2.push_back(removeH2idx);
+        }
+    }
+    H2remove_File.close();
+
+  std::cout<< "remove idx loading finished" <<std::endl;
+  std::cout<< "H1 info: " << edge_idx_H1.size()<<std::endl;
+  std::cout<< "H1: " << edge_idx_H1[0]<<" "<< edge_idx_H1[1]<<" "<< edge_idx_H1[2]<<std::endl;
+  std::cout<< "H2 info: " << edge_idx_H2.size()<<std::endl;
+  std::cout<< "H2: " << edge_idx_H2[0]<<" "<< edge_idx_H2[1]<<" "<< edge_idx_H2[2]<<std::endl;
+  
+  }
+
 
 
   //<<<<<<<<< Pipeline start >>>>>>>>>//
@@ -302,6 +345,8 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
   Eigen::Matrix3d R2          = All_R[HYPO2_VIEW_INDX];
   Eigen::Vector3d T2          = All_T[HYPO2_VIEW_INDX];
+  Eigen::MatrixXd Edges_HYPO1_all = All_Edgels[HYPO1_VIEW_INDX];
+  Eigen::MatrixXd Edges_HYPO2_all = All_Edgels[HYPO2_VIEW_INDX];
   // deal with multiple K scenario
   Eigen::Matrix3d K1;
   Eigen::Matrix3d K2;
@@ -328,8 +373,17 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
-  // std::cout<< "Edges_HYPO1: \n" << Edges_HYPO1.block(0,0,10,2) << std::endl;
-  // std::cout<< "OreListBardegree: \n" << OreListBardegree.block(0,0,10,2) << std::endl;
+  if(NOT1STROUND == 1){
+    for(int h1_idx = 0; h1_idx < edge_idx_H1.size(); h1_idx++){
+      if(edge_idx_H1[h1_idx]>Edges_HYPO1.rows()){
+        std::cout<< "h1_idx: " << h1_idx << std::endl;
+        break;
+      }
+      paired_edge(edge_idx_H1[h1_idx],0) = -3;
+    }
+  }
+  // std::cout<< "Edges_HYPO1: \n" << Edges_HYPO1.block(0,0,20,2) << std::endl;
+  // std::cout<< "OreListBardegree: \n" << OreListBardegree.block(0,0,20,2) << std::endl;
   // Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   // Calculate the angle range for epipolar lines (Hypo1 --> Hypo2)
   // double angle_range1              = OreListdegree.maxCoeff() - OreListdegree.minCoeff();
@@ -433,10 +487,23 @@ int main(int argc, char **argv) {
   double itime, ftime, exec_time, totaltime;
   totaltime = 0;
   int thresh_EDG = threshEDG;
-  while(thresh_EDG >=1){
-  // std::cout<< "Edges_HYPO1: " << Edges_HYPO1.rows() << std::endl;
+  while(thresh_EDG >=threshEDGforall){
+  std::cout<< "Number of edges in hypothesis view 1: " << Edges_HYPO1.rows() << std::endl;
+  std::cout<< "Number of edges in hypothesis view 2: " << Edges_HYPO2.rows() << std::endl;
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
+  //remove edge in H2
+  std::cout<< "Edges_HYPO2.rows(): " << Edges_HYPO2.rows() << std::endl;
+  if(NOT1STROUND == 1){
+    for(int h2_idx = 0; h2_idx < edge_idx_H2.size(); h2_idx++){
+      if(edge_idx_H2[h2_idx]>Edges_HYPO2.rows()){
+        std::cout<< "edge_idx_H2[h2_idx]: " << edge_idx_H2[h2_idx] << std::endl;
+        break;
+      }
+      Edges_HYPO2.row(edge_idx_H2[h2_idx]) << 0,0,0,0;
+    }
+    // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+  }
   //<<<<<<<<< OpenMp Operation >>>>>>>>>//
   #if defined(_OPENMP)
     unsigned nthreads = NUM_OF_OPENMP_THREADS;
@@ -466,10 +533,13 @@ int main(int argc, char **argv) {
     // Get the range of epipolar wedge for the current edge (Hypo1 --> Hypo2)
     double thresh_ore21_1 = OreListBardegree(edge_idx,0);
     double thresh_ore21_2 = OreListBardegree(edge_idx,1);
+    // std::cout << "edge_idx: " << edge_idx <<std::endl;
     // std::cout << "thresh_ore21_1: " << thresh_ore21_1 <<std::endl;
     // std::cout << "thresh_ore21_2: " << thresh_ore21_2 <<std::endl;
-
+    
     Eigen::MatrixXd HYPO2_idx_raw = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    // std::cout << "HYPO2_idx_raw: \n" << HYPO2_idx_raw.rows() <<std::endl;
+    // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
     if (HYPO2_idx_raw.rows() == 0){
       continue;
     }
@@ -619,7 +689,6 @@ int main(int argc, char **argv) {
       // std::cout << "isparallel: \n" << isparallel << std::endl;
       // std::cout << "supported_indices.col(VALID_idx): \n" << supported_indices.col(VALID_idx) << std::endl;
       VALID_idx++;
-      
     } //> End of second loop
     
     // std::cout << "supported_indices_stack: " << supported_indices_stack.rows() <<std::endl;
@@ -684,6 +753,7 @@ int main(int argc, char **argv) {
       //std::cout << dist <<std::endl;
       Eigen::VectorXd::Index   minIndex;
       double min_dist = dist.minCoeff(&minIndex);
+      // std::cout << "min_dist: "<< min_dist <<std::endl;
       if(min_dist > DIST_THRESH){
         continue;
       }
@@ -696,8 +766,29 @@ int main(int argc, char **argv) {
     }
     // linearTriangulation code already exist
     paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
-    // std::cout << "paired_edge.row(edge_idx): \n" << paired_edge.row(edge_idx) <<std::endl;
-
+    //std::cout << "paired_edge.row(edge_idx): \n" << paired_edge.row(edge_idx) <<std::endl;
+    /*
+    Eigen::Vector2d pt_H1 = Edges_HYPO1_final.row(finalpair);
+    Eigen::Vector2d pt_H2 = Edges_HYPO2_final.row(finalpair);
+    std::vector<Eigen::Vector2d> pts;
+    pts.push_back(pt_H1);
+    pts.push_back(pt_H2);
+    // std::cout << "pt1: " << pt_H1 <<std::endl;
+    // std::cout << "pt2: " << pt_H2 <<std::endl;
+    std::vector<Eigen::Matrix3d> Rs;
+    Rs.push_back(R21);
+    std::vector<Eigen::Vector3d> Ts;
+    Ts.push_back(T21);
+    std::vector<double> K1_v;
+    K1_v.push_back(K1(0,2));
+    K1_v.push_back(K1(1,2));
+    K1_v.push_back(K1(0,0));
+    K1_v.push_back(K1(1,1));
+    // std::cout << "K1_v: " << K1_v[0] <<"; "<< K1_v[1] <<"; " << K1_v[2] <<"; " << K1_v[3] <<std::endl;
+    // std::cout << "K1: " << K1 <<std::endl;
+    Eigen::Vector3d edge_pt_3D = linearTriangulation(2, pts, Rs,Ts,K1_v);
+    //std::cout << "edge_pt_3D: " << edge_pt_3D <<std::endl;
+    */
     // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
   }
   //> End of first loop4
@@ -727,12 +818,53 @@ int main(int argc, char **argv) {
   int pair_num = 0;
   Eigen::MatrixXd paired_edge_final;
   for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++){
-    if(paired_edge(pair_idx,0) != -2){
+    if(paired_edge(pair_idx,0) != -2 && paired_edge(pair_idx,0) != -3){
       paired_edge_final.conservativeResize(pair_num+1,50);
       paired_edge_final.row(pair_num) << paired_edge.row(pair_idx);
       pair_num++;
     }
   }
+  Eigen::MatrixXd Gamma1s;
+   // gamma3 calculation, next view index pre
+  if(thresh_EDG == 1){
+  std::vector<Eigen::Matrix3d> Rs;
+  Rs.push_back(R21);
+  std::vector<Eigen::Vector3d> Ts;
+  Ts.push_back(T21);
+  std::vector<double> K1_v;
+  K1_v.push_back(K1(0,2));
+  K1_v.push_back(K1(1,2));
+  K1_v.push_back(K1(0,0));
+  K1_v.push_back(K1(1,1));
+  Gamma1s.conservativeResize(paired_edge_final.rows(),3);
+  for(int pair_idx = 0; pair_idx < paired_edge_final.rows(); pair_idx++){
+    Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1_all.row(int(paired_edge_final(pair_idx,0)));
+    Eigen::MatrixXd edgels_HYPO2  = Edges_HYPO2_all.row(int(paired_edge_final(pair_idx,1)));
+    // std::cout<< "edgels_HYPO2: " << edgels_HYPO2 << std::endl;
+    // std::cout<< "paired_edge_final: " << paired_edge_final(0,0) << std::endl;
+    // std::cout<< "paired_edge_final: " << paired_edge_final(0,1) << std::endl;
+    Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));
+    // std::cout<< "here \n" << std::endl;
+    Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F, F12, HYPO2_idx_raw);
+    // std::cout<< "edgels_HYPO2_corrected: \n" << edgels_HYPO2_corrected <<std::endl;
+    Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
+    Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+    Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(),4);
+    Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
+    
+    Eigen::Vector2d pt_H1 = Edges_HYPO1_final.row(0);
+    Eigen::Vector2d pt_H2 = Edges_HYPO2_final.row(0);
+    std::vector<Eigen::Vector2d> pts;
+    pts.push_back(pt_H1);
+    pts.push_back(pt_H2);
+
+    Eigen::Vector3d edge_pt_3D = linearTriangulation(2, pts, Rs,Ts,K1_v);
+    // std::cout<< "edge_pt_3D: \n" << edge_pt_3D << std::endl;
+    Gamma1s.row(pair_idx)<< edge_pt_3D(0),edge_pt_3D(1),edge_pt_3D(2);
+  }
+  }
+  // std::cout<< "Gamma1s: \n" << Gamma1s.row(0) << std::endl;
+  std::cout<< "this round finished" <<std::endl;
 
   //std::cout<< "pipeline finished" <<std::endl;
   tend = clock() - tstart; 
@@ -741,11 +873,13 @@ int main(int argc, char **argv) {
 
 
 
+  /*
   std::ofstream myfile1;
-  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_Tless10_6n12_t32to"+std::to_string(thresh_EDG)+"excludehypo1n2.txt";
+  std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_ABC0006_"+std::to_string(HYPO1_VIEW_INDX)+"n"+std::to_string(HYPO2_VIEW_INDX)+"_t32to"+std::to_string(thresh_EDG)+"excludehypo1n2_delta1.txt";
   myfile1.open (Output_File_Path);
   myfile1 << paired_edge_final;
   myfile1.close();
+  */
 
   thresh_EDG = thresh_EDG/2;
   std::vector<Eigen::MatrixXd> All_Edgels_H12_1;  
@@ -758,9 +892,10 @@ int main(int argc, char **argv) {
     }
     
     // std::cout<< "thresh_EDG: " << thresh_EDG << std::endl;
-    std::string Edge_File_PathH12 = REPO_DIR + "datasets/T-Less/10/Edges/thresh/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(thresh_EDG)+".txt"; 
+    // std::string Edge_File_PathH12 = REPO_DIR + "datasets/ABC-NEF/00000006/Edges/thresh/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(thresh_EDG)+".txt"; 
+    std::string Edge_File_PathH12 = REPO_DIR + "datasets/ABC-NEF/00000006/Edges/Edge_"+std::to_string(H_idx+1)+"_t"+std::to_string(thresh_EDG)+".txt"; 
     file_idx ++;
-    Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
+    Eigen::MatrixXd Edgels; //> Declare loclly, ensuring the memory addresses are different for different frames
     Edge_File.open(Edge_File_PathH12, std::ios_base::in);
     if (!Edge_File) { 
        std::cerr << "Edge file not existed!\n"; exit(1); 
@@ -791,18 +926,32 @@ int main(int argc, char **argv) {
   Edges_HYPO2 = All_Edgels_H12_1[1];
 
   //*
+  
+  //*/
+  // std::cout<< "Edges_HYPO2: \n" << Edges_HYPO2.block(0,0,100,2) << std::endl;
+ 
+
   for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++){
-    if(paired_edge(pair_idx,0) != -2){
+    if(paired_edge(pair_idx,0) != -2 && paired_edge(pair_idx,0) != -3 ){
       Edges_HYPO2.row(int(paired_edge(pair_idx,1))) << 0,0,0,0;
       pair_num++;
     }
   }
-  //*/
-  // std::cout<< "Edges_HYPO2: \n" << Edges_HYPO2.block(0,0,100,2) << std::endl;
-  if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
+  
+  // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
   }else{
+    std::ofstream myfile1;
+    std::string Output_File_Path = OUTPUT_WRITE_FOLDER + "pairededge_ABC0006_"+std::to_string(HYPO1_VIEW_INDX)+"n"+std::to_string(HYPO2_VIEW_INDX)+"_t32to"+std::to_string(thresh_EDG)+"excludehypo1n2_delta"+ deltastr +"_theta"+std::to_string(OREN_THRESH)+"_N"+std::to_string(MAX_NUM_OF_SUPPORT_VIEWS)+".txt";
+    myfile1.open (Output_File_Path);
+    myfile1 << paired_edge_final;
+    myfile1.close();
     std::cout<< "pipeline finished" <<std::endl;
     std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
+    std::ofstream myfile2;
+    std::string Output_File_Path2 = OUTPUT_WRITE_FOLDER + "Gamma1s_ABC0006_"+std::to_string(HYPO1_VIEW_INDX)+"n"+std::to_string(HYPO2_VIEW_INDX)+"_t32to"+std::to_string(thresh_EDG)+"excludehypo1n2_delta"+ deltastr +"_theta"+std::to_string(OREN_THRESH)+"_N"+std::to_string(MAX_NUM_OF_SUPPORT_VIEWS)+".txt";
+    myfile2.open (Output_File_Path2);
+    myfile2 << Gamma1s;
+    myfile2.close();
   }
 
   }

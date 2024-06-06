@@ -14,6 +14,7 @@ set ( control_sources
   getSupportedEdgels.cpp
   getOrientationList.hpp
   getOrientationList.cpp
+  linearTriangulationUtil.hpp
 
   subpixel_point_set.hpp
 
