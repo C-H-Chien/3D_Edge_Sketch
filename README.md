@@ -33,13 +33,13 @@ and an executive file will be under ``/buid/bin``. <br />
 
 ## Running an Example
 To get started, we use [ABC-NEF dataset](https://github.com/yunfan1202/NEF_code?tab=readme-ov-file#evergreen_treedataset) object 00000006. Third-order edges and absolute poses for all images are already processed which can be seen under ``datasets/ABC-NEF/00000006/Edges`` and ``datasets/ABC-NEF/00000006/RnT``, respectively. The macros in the ``definitions.h`` are set for this example, if otherwise specified. <br />
-(1) If you are using multiple CPU cores, you can set the value of the macro ``NUM_OF_OPENMP_THREADS`` in ``definitions.h`` to the number of CPU cores you'd like to run 3D edge sketch in parallel. Remember to re-compile after the setting is done.
+(1) If you are using multiple CPU cores, you can set the value of the macro ``NUM_OF_OPENMP_THREADS`` in ``definitions.h`` to the number of CPU cores you'd like to run 3D edge sketch in parallel. Remember to re-compile after the setting is done. <br />
 (2) Simply run 3D Edge Sketch by
 ```bash
 ./edge_reconstruction-main
 ```
-which is located under ``/build/bin``.
-(3) The output 3D edge points are written in the file under ``outputs/`` where the file is named by the name of the dataset, object, and the settings.
+which is located under ``/build/bin``. <br />
+(3) The output 3D edge points are written in the file under ``outputs/`` where the file is named by the name of the dataset, object, and the settings. <br />
 (4) Visualize the 3D edge sketch using ``visualization/plot_3D_edge_sketch.m``. The 3D edges are under the coordinate of the first hypothesis view.
 
 ## Generating Third-Order Edges and Absolute Poses as Inputs for 3D Edge Sketch
@@ -47,6 +47,7 @@ which is located under ``/build/bin``.
 - Absolute Poses: use ``preprocesser/get_poses_from_ABC_NEF_dataset.m`` which reads dataset ground-truth file and transform all ground-truth poses to ``R_matrix.txt`` and ``T_matrix.txt``. The example code reads ``transforms_train.json`` file provided by the ABC-NEF dataset.
 
 ## TODOs
+- [ ] Organize all messy MATLAB files 
 - [ ] Organize the code to make it highly readable and run with no error
 - [ ] Use YAML file to parse input arguments
 - [ ] Implement multiple runs (automatically) to get a complete 3D edge sketch
