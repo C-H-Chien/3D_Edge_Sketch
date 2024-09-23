@@ -122,9 +122,9 @@ namespace GetReprojectedEdgel {
             Eigen::Vector3d T_v3 = R31 * T_v1;
             Eigen::Vector3d Tt_v3 = T_v3 - double(e3.transpose()*T_v3)*Gamma3;
             Eigen::Vector3d t_v3  = Tt_v3 / Tt_v3.norm();
-            if(IF_ICLNUIM_DATASET == 1){
-                t_v3(1) = -1*t_v3(1);
-            }
+            // if(IF_ICLNUIM_DATASET == 1){
+            //     t_v3(1) = -1*t_v3(1);
+            // }
             edge_tgt_gamma3.row(idx_HYPO2) << t_v3(0), t_v3(1);
         }
         return edge_tgt_gamma3;
