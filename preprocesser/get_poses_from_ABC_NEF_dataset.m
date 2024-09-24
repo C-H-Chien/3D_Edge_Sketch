@@ -12,10 +12,10 @@ Write_rotations_and_translations_in_files = 1;
 % input_curves = load("curves.mat").curve_points;
 
 %> yml file containing matrices of all the views
-media_storage = "/media/chchien/843557f5-9293-49aa-8fb8-c1fc6c72f7ea/";
+media_storage = "/oscar/data/bkimia/zqiwu/3D_Edge_Sketch/datasets/";
 dataset_name = "ABC-NEF/";
-object_tag_name = "00000162";
-mfiledir = strcat(media_storage, "/home/chchien/datasets/", dataset_name);
+object_tag_name = "00000006";
+mfiledir = strcat(media_storage, "/oscar/data/bkimia/zqiwu/3D_Edge_Sketch/datasets/", dataset_name);
 ymlPath = fullfile(mfiledir, object_tag_name, "transforms_train.json");
 
 data = yaml.loadFile(ymlPath);

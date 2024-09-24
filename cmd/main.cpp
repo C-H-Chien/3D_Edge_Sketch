@@ -16,7 +16,6 @@
 #include <Eigen/Dense>
 
 //> Include functions
-
 #include "../Edge_Reconst/util.hpp"
 #include "../Edge_Reconst/PairEdgeHypo.hpp"
 #include "../Edge_Reconst/getReprojectedEdgel.hpp"
@@ -25,11 +24,13 @@
 #include "../Edge_Reconst/getOrientationList.hpp"
 #include "../Edge_Reconst/linearTriangulationUtil.hpp"
 #include "../Edge_Reconst/definitions.h"
+#include "../Edge_Reconst/file_reader.hpp"
 
 //> Added by CH: Efficient Bucketing Method
 #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
 #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
 #include "../Edge_Reconst/subpixel_point_set.hpp"
+
 
 // using namespace std;
 using namespace MultiviewGeometryUtil;
@@ -99,208 +100,49 @@ void getEdgelsFromInteriorQuadrilateral(
     }
     //std::cout << "sp_pts.cells()[i_row][i_col].size(): " << sp_pts.cells()[i_row][i_col].size() <<std::endl;
   }
-  
   //std::cout << "number of edges in this quadrilateral found by bucketing: "<< Edgel_Indices.size() <<std::endl;
 }
 
 int main(int argc, char **argv) {
+
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< READ FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   std::fstream Edge_File;
-  std::fstream Edge_File_H12;
   std::fstream Rmatrix_File;
   std::fstream Tmatrix_File;
   std::fstream Kmatrix_File;
-  std::fstream H1remove_File;
-  std::fstream H2remove_File;
-  int d = 0;
-  int q = 0;
-  int file_idx = 0;
-  double rd_data;
+
   std::vector<Eigen::MatrixXd> All_Edgels; 
   std::vector<Eigen::MatrixXd> All_Edgels_H12;  
-  //Eigen::MatrixXd Edgels;
-  Eigen::Vector4d row_edge;
-
-  //> All_Bucketed_Imgs stores all "bucketed" images
-  //> (A "bucketed image" means that edgels are inserted to the buckets of that image)
-  // std::vector< subpixel_point_set > All_Bucketed_Imgs;
-  std::cout << "Reading edgel files ...\n";
-
-  //> Looping over all frames and read corresponding third-order edgels
-  while(file_idx < DATASET_NUM_OF_FRAMES) {
-    // std::stringstream ss;
-    // ss << std::setfill('0') << std::setw(6) << file_idx;
-    // std::string Edge_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + ss.str() + "_t" + std::to_string(threshEDGforall) + ".txt";
-    std::string Edge_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(file_idx) + "_t" + std::to_string(threshEDGforall) + ".txt";
-#if DEBUG_READ_FILES
-    std::cout << Edge_File_Path << std::endl;
-#endif
-    file_idx++;
-    Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
-    Edge_File.open(Edge_File_Path, std::ios_base::in);
-    if (!Edge_File) {
-      LOG_FILE_ERROR("Edge file not existed!"); exit(1);
-    }
-    else {
-      Edgels.resize(1,4);
-      while (Edge_File >> rd_data) {
-        row_edge(q) = rd_data;
-        q++;
-        if(q>3){
-          Edgels.conservativeResize(d+1,4);
-          Edgels.row(d) = row_edge;
-          q = 0;
-          d++;
-        }
-      }
-      Edge_File.close();
-      All_Edgels.push_back(Edgels);
-
-      // //> Building bucket grid for the current frame
-      // subpixel_point_set bucketed_img( Edgels );
-      // bucketed_img.build_bucketing_grid( imgrows, imgcols );
-      // All_Bucketed_Imgs.push_back( bucketed_img );
-      d = 0;
-      q = 0;
-    }
-  }
-  
-  std::cout << "Edge file loading finished" << std::endl;
-
-  //> Read edgels of hypothesis view 1 and 2
-  file_idx = 1;
-  int H_idx = 0;
-  while(file_idx < 3) {
-    if(file_idx == 1){
-      H_idx = HYPO1_VIEW_INDX;
-    }else{
-      H_idx = HYPO2_VIEW_INDX;
-    }
-    // std::stringstream ss;
-    // ss << std::setfill('0') << std::setw(6) << H_idx;
-    // std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + ss.str() + "_t" + std::to_string(threshEDG) + ".txt"; 
-    std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_"+std::to_string(H_idx)+"_t" + std::to_string(threshEDG) + ".txt"; 
-#if DEBUG_READ_FILES
-    std::cout << Edge_File_PathH12 << std::endl;
-#endif
-    file_idx ++;
-    Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
-    Edge_File.open(Edge_File_PathH12, std::ios_base::in);
-    if (!Edge_File) { 
-       LOG_FILE_ERROR("Edge file not existed!"); exit(1); 
-    }
-    else {
-      Edgels.resize(1,4);
-      while (Edge_File >> rd_data) {
-        row_edge(q) = rd_data;
-        q++;
-        if(q>3){
-          Edgels.conservativeResize(d+1,4);
-          Edgels.row(d) = row_edge;
-          q = 0;
-          d++;
-        }
-      }
-      Edge_File.close();
-      All_Edgels_H12.push_back(Edgels);
-      d = 0;
-      q = 0;
-    }
-  }
-  file_idx = 1;
-  std::cout<< "HYPO1 and HYPO2 Edge file loading finished" <<std::endl;
-
-  //> Start reading rotation matrices
   std::vector<Eigen::Matrix3d> All_R;
+  std::vector<Eigen::Vector3d> All_T;
+  std::vector<Eigen::Matrix3d> All_K;
+  
+  Eigen::Vector4d row_edge;
   Eigen::Matrix3d R_matrix;
   Eigen::Vector3d row_R;
-  std::string Rmatrix_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/RnT/R_matrix.txt";
-  Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
-  if (!Rmatrix_File) { 
-    LOG_FILE_ERROR("R_matrix file not existed!"); exit(1); 
-  }
-  else {
-    while (Rmatrix_File >> rd_data) {
-      row_R(q) = rd_data;
-      q++;
-      if(q>2){
-        R_matrix.row(d) = row_R;
-        row_R = {};
-        q = 0;
-        d++;
-      }
-      if(d>2){
-        All_R.push_back(R_matrix);
-        R_matrix = {};
-        d = 0;
-      }
-    }
-    Rmatrix_File.close();
-  }
-  std::cout<< "R matrix loading finished" <<std::endl;
-
-  //> Start reading translation vectors
-  std::vector<Eigen::Vector3d> All_T;
   Eigen::Vector3d T_matrix;
-  std::string Tmatrix_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/RnT/T_matrix.txt";
-  Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
-  if (!Tmatrix_File) { 
-    LOG_FILE_ERROR("T_matrix file not existed!"); exit(1); 
-  }
-  else {
-    while (Tmatrix_File >> rd_data) {
-      T_matrix(d) = rd_data;
-      d++;
-      if(d>2){
-        All_T.push_back(T_matrix);
-        T_matrix = {};
-        d = 0;
-      }
-    }
-    Tmatrix_File.close();
-  }
-  
-  std::cout<< "T matrix loading finished" <<std::endl;
-
   Eigen::Matrix3d K;
-  std::vector<Eigen::Matrix3d> All_K;
-  if(IF_MULTIPLE_K == 1){
-    Eigen::Matrix3d K_matrix;
-    Eigen::Vector3d row_K;
-    std::string Kmatrix_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/RnT/K_matrix.txt";
-    Kmatrix_File.open(Kmatrix_File_Path, std::ios_base::in);
-    if (!Kmatrix_File) { 
-      LOG_FILE_ERROR("K_matrix file not existed!"); exit(1);
-    }else {
-      while (Kmatrix_File >> rd_data) {
-        row_K(q) = rd_data;
-        q++;
-        if(q>2){
-          K_matrix.row(d) = row_K;
-          row_K = {};
-          q = 0;
-          d++;
-        }
-        if(d>2){
-          All_K.push_back(K_matrix);
-          K_matrix = {};
-          d = 0;
-        }
-      }
-      Kmatrix_File.close();
-    }
-  }
-  else {
-    if (DATASET_NAME == "ABC-NEF") 
-      K << 1111.11136542426,	0,	399.500000000000, 0,	1111.11136542426,	399.500000000000, 0,	0,	1;
-    else if (DATASET_NAME == "Replica")
-      K << 600,	0,	599.500000000000, 0,	600,	339.500000000000, 0,	0,	1;
-  }
-  std::cout<< "K matrix loading finished" <<std::endl;
+  Eigen::Matrix3d K_matrix;
+  Eigen::Vector3d row_K;
 
-  //<<<<<<<<< Pipeline start >>>>>>>>>//
+  double rd_data;
+  int file_idx = 0;
+  int d = 0;
+  int q = 0;
+  int H_idx = 0;
+  
+  // Function to read edgel files
+  readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q);  
+  //> Read edgels of hypothesis view 1 and 2
+  readHypothesisEdgelFiles(All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q);
+  readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
+  //> Start reading translation vectors
+  readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
+  readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
+
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< PREPROCESSING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   clock_t tstart_pre, tend_pre;
   tstart_pre = clock();
-  ////////PREPROCESSING/////////
   MultiviewGeometryUtil::multiview_geometry_util util;
   PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
   GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
@@ -343,13 +185,11 @@ int main(int argc, char **argv) {
   Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
   Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
   
-  //<<<<<<<<< Core of the pipeline starts here >>>>>>>>>//
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   std::cout<< "pipeline start" <<std::endl;
   
-  //clock_t tstart, tstart1, tend;
   clock_t tstart, tend;
-  double itime, ftime, exec_time, totaltime;
-  totaltime = 0;
+  double itime, ftime, exec_time, totaltime=0;
   int thresh_EDG = threshEDG;
 
   //> Multi-thresholding!!!!!!
@@ -360,16 +200,7 @@ int main(int argc, char **argv) {
     Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
     //remove edge in H2
     std::cout<< "Edges_HYPO2.rows(): " << Edges_HYPO2.rows() << std::endl;
-    // if(NOT1STROUND == 1){
-    //   for(int h2_idx = 0; h2_idx < edge_idx_H2.size(); h2_idx++){
-    //     if(edge_idx_H2[h2_idx]>Edges_HYPO2.rows()){
-    //       std::cout<< "edge_idx_H2[h2_idx]: " << edge_idx_H2[h2_idx] << std::endl;
-    //       break;
-    //     }
-    //     Edges_HYPO2.row(edge_idx_H2[h2_idx]) << 0,0,0,0;
-    //   }
-    //   // if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
-    // }
+
     //<<<<<<<<< OpenMp Operation >>>>>>>>>//
     #if defined(_OPENMP)
       unsigned nthreads = NUM_OF_OPENMP_THREADS;
@@ -381,36 +212,29 @@ int main(int argc, char **argv) {
     #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
     #endif
 
-    //> First loop: loop over all edgels from hypothesis view 1
-    
-    
+      
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< First loop: loop over all edgels from hypothesis view 1>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++){
+      //Edge Boundary Check: not too close to boundary
       if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
         continue;
       }
+      //Paired Edge Check: not yet been paired
       if(paired_edge(edge_idx,0) != -2){
         continue;
       }
       // Get the current edge from Hypo1
       Eigen::Vector3d pt_edgel_HYPO1;
       pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
-      // std::cout << "edge_idx: " << edge_idx <<std::endl;
-      // Eigen::MatrixXd ApBp = PairHypo.getAp_Bp(Edges_HYPO2, pt_edgel_HYPO1, F);
-      // Get the range of epipolar wedge for the current edge (Hypo1 --> Hypo2)
+
       double thresh_ore21_1 = OreListBardegree(edge_idx,0);
       double thresh_ore21_2 = OreListBardegree(edge_idx,1);
-      // std::cout << "edge_idx: " << edge_idx <<std::endl;
-      // std::cout << "thresh_ore21_1: " << thresh_ore21_1 <<std::endl;
-      // std::cout << "thresh_ore21_2: " << thresh_ore21_2 <<std::endl;
       
       Eigen::MatrixXd HYPO2_idx_raw = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
       if (HYPO2_idx_raw.rows() == 0){
         continue;
       }
-      // std::cout << "edge_idx: " << edge_idx <<std::endl;
-      // std::cout << "HYPO2_idx_raw: \n" << HYPO2_idx_raw.rows() <<std::endl;
-      
-      // std::cout << "HYPO2_idxsted: \n" << HYPO2_idxsted <<std::endl;
+
       Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
       Eigen::MatrixXd edgel_HYPO1  = Edges_HYPO1.row(edge_idx);
       Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F, F12, HYPO2_idx_raw);
@@ -423,9 +247,9 @@ int main(int argc, char **argv) {
       if (HYPO2_idx.rows() == 0){
         continue;
       }
-      // std::cout << "Edges_HYPO1_final: \n" << Edges_HYPO1_final <<std::endl;
-      // std::cout << "Edges_HYPO2_final: \n" << Edges_HYPO2_final <<std::endl;
 
+
+      //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
       // Initializations for all validation views
       int VALID_idx = 0;
       int stack_idx = 0;
@@ -436,9 +260,7 @@ int main(int argc, char **argv) {
       Eigen::MatrixXd supported_indices_stack;
       
       bool isempty_link = true;
-      //tstart = clock();
 
-      //> second loop: loop over all validation views
       for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
         if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
           continue;
@@ -468,52 +290,30 @@ int main(int argc, char **argv) {
         Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
         Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
         Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
-        // double angle_range2   = OreListdegree31.maxCoeff() - OreListdegree31.minCoeff();
-        // Calculate the angle range for epipolar wedges (Hypo1 --> Vali)
-        // double range2         =  angle_range2; // * PERCENT_EPIPOLE;
-        // Get the range of epipolar wedge for the current edge (Hypo1 --> Vali)
-        // std::cout << "edge_tgt_gamma3: \n" << edge_tgt_gamma3 <<std::endl;
 
         // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
-        
         Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
         Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
         for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++){
-          // Calculate the angle range for epipolar lines (Hypo2 --> Vali)
-          // double angle_range3   = OreListdegree32.maxCoeff() - OreListdegree32.minCoeff();
-          // Calculate the angle range for epipolar wedges (Hypo2 --> Vali)
-          // double range3         =  angle_range3;// * PERCENT_EPIPOLE;
-          // Get the range of epipolar wedge for the current edge (Hypo2 --> Vali)
           double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
           double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
-          // std::cout << "thresh_ore31_1: " << thresh_ore31_1 <<std::endl;
-          // std::cout << "thresh_ore31_2: " << thresh_ore31_2 <<std::endl;
           double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
           double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
-          // std::cout << "thresh_ore32_1: " << thresh_ore32_1 <<std::endl;
-          // std::cout << "thresh_ore32_2: " << thresh_ore32_2 <<std::endl;
           
           Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
           Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-          // std::cout<<"vali_idx31: \n"<<vali_idx31.rows()<<std::endl;
-          // std::cout<<"edgels_31: \n"<<edgels_31<<std::endl;
 
           // Find all the edges fall inside epipolar wedge on validation view (Hypo2 --> Vali)
           Eigen::MatrixXd vali_idx32 = PairHypo.getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
           Eigen::MatrixXd edgels_32  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
-          // std::cout<<"vali_idx32: \n"<<vali_idx32.rows()<<std::endl;
-          // std::cout<<"edgels_32: \n"<<edgels_32<<std::endl;
           
           // Check if the two wedges could be considered as parallel to each other
-          
           Eigen::MatrixXd anglediff(4,1);
           anglediff << fabs(thresh_ore31_1 - thresh_ore32_1), 
                       fabs(thresh_ore31_1 - thresh_ore32_2),
                       fabs(thresh_ore31_2 - thresh_ore32_1),
                       fabs(thresh_ore31_2 - thresh_ore32_2);
-          // std::cout<<"anglediff: \n"<<anglediff<<std::endl;
-          // std::cout<<"vali_idx32: \n"<<vali_idx32<<std::endl;
           if(anglediff.maxCoeff() <= parallelangle){
             isparallel.row(idx_pair) << 0;
           }
@@ -529,11 +329,8 @@ int main(int argc, char **argv) {
           
           // Caluclate orientation of gamma 3
           Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
-          // std::cout<<"edgels_tgt_reproj: \n"<<edgels_tgt_reproj<<std::endl;
           // Get support from validation view for this gamma 3
           double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
-          // std::cout << "supported_link_indx: " << supported_link_indx <<std::endl;
-          // std::cout << "inliner: " << inliner <<std::endl;
 
           // Get the supporting edge idx from this validation view (if isnotparallel)
           if (isparallel(idx_pair,0) != 0){
@@ -549,8 +346,6 @@ int main(int argc, char **argv) {
           }
         }
         supported_indices.col(VALID_idx) << supported_indice_current.col(0);
-        // std::cout << "isparallel: \n" << isparallel << std::endl;
-        // std::cout << "supported_indices.col(VALID_idx): \n" << supported_indices.col(VALID_idx) << std::endl;
         VALID_idx++;
       } //> End of second loop
       if (isempty_link) {
@@ -574,7 +369,6 @@ int main(int argc, char **argv) {
       Eigen::VectorXd::Index   maxIndex;
       double max_support = rep_count.maxCoeff(&maxIndex);
       int numofmax = std::count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
-      // std::cout << "num of max: "<< numofmax<<std::endl;
       
       if( double(max_support) < MAX_NUM_OF_SUPPORT_VIEWS){
         continue;
@@ -695,10 +489,7 @@ int main(int argc, char **argv) {
         }else{
           H_idx = HYPO2_VIEW_INDX;
         }
-        // std::stringstream ss;
-        // ss << std::setfill('0') << std::setw(6) << H_idx;
-        // std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + ss.str() + "_t" + std::to_string(threshEDG) + ".txt"; 
-        std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
+       std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
 #if DEBUG_READ_FILES
         std::cout << Edge_File_PathH12 << std::endl;
 #endif
@@ -739,11 +530,6 @@ int main(int argc, char **argv) {
       }
     }
     else {
-      // std::ofstream myfile1;
-      // std::string Output_File_Path = "../outputs/" + "pairededge_ABC0006_"+std::to_string(HYPO1_VIEW_INDX)+"n"+std::to_string(HYPO2_VIEW_INDX)+"_t32to"+std::to_string(thresh_EDG)+"excludehypo1n2_delta"+ deltastr +"_theta"+std::to_string(OREN_THRESH)+"_N"+std::to_string(MAX_NUM_OF_SUPPORT_VIEWS)+".txt";
-      // myfile1.open (Output_File_Path);
-      // myfile1 << paired_edge_final;
-      // myfile1.close();
       std::cout<< "pipeline finished" <<std::endl;
       std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
       std::ofstream myfile2;

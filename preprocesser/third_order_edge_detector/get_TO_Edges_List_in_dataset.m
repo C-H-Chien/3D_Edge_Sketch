@@ -10,7 +10,7 @@
 
 % mfiledir = fileparts(mfilename('fullpath'));
 %> Path to where the dataset is
-Dataset_Path = '/media/chchien/843557f5-9293-49aa-8fb8-c1fc6c72f7ea/home/chchien/datasets/';
+Dataset_Path = '/oscar/data/bkimia/zqiwu/3D_Edge_Sketch/datasets/';
 Dataset_Name = 'ABC-NEF/';      %> ABC-NEF or Replica
 Scene_Name = '00000006/';          %> 00009779
 Image_Folder_Name = 'train_img/';   %> train_img for ABC-NEF, color for Replica
@@ -19,7 +19,7 @@ All_Images = dir(strcat(Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Nam
 Full_Accessible_Path = [Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name];
 
 %> Settings for the Third-Order Edge Detector
-thresh = 1;
+thresh = 2;
 sigma = 1;
 n = 1;
 format long;

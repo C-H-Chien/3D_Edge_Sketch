@@ -25,6 +25,9 @@ set ( control_sources
   lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp
   lemsvpe_CH/vgl_region_scan_iterator_CH.hpp
 
+  file_reader.hpp
+  file_reader.cpp
+  common_include.h
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

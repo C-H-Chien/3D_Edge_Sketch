@@ -6,7 +6,7 @@
 %> chiang-heng chien
 
 %> Define the path from which the output 3D egdes file comes
-data_folder_path = "/gpfs/data/bkimia/cchien3/3D_Edge_Sketch/outputs/";
+data_folder_path = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/outputs/";
 
 %> Some settings which define the output file name
 dataset_name = "ABC-NEF";
