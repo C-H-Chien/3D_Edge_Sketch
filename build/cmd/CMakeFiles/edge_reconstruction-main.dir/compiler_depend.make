@@ -526,14 +526,14 @@ cmd/CMakeFiles/edge_reconstruction-main.dir/main.cpp.o: ../cmd/main.cpp \
   ../Edge_Reconst/getOrientationList.hpp \
   ../Edge_Reconst/linearTriangulationUtil.hpp \
   ../Edge_Reconst/definitions.h \
+  ../Edge_Reconst/file_reader.hpp \
+  ../Edge_Reconst/definitions.h \
   ../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp \
   ../Edge_Reconst/lemsvpe_CH/vgl_point_2d_CH.hpp \
   ../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp \
   ../Edge_Reconst/lemsvpe_CH/vgl_region_scan_iterator_CH.hpp \
   ../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp \
-  ../Edge_Reconst/subpixel_point_set.hpp \
-  ../Edge_Reconst/file_reader.hpp \
-  ../Edge_Reconst/definitions.h
+  ../Edge_Reconst/subpixel_point_set.hpp
 
 
 ../Edge_Reconst/file_reader.hpp:

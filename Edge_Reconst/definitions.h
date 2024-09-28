@@ -1,14 +1,14 @@
 //> Macros
 
 //> 3D Edge Sketch Settings
-#define NUM_OF_OPENMP_THREADS      (1)                 //> Number of CPU cores to run 3D Edge Sketch in parallel
+#define NUM_OF_OPENMP_THREADS      (32)                 //> Number of CPU cores to run 3D Edge Sketch in parallel
 #define HYPO1_VIEW_INDX            (6)                  //> Index of the 1st hypothesis view
 #define HYPO2_VIEW_INDX            (8)                  //> Index of the 2nd hypothesis view
 #define delta                      (0.3)                //> edge location perturbation
 #define deltastr                   std::string("03")    //> string of delta value (used as part of the output file name)
 #define OREN_THRESH                (15)                 //> \Delta \theta: orientation threshold
 #define MAX_NUM_OF_SUPPORT_VIEWS   (4)                  //> N: minimal number of validation views supporting a hypothesis edge pair
-#define threshEDG                  (1)                  //> third-order edge threshold for 1st round of multi-thresholding
+#define threshEDG                  (32)                  //> third-order edge threshold for 1st round of multi-thresholding
 #define threshEDGforall            (1)                  //> third-order edge threshold for last round of multi-thresholding
 #define parallelangle              (15)                 //> decide if the picked hypothesis view should be abandoned by the angle between two epipolar lines
 #define circleR                    (55)                 //> not sure what it is
