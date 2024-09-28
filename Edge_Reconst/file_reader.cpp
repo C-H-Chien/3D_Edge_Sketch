@@ -1,12 +1,12 @@
 #include "file_reader.hpp"
 
 // Function to read edgel files
-void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &file_idx, int &d, int &q) {
+void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &file_idx, int &d, int &q, int thresh_EDG) {
     std::cout << "Reading edgel files ...\n";
     
     //> Looping over all frames and read corresponding third-order edgels
     while(file_idx < DATASET_NUM_OF_FRAMES) {
-        std::string Edge_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(file_idx) + "_t" + std::to_string(threshEDGforall) + ".txt";
+        std::string Edge_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(file_idx) + "_t" + std::to_string(thresh_EDG) + ".txt";
         #if DEBUG_READ_FILES
             std::cout << Edge_File_Path << std::endl;
         #endif
@@ -40,14 +40,14 @@ void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge
 
 
 
-void readHypothesisEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q){
+void readHypothesisEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG){
     while(file_idx < 3) {
         if(file_idx == 1){
             H_idx = HYPO1_VIEW_INDX;
         }else{
             H_idx = HYPO2_VIEW_INDX;
         }
-        std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_"+std::to_string(H_idx)+"_t" + std::to_string(threshEDG) + ".txt"; 
+        std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_"+std::to_string(H_idx)+"_t" + std::to_string(thresh_EDG) + ".txt"; 
         #if DEBUG_READ_FILES
             std::cout << Edge_File_PathH12 << std::endl;
         #endif

@@ -11,7 +11,7 @@
 #define threshEDG                  (32)                  //> third-order edge threshold for 1st round of multi-thresholding
 #define threshEDGforall            (1)                  //> third-order edge threshold for last round of multi-thresholding
 #define parallelangle              (15)                 //> decide if the picked hypothesis view should be abandoned by the angle between two epipolar lines
-#define circleR                    (55)                 //> not sure what it is
+#define circleR                    (55)                 //> threshold determining whether the distance between edges in hypothesis view 1 and 2 is small enough for them to be considered a match
 #define NOT1STROUND                (0)                  //> not sure what it is
 #define DIST_THRESH                (2)                  //> distance threshold between observed edge and reprojected edge on the validation view (probably not in use)
 

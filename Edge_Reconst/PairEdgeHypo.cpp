@@ -205,6 +205,8 @@ namespace PairEdgeHypothesis {
                 edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), x_currH2, y_currH2,  edgels_HYPO2(idx_hypo2,2),  edgels_HYPO2(idx_hypo2,3), HYPO2_idx_raw(idx_hypo2), idx_hypo2;
                 idx_correct +=1;
             }
+            //std::cout << "dist1: " << dist1 << ", dist2: " << dist2 << ", circleR: " << circleR << std::endl;
+
         }
         return edgels_HYPO2_corrected;
     }
