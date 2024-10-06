@@ -7,7 +7,6 @@
 #include <assert.h>
 #include <string>
 #include <ctime>
-
 //> Inluce OpenMP here
 #include <omp.h>
 
@@ -24,12 +23,15 @@
 #include "../Edge_Reconst/getOrientationList.hpp"
 #include "../Edge_Reconst/linearTriangulationUtil.hpp"
 #include "../Edge_Reconst/definitions.h"
-#include "../Edge_Reconst/file_reader.hpp"
 
 //> Added by CH: Efficient Bucketing Method
 #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
 #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
 #include "../Edge_Reconst/subpixel_point_set.hpp"
+
+//Qiwu
+#include "../Edge_Reconst/file_reader.hpp"
+#include "../Edge_Reconst/edge_mapping.hpp"
 
 
 // using namespace std;
@@ -49,6 +51,57 @@ using namespace MultiviewGeometryUtil;
 //> Yilin Zheng (yilin_zheng@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
 // =========================================================================================================================
+// Function to write supported_indices to a file
+void writeSupportedIndicesToFile(const Eigen::MatrixXd& supported_indices, const std::string& filename) {
+    std::ofstream outfile(filename);
+
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
+        return;
+    }
+
+    // Loop through the rows (edge hypotheses)
+    for (int row = 0; row < supported_indices.rows(); ++row) {
+        outfile << "Hypothesis Edge " << row << ":\n";
+
+        // Loop through the columns (validation views)
+        for (int col = 0; col < supported_indices.cols(); ++col) {
+            int support_idx = supported_indices(row, col);
+
+            if (support_idx == -2) {
+                outfile << "  Validation View " << col << ": No support found.\n";
+            } else {
+                outfile << "  Validation View " << col << ": Supporting edge index = " << support_idx << "\n";
+            }
+        }
+
+        outfile << std::endl;
+    }
+
+    // Close the file
+    outfile.close();
+   // std::cout << "Supported indices successfully written to " << filename << std::endl;
+}
+
+void printSupportedIndices(const Eigen::MatrixXd& supported_indices) {
+    // Loop through the rows (edge hypotheses)
+    for (int row = 0; row < supported_indices.rows(); ++row) {
+        std::cout << "Hypothesis Edge " << row << ":\n";
+
+        // Loop through the columns (validation views)
+        for (int col = 0; col < supported_indices.cols(); ++col) {
+            int support_idx = supported_indices(row, col);
+
+            if (support_idx == -2) {
+                std::cout << "  Validation View " << col << ": No support found.\n";
+            } else {
+                std::cout << "  Validation View " << col << ": Supporting edge index = " << support_idx << "\n";
+            }
+        }
+
+        std::cout << std::endl;
+    }
+}
 
 void getInteriorBuckets(
   const vgl_polygon_CH<double> &p, bool boundary_in, 
@@ -109,10 +162,13 @@ std::cout<< "pipeline start" <<std::endl;
   
 clock_t tstart, tend;
 double itime, ftime, exec_time, totaltime=0;
-int thresh_EDG = threshEDG;
+int thresh_EDG = THRESHEDG;
+
+std::vector<Eigen::MatrixXd> all_supported_indices;
+EdgeMapping edgeMapping;
 
 //> Multi-thresholding!!!!!!
-while(thresh_EDG >= threshEDGforall) {
+while(thresh_EDG >= THRESEDGFORALL) {
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< READ FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     std::fstream Edge_File;
     std::fstream Rmatrix_File;
@@ -220,7 +276,7 @@ while(thresh_EDG >= threshEDGforall) {
 
     for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++){
       //Edge Boundary Check: not too close to boundary
-      if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > imgcols-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > imgrows-10){
+      if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > IMGCOLS-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > IMGROWS-10){
         continue;
       }
       //Paired Edge Check: not yet been paired
@@ -362,11 +418,19 @@ while(thresh_EDG >= threshEDGforall) {
         VALID_idx++;
       } 
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
-      
+      //printSupportedIndices(supported_indices);
+      //all_supported_indices.push_back(supported_indices);
+      //std::string output_file_path = "../../outputs/supported_indices_" + std::to_string(edge_idx) + ".txt";
+
+      // Instead of pushing it to all_supported_indices, write it to a file
+      //writeSupportedIndicesToFile(supported_indices, output_file_path);
+
+
       //Check for Empty Supported Indices
       if (isempty_link) {
         continue;
       }
+      
 
       //Create a Stack of Supported Indices
       std::vector<double> indices_stack(supported_indices_stack.data(), supported_indices_stack.data() + supported_indices_stack.rows());
@@ -518,6 +582,8 @@ while(thresh_EDG >= threshEDGforall) {
         }
 
         Gamma1s.row(pair_idx)<< edge_pt_3D(0),edge_pt_3D(1),edge_pt_3D(2);
+        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, HYPO1_VIEW_INDX);
+        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, HYPO2_VIEW_INDX);
       }
     }
 
@@ -575,8 +641,7 @@ while(thresh_EDG >= threshEDGforall) {
         //std::cout << "Processing pair index: " << pair_idx << " with sizes: "
         //  << "Edges_HYPO1_all size: " << Edges_HYPO1_all.rows() << "x" << Edges_HYPO1_all.cols() << std::endl;
       }
-    }
-    else {
+    }else {
       std::cout<< "pipeline finished" <<std::endl;
       std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
       std::ofstream myfile2;
@@ -585,6 +650,20 @@ while(thresh_EDG >= threshEDGforall) {
       myfile2.open (Output_File_Path2);
       myfile2 << Gamma1s;
       myfile2.close();
+    }
+
+
+    std::cout << "Printing all 3D edges and their corresponding 2D supporting edges:\n";
+    
+    for (const auto& [edge_3D, supporting_edges] : edgeMapping.edge_3D_to_supporting_edges) {
+        // Print the 3D edge
+        std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
+
+        // Print all supporting 2D edges and their image numbers
+        for (const auto& [supporting_edge, image_number] : supporting_edges) {
+            std::cout << "    Supporting 2D Edge: [" << supporting_edge(0) << ", " << supporting_edge(1)
+                      << "] from Image " << image_number << "\n";
+        }
     }
 
 

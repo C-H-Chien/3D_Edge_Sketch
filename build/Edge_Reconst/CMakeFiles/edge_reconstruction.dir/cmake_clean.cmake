@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "../lib/libedge_reconstruction.pdb"
   "CMakeFiles/edge_reconstruction.dir/PairEdgeHypo.cpp.o"
   "CMakeFiles/edge_reconstruction.dir/PairEdgeHypo.cpp.o.d"
+  "CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o"
+  "CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o"
   "CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/getOrientationList.cpp.o"

@@ -148,30 +148,30 @@ namespace GetOrientationList {
         Eigen::MatrixXd p1x_hypo_all;
         p1x_hypo_all.conservativeResize(Apixel_1.rows(),4);
         p1x_hypo_all.col(0) = Eigen::VectorXd::Zero(Edges_HYPO1.rows());
-        p1x_hypo_all.col(1) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*imgcols;
+        p1x_hypo_all.col(1) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*IMGCOLS;
         p1x_hypo_all.col(2) = -1*Cpixel_1.col(0).array()/Apixel_1.col(0).array();
-        p1x_hypo_all.col(3) = -1*(Cpixel_1 + Bpixel_1*imgrows).array()/Apixel_1.array();
+        p1x_hypo_all.col(3) = -1*(Cpixel_1 + Bpixel_1*IMGROWS).array()/Apixel_1.array();
 
         Eigen::MatrixXd p1y_hypo_all;
         p1y_hypo_all.conservativeResize(Apixel_1.rows(),4);
         p1y_hypo_all.col(0) = -1*Cpixel_1.col(0).array()/Bpixel_1.col(0).array();
-        p1y_hypo_all.col(1) = -1*(Cpixel_1 + Apixel_1*imgcols).array()/Bpixel_1.array();
+        p1y_hypo_all.col(1) = -1*(Cpixel_1 + Apixel_1*IMGCOLS).array()/Bpixel_1.array();
         p1y_hypo_all.col(2) = Eigen::VectorXd::Zero(Edges_HYPO1.rows());
-        p1y_hypo_all.col(3) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*imgrows;
+        p1y_hypo_all.col(3) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*IMGROWS;
 
         Eigen::MatrixXd p2x_hypo_all;
         p2x_hypo_all.conservativeResize(Apixel_2.rows(),4);
         p2x_hypo_all.col(0) = Eigen::VectorXd::Zero(Edges_HYPO1.rows());
-        p2x_hypo_all.col(1) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*imgcols;
+        p2x_hypo_all.col(1) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*IMGCOLS;
         p2x_hypo_all.col(2) = -1*Cpixel_2.col(0).array()/Apixel_2.col(0).array();
-        p2x_hypo_all.col(3) = -1*(Cpixel_2 + Bpixel_2*imgrows).array()/Apixel_2.array();
+        p2x_hypo_all.col(3) = -1*(Cpixel_2 + Bpixel_2*IMGROWS).array()/Apixel_2.array();
 
         Eigen::MatrixXd p2y_hypo_all;
         p2y_hypo_all.conservativeResize(Apixel_2.rows(),4);
         p2y_hypo_all.col(0) = -1*Cpixel_2.col(0).array()/Bpixel_2.col(0).array();
-        p2y_hypo_all.col(1) = -1*(Cpixel_2 + Apixel_2*imgcols).array()/Bpixel_2.array();
+        p2y_hypo_all.col(1) = -1*(Cpixel_2 + Apixel_2*IMGCOLS).array()/Bpixel_2.array();
         p2y_hypo_all.col(2) = Eigen::VectorXd::Zero(Edges_HYPO1.rows());
-        p2y_hypo_all.col(3) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*imgrows;
+        p2y_hypo_all.col(3) = Eigen::VectorXd::Ones(Edges_HYPO1.rows())*IMGROWS;
 
         Eigen::MatrixXd p1_all;
         Eigen::MatrixXd p1_dxdy;
@@ -204,7 +204,7 @@ namespace GetOrientationList {
         for(int idx_pt12 = 0; idx_pt12 < p1_all.rows(); idx_pt12++){
             int column     = 0;
             int columndist = 0;
-            if(p1y_hypo_all(idx_pt12,0) >= 0 && p1y_hypo_all(idx_pt12,0) <= imgrows ){
+            if(p1y_hypo_all(idx_pt12,0) >= 0 && p1y_hypo_all(idx_pt12,0) <= IMGROWS ){
                 p1_all(idx_pt12, 0)  = p1x_hypo_all(idx_pt12,0);
                 p1_dxdy(idx_pt12, 0) = p1x_hypo_all(idx_pt12,0) - epipole_pix_view2(0);
                 p1_all(idx_pt12, 1)  = p1y_hypo_all(idx_pt12,0);
@@ -213,7 +213,7 @@ namespace GetOrientationList {
                 column     += 2;
                 columndist += 1;
             }
-            if(p1y_hypo_all(idx_pt12,1) >= 0 && p1y_hypo_all(idx_pt12,1) <= imgrows ){
+            if(p1y_hypo_all(idx_pt12,1) >= 0 && p1y_hypo_all(idx_pt12,1) <= IMGROWS ){
                 p1_all(idx_pt12, column)    = p1x_hypo_all(idx_pt12,1);
                 p1_dxdy(idx_pt12, column)   = p1x_hypo_all(idx_pt12,1) - epipole_pix_view2(0);
                 p1_all(idx_pt12, column+1)  = p1y_hypo_all(idx_pt12,1);
@@ -222,7 +222,7 @@ namespace GetOrientationList {
                 column     += 2;
                 columndist += 1;
             }
-            if(p1x_hypo_all(idx_pt12,2) >= 0 && p1x_hypo_all(idx_pt12,2) <= imgcols ){
+            if(p1x_hypo_all(idx_pt12,2) >= 0 && p1x_hypo_all(idx_pt12,2) <= IMGCOLS ){
                 p1_all(idx_pt12, column)    = p1x_hypo_all(idx_pt12,2);
                 p1_dxdy(idx_pt12, column)   = p1x_hypo_all(idx_pt12,2) - epipole_pix_view2(0);
                 p1_all(idx_pt12, column+1)  = p1y_hypo_all(idx_pt12,2);
@@ -230,7 +230,7 @@ namespace GetOrientationList {
                 p1_dist(0, columndist)        = p1_dxdy(idx_pt12, column)*p1_dxdy(idx_pt12, column) + p1_dxdy(idx_pt12, column+1)*p1_dxdy(idx_pt12, column+1);
                 column += 2;
             }
-            if(p1x_hypo_all(idx_pt12,3) >= 0 && p1x_hypo_all(idx_pt12,3) <= imgcols ){
+            if(p1x_hypo_all(idx_pt12,3) >= 0 && p1x_hypo_all(idx_pt12,3) <= IMGCOLS ){
                 p1_all(idx_pt12, 2)  = p1x_hypo_all(idx_pt12,3);
                 p1_dxdy(idx_pt12, 2) = p1x_hypo_all(idx_pt12,3) - epipole_pix_view2(0);
                 p1_all(idx_pt12, 3)  = p1y_hypo_all(idx_pt12,3);
@@ -247,7 +247,7 @@ namespace GetOrientationList {
             double delta_x1 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*M_PI)*delta); 
             double slope1_p = 0;
             double slope1_n = 0;
-            if(p1_xy(idx_pt12, 0) == 0 || p1_xy(idx_pt12, 0) == imgcols){
+            if(p1_xy(idx_pt12, 0) == 0 || p1_xy(idx_pt12, 0) == IMGCOLS){
                 p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
                 p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x1;
                 p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
@@ -269,7 +269,7 @@ namespace GetOrientationList {
             //
             column     = 0;
             columndist = 0;
-            if(p2y_hypo_all(idx_pt12,0) >= 0 && p2y_hypo_all(idx_pt12,0) <= imgrows ){
+            if(p2y_hypo_all(idx_pt12,0) >= 0 && p2y_hypo_all(idx_pt12,0) <= IMGROWS ){
                 p2_all(idx_pt12, 0)  = p2x_hypo_all(idx_pt12,0);
                 p2_dxdy(idx_pt12, 0) = p2x_hypo_all(idx_pt12,0) - epipole_pix_view2(0);
                 p2_all(idx_pt12, 1)  = p2y_hypo_all(idx_pt12,0);
@@ -278,7 +278,7 @@ namespace GetOrientationList {
                 column     += 2;
                 columndist += 1;
             }
-            if(p2y_hypo_all(idx_pt12,1) >= 0 && p2y_hypo_all(idx_pt12,1) <= imgrows ){
+            if(p2y_hypo_all(idx_pt12,1) >= 0 && p2y_hypo_all(idx_pt12,1) <= IMGROWS ){
                 p2_all(idx_pt12, column)    = p2x_hypo_all(idx_pt12,1);
                 p2_dxdy(idx_pt12, column)   = p2x_hypo_all(idx_pt12,1) - epipole_pix_view2(0);
                 p2_all(idx_pt12, column+1)  = p2y_hypo_all(idx_pt12,1);
@@ -287,7 +287,7 @@ namespace GetOrientationList {
                 column     += 2;
                 columndist += 1;
             }
-            if(p2x_hypo_all(idx_pt12,2) >= 0 && p2x_hypo_all(idx_pt12,2) <= imgcols ){
+            if(p2x_hypo_all(idx_pt12,2) >= 0 && p2x_hypo_all(idx_pt12,2) <= IMGCOLS ){
                 p2_all(idx_pt12, column)    = p2x_hypo_all(idx_pt12,2);
                 p2_dxdy(idx_pt12, column)   = p2x_hypo_all(idx_pt12,2) - epipole_pix_view2(0);
                 p2_all(idx_pt12, column+1)  = p2y_hypo_all(idx_pt12,2);
@@ -296,7 +296,7 @@ namespace GetOrientationList {
                 column     += 2;
                 columndist += 1;
             }
-            if(p2x_hypo_all(idx_pt12,3) >= 0 && p2x_hypo_all(idx_pt12,3) <= imgcols ){
+            if(p2x_hypo_all(idx_pt12,3) >= 0 && p2x_hypo_all(idx_pt12,3) <= IMGCOLS ){
                 p2_all(idx_pt12, 2)  = p2x_hypo_all(idx_pt12,3);
                 p2_dxdy(idx_pt12, 2) = p2x_hypo_all(idx_pt12,3) - epipole_pix_view2(0);
                 p2_all(idx_pt12, 3)  = p2y_hypo_all(idx_pt12,3);
@@ -313,7 +313,7 @@ namespace GetOrientationList {
             double delta_x2 = abs(cos(ore_list1bar_all(idx_pt12,1)/180*M_PI)*delta); 
             double slope2_p = 0;
             double slope2_n = 0;
-            if(p2_xy(idx_pt12, 0) == 0 || p2_xy(idx_pt12, 0) == imgcols){
+            if(p2_xy(idx_pt12, 0) == 0 || p2_xy(idx_pt12, 0) == IMGCOLS){
                 p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
                 p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x2;
                 p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);

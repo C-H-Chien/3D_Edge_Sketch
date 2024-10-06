@@ -195,6 +195,20 @@ Edge_Reconst/CMakeFiles/edge_reconstruction.dir/file_reader.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/edge_reconstruction.dir/file_reader.cpp.s"
 	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/Edge_Reconst && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/file_reader.cpp -o CMakeFiles/edge_reconstruction.dir/file_reader.cpp.s
 
+Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/flags.make
+Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o: ../Edge_Reconst/edge_mapping.cpp
+Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o"
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/Edge_Reconst && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o -MF CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o.d -o CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o -c /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/edge_mapping.cpp
+
+Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.i"
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/Edge_Reconst && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/edge_mapping.cpp > CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.i
+
+Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.s"
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/Edge_Reconst && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/edge_mapping.cpp -o CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.s
+
 # Object files for target edge_reconstruction
 edge_reconstruction_OBJECTS = \
 "CMakeFiles/edge_reconstruction.dir/util.cpp.o" \
@@ -205,7 +219,8 @@ edge_reconstruction_OBJECTS = \
 "CMakeFiles/edge_reconstruction.dir/getOrientationList.cpp.o" \
 "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_point_2d_CH.cpp.o" \
 "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.o" \
-"CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o"
+"CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o" \
+"CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o"
 
 # External object files for target edge_reconstruction
 edge_reconstruction_EXTERNAL_OBJECTS =
@@ -219,9 +234,10 @@ lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/ge
 lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_point_2d_CH.cpp.o
 lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.o
 lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o
+lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o
 lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make
 lib/libedge_reconstruction.a: Edge_Reconst/CMakeFiles/edge_reconstruction.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX static library ../lib/libedge_reconstruction.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX static library ../lib/libedge_reconstruction.a"
 	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/Edge_Reconst && $(CMAKE_COMMAND) -P CMakeFiles/edge_reconstruction.dir/cmake_clean_target.cmake
 	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/Edge_Reconst && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/edge_reconstruction.dir/link.txt --verbose=$(VERBOSE)
 

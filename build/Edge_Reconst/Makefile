@@ -164,6 +164,30 @@ PairEdgeHypo.cpp.s:
 	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/PairEdgeHypo.cpp.s
 .PHONY : PairEdgeHypo.cpp.s
 
+edge_mapping.o: edge_mapping.cpp.o
+.PHONY : edge_mapping.o
+
+# target to build an object file
+edge_mapping.cpp.o:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o
+.PHONY : edge_mapping.cpp.o
+
+edge_mapping.i: edge_mapping.cpp.i
+.PHONY : edge_mapping.i
+
+# target to preprocess a source file
+edge_mapping.cpp.i:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.i
+.PHONY : edge_mapping.cpp.i
+
+edge_mapping.s: edge_mapping.cpp.s
+.PHONY : edge_mapping.s
+
+# target to generate assembly for a file
+edge_mapping.cpp.s:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.s
+.PHONY : edge_mapping.cpp.s
+
 file_reader.o: file_reader.cpp.o
 .PHONY : file_reader.o
 
@@ -369,6 +393,9 @@ help:
 	@echo "... PairEdgeHypo.o"
 	@echo "... PairEdgeHypo.i"
 	@echo "... PairEdgeHypo.s"
+	@echo "... edge_mapping.o"
+	@echo "... edge_mapping.i"
+	@echo "... edge_mapping.s"
 	@echo "... file_reader.o"
 	@echo "... file_reader.i"
 	@echo "... file_reader.s"

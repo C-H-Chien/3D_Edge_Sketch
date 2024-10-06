@@ -27,7 +27,8 @@ set ( control_sources
 
   file_reader.hpp
   file_reader.cpp
-  common_include.h
+  edge_mapping.hpp
+  edge_mapping.cpp
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

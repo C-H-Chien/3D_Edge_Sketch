@@ -8,8 +8,8 @@
 #define deltastr                   std::string("03")    //> string of delta value (used as part of the output file name)
 #define OREN_THRESH                (15)                 //> \Delta \theta: orientation threshold
 #define MAX_NUM_OF_SUPPORT_VIEWS   (4)                  //> N: minimal number of validation views supporting a hypothesis edge pair
-#define threshEDG                  (32)                  //> third-order edge threshold for 1st round of multi-thresholding
-#define threshEDGforall            (1)                  //> third-order edge threshold for last round of multi-thresholding
+#define THRESHEDG                  (1)                  //> third-order edge threshold for 1st round of multi-thresholding
+#define THRESEDGFORALL            (1)                  //> third-order edge threshold for last round of multi-thresholding
 #define parallelangle              (15)                 //> decide if the picked hypothesis view should be abandoned by the angle between two epipolar lines
 #define circleR                    (55)                 //> threshold determining whether the distance between edges in hypothesis view 1 and 2 is small enough for them to be considered a match
 #define NOT1STROUND                (0)                  //> not sure what it is
@@ -19,8 +19,8 @@
 #define DATASET_NAME               std::string("ABC-NEF")   //> ABC-NEF
 #define SCENE_NAME                 std::string("00000006")
 #define DATASET_NUM_OF_FRAMES      (50)
-#define imgcols                    (800)
-#define imgrows                    (800)
+#define IMGCOLS                    (800)
+#define IMGROWS                    (800)
 #define IF_MULTIPLE_K              (0)
 
 //> Constant values (no change)

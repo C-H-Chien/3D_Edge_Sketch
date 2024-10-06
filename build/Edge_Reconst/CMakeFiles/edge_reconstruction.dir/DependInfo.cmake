@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/PairEdgeHypo.cpp" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/PairEdgeHypo.cpp.o" "gcc" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/PairEdgeHypo.cpp.o.d"
+  "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/edge_mapping.cpp" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o" "gcc" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/edge_mapping.cpp.o.d"
   "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/file_reader.cpp" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o" "gcc" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/file_reader.cpp.o.d"
   "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/getOrientationList.cpp" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/getOrientationList.cpp.o" "gcc" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/getOrientationList.cpp.o.d"
   "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/Edge_Reconst/getQuadrilateral.cpp" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/getQuadrilateral.cpp.o" "gcc" "Edge_Reconst/CMakeFiles/edge_reconstruction.dir/getQuadrilateral.cpp.o.d"
