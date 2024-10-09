@@ -83,25 +83,7 @@ void writeSupportedIndicesToFile(const Eigen::MatrixXd& supported_indices, const
    // std::cout << "Supported indices successfully written to " << filename << std::endl;
 }
 
-void printSupportedIndices(const Eigen::MatrixXd& supported_indices) {
-    // Loop through the rows (edge hypotheses)
-    for (int row = 0; row < supported_indices.rows(); ++row) {
-        std::cout << "Hypothesis Edge " << row << ":\n";
 
-        // Loop through the columns (validation views)
-        for (int col = 0; col < supported_indices.cols(); ++col) {
-            int support_idx = supported_indices(row, col);
-
-            if (support_idx == -2) {
-                std::cout << "  Validation View " << col << ": No support found.\n";
-            } else {
-                std::cout << "  Validation View " << col << ": Supporting edge index = " << support_idx << "\n";
-            }
-        }
-
-        std::cout << std::endl;
-    }
-}
 
 void getInteriorBuckets(
   const vgl_polygon_CH<double> &p, bool boundary_in, 
@@ -164,7 +146,8 @@ clock_t tstart, tend;
 double itime, ftime, exec_time, totaltime=0;
 int thresh_EDG = THRESHEDG;
 
-std::vector<Eigen::MatrixXd> all_supported_indices;
+std::vector<std::tuple<int, int, int>> all_support_tuples;
+
 EdgeMapping edgeMapping;
 
 //> Multi-thresholding!!!!!!
@@ -419,11 +402,22 @@ while(thresh_EDG >= THRESEDGFORALL) {
       } 
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
       //printSupportedIndices(supported_indices);
-      //all_supported_indices.push_back(supported_indices);
+      
       //std::string output_file_path = "../../outputs/supported_indices_" + std::to_string(edge_idx) + ".txt";
 
       // Instead of pushing it to all_supported_indices, write it to a file
       //writeSupportedIndicesToFile(supported_indices, output_file_path);
+      // for (int row = 0; row < supported_indices.rows(); ++row) {
+      //   for (int col = 0; col < supported_indices.cols(); ++col) {
+      //     assert(row >= 0 && row < supported_indices.rows());
+      //     assert(col >= 0 && col < supported_indices.cols());
+
+      //     int support_idx = supported_indices(row, col);
+      //     if (support_idx != -2) {
+      //         all_support_tuples.emplace_back(row, col, support_idx);
+      //     }
+      //   }
+      // }
 
 
       //Check for Empty Supported Indices
@@ -664,6 +658,13 @@ while(thresh_EDG >= THRESEDGFORALL) {
             std::cout << "    Supporting 2D Edge: [" << supporting_edge(0) << ", " << supporting_edge(1)
                       << "] from Image " << image_number << "\n";
         }
+    }
+    std::cout << "All support tuples:\n";
+    for (const auto& tuple : all_support_tuples) {
+        std::cout << "Support tuple: [edge_idx: " 
+                  << std::get<0>(tuple) << ", col: " 
+                  << std::get<1>(tuple) << ", support_idx: " 
+                  << std::get<2>(tuple) << "]\n";
     }
 
 
