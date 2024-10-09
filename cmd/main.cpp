@@ -83,7 +83,25 @@ void writeSupportedIndicesToFile(const Eigen::MatrixXd& supported_indices, const
    // std::cout << "Supported indices successfully written to " << filename << std::endl;
 }
 
+void printSupportedIndices(const Eigen::MatrixXd& supported_indices) {
+    // Loop through the rows (edge hypotheses)
+    for (int row = 0; row < supported_indices.rows(); ++row) {
+        std::cout << "Hypothesis Edge " << row << ":\n";
 
+        // Loop through the columns (validation views)
+        for (int col = 0; col < supported_indices.cols(); ++col) {
+            int support_idx = supported_indices(row, col);
+
+            if (support_idx == -2) {
+                std::cout << "  Validation View " << col << ": No support found.\n";
+            } else {
+                std::cout << "  Validation View " << col << ": Supporting edge index = " << support_idx << "\n";
+            }
+        }
+
+        std::cout << std::endl;
+    }
+}
 
 void getInteriorBuckets(
   const vgl_polygon_CH<double> &p, bool boundary_in, 
@@ -146,8 +164,7 @@ clock_t tstart, tend;
 double itime, ftime, exec_time, totaltime=0;
 int thresh_EDG = THRESHEDG;
 
-std::vector<std::tuple<int, int, int>> all_support_tuples;
-
+std::vector< Eigen::MatrixXd > all_supported_indices;
 EdgeMapping edgeMapping;
 
 //> Multi-thresholding!!!!!!
@@ -243,21 +260,25 @@ while(thresh_EDG >= THRESEDGFORALL) {
    // std::cout<< "Edges_HYPO2.rows(): " << Edges_HYPO2.rows() << std::endl;
 
     //<<<<<<<<< OpenMp Operation >>>>>>>>>//
-    #if defined(_OPENMP)
+// #if defined(_OPENMP)
+// #endif
       unsigned nthreads = NUM_OF_OPENMP_THREADS;
       omp_set_num_threads(nthreads);
       int ID = omp_get_thread_num();
       itime = omp_get_wtime();
       std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
       std::cout << "nthreads: " << nthreads << "." << std::endl;
-    #pragma omp parallel for schedule(static, nthreads) //reduction(+:variables_to_be_summed_up)   //> CH: comment out reduction if you have a variable to be summed up inside the first loop
-    #endif
 
-      
+  #pragma omp parallel
+  {
+    //> Local array stacking all supported indices
+    std::vector<Eigen::MatrixXd> local_thread_supported_indices;
+
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< First loop: loop over all edgels from hypothesis view 1 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     //<<<<<<<<<<< Identify pairs of edge, correct the positions of the edges from Hypo2, and store the paired edges >>>>>>>>>>>>>>>>//
+    #pragma omp for schedule(static, nthreads)
+    for (int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++) {
 
-    for(int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++){
       //Edge Boundary Check: not too close to boundary
       if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > IMGCOLS-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > IMGROWS-10){
         continue;
@@ -311,10 +332,11 @@ while(thresh_EDG >= THRESEDGFORALL) {
       
       bool isempty_link = true;
 
-      for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++){
-        if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX){
+      for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++) {
+        //> Skip the two hypothesis views
+        if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX)
           continue;
-        }
+
         // Get camera pose and other info for current validation view
         Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
         Eigen::Matrix3d R3             = All_R[VALID_INDX];
@@ -324,13 +346,8 @@ while(thresh_EDG >= THRESEDGFORALL) {
         Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
         Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
         Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
-        // deal with multiple view K scenario
-        Eigen::Matrix3d K3;
-        if(IF_MULTIPLE_K == 1){
-          K3 = All_K[VALID_INDX];
-        }else{
-          K3 = K;
-        }
+        Eigen::Matrix3d K3 = (IF_MULTIPLE_K == 1) ? All_K[VALID_INDX] : K;
+
         // Calculate relative pose
         Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
         Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
@@ -347,7 +364,7 @@ while(thresh_EDG >= THRESEDGFORALL) {
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
-        for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++){
+        for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
           double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
           double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
           double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
@@ -400,24 +417,18 @@ while(thresh_EDG >= THRESEDGFORALL) {
         supported_indices.col(VALID_idx) << supported_indice_current.col(0);
         VALID_idx++;
       } 
+      // std::cout << supported_indices.rows() << ", " << supported_indices.cols() << std::endl;
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
       //printSupportedIndices(supported_indices);
-      
-      //std::string output_file_path = "../../outputs/supported_indices_" + std::to_string(edge_idx) + ".txt";
+
+      //> Now, for each local thread, stack the supported indices
+      local_thread_supported_indices.push_back(supported_indices);
+
+      // all_supported_indices.push_back(supported_indices);
+      // std::string output_file_path = "../../outputs/supported_indices_" + std::to_string(edge_idx) + ".txt";
 
       // Instead of pushing it to all_supported_indices, write it to a file
-      //writeSupportedIndicesToFile(supported_indices, output_file_path);
-      // for (int row = 0; row < supported_indices.rows(); ++row) {
-      //   for (int col = 0; col < supported_indices.cols(); ++col) {
-      //     assert(row >= 0 && row < supported_indices.rows());
-      //     assert(col >= 0 && col < supported_indices.cols());
-
-      //     int support_idx = supported_indices(row, col);
-      //     if (support_idx != -2) {
-      //         all_support_tuples.emplace_back(row, col, support_idx);
-      //     }
-      //   }
-      // }
+      // writeSupportedIndicesToFile(supported_indices, output_file_path);
 
 
       //Check for Empty Supported Indices
@@ -425,7 +436,6 @@ while(thresh_EDG >= THRESEDGFORALL) {
         continue;
       }
       
-
       //Create a Stack of Supported Indices
       std::vector<double> indices_stack(supported_indices_stack.data(), supported_indices_stack.data() + supported_indices_stack.rows());
       std::vector<double> indices_stack_unique = indices_stack;
@@ -499,14 +509,20 @@ while(thresh_EDG >= THRESEDGFORALL) {
     }
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of first loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
 
+    //> A critical session to stack all local supported indices
+    #pragma omp critical
+    all_supported_indices.insert(all_supported_indices.end(), local_thread_supported_indices.begin(), local_thread_supported_indices.end());
+
     //OpenMP Parallelization Time Reporting
-    #if defined(_OPENMP)
+    // #if defined(_OPENMP)
       ftime = omp_get_wtime();
       exec_time = ftime - itime;
       totaltime += exec_time;
       std::cout << "It took "<< exec_time <<" second(s) to finish this round."<<std::endl;
       std::cout << "End of using OpenMP parallelization." << std::endl;
-    #endif
+    // #endif
+  } //> End of pragma omp parallel
+    
 
     //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
     // .....
@@ -635,7 +651,8 @@ while(thresh_EDG >= THRESEDGFORALL) {
         //std::cout << "Processing pair index: " << pair_idx << " with sizes: "
         //  << "Edges_HYPO1_all size: " << Edges_HYPO1_all.rows() << "x" << Edges_HYPO1_all.cols() << std::endl;
       }
-    }else {
+    }
+    else {
       std::cout<< "pipeline finished" <<std::endl;
       std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
       std::ofstream myfile2;
@@ -659,16 +676,5 @@ while(thresh_EDG >= THRESEDGFORALL) {
                       << "] from Image " << image_number << "\n";
         }
     }
-    std::cout << "All support tuples:\n";
-    for (const auto& tuple : all_support_tuples) {
-        std::cout << "Support tuple: [edge_idx: " 
-                  << std::get<0>(tuple) << ", col: " 
-                  << std::get<1>(tuple) << ", support_idx: " 
-                  << std::get<2>(tuple) << "]\n";
-    }
-
-
   }
-
-
 }
