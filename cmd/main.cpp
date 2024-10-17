@@ -51,57 +51,53 @@ using namespace MultiviewGeometryUtil;
 //> Yilin Zheng (yilin_zheng@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
 // =========================================================================================================================
-// Function to write supported_indices to a file
-void writeSupportedIndicesToFile(const Eigen::MatrixXd& supported_indices, const std::string& filename) {
-    std::ofstream outfile(filename);
+void printEdge3DToHypothesisAndSupports(
+    const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
+                             std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
+                             EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
+{
+    for (const auto& [edge_3D, value] : edge_3D_to_hypothesis_and_supports) {
+        // Extract 3D edge
+        std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
 
-    if (!outfile.is_open()) {
-        std::cerr << "Error: Could not open file " << filename << " for writing." << std::endl;
-        return;
-    }
+        // Extract the hypothesis edges from view 6 and view 8
+        const Eigen::Vector2d& hypothesis_edge_view6 = std::get<0>(value);
+        const Eigen::Vector2d& hypothesis_edge_view8 = std::get<1>(value);
 
-    // Loop through the rows (edge hypotheses)
-    for (int row = 0; row < supported_indices.rows(); ++row) {
-        outfile << "Hypothesis Edge " << row << ":\n";
+        std::cout << "    Hypothesis Edge (View 6): [" << hypothesis_edge_view6(0) << ", " << hypothesis_edge_view6(1) << "]\n";
+        std::cout << "    Hypothesis Edge (View 8): [" << hypothesis_edge_view8(0) << ", " << hypothesis_edge_view8(1) << "]\n";
 
-        // Loop through the columns (validation views)
-        for (int col = 0; col < supported_indices.cols(); ++col) {
-            int support_idx = supported_indices(row, col);
+        // Extract the supporting edges with validation view numbers
+        const std::vector<std::pair<int, Eigen::Vector2d>>& validation_support_edges = std::get<2>(value);
 
-            if (support_idx == -2) {
-                outfile << "  Validation View " << col << ": No support found.\n";
-            } else {
-                outfile << "  Validation View " << col << ": Supporting edge index = " << support_idx << "\n";
-            }
+        // Loop through and print each supporting edge and its corresponding validation view number
+        for (size_t i = 0; i < validation_support_edges.size(); ++i) {
+            const auto& [val_view_num, support_edge] = validation_support_edges[i];
+            std::cout << "    Validation View " << val_view_num << ": Supporting Edge = [" 
+                      << support_edge(0) << ", " << support_edge(1) << "]\n";
         }
-
-        outfile << std::endl;
     }
-
-    // Close the file
-    outfile.close();
-   // std::cout << "Supported indices successfully written to " << filename << std::endl;
 }
 
-void printSupportedIndices(const Eigen::MatrixXd& supported_indices) {
-    // Loop through the rows (edge hypotheses)
-    for (int row = 0; row < supported_indices.rows(); ++row) {
-        std::cout << "Hypothesis Edge " << row << ":\n";
-
-        // Loop through the columns (validation views)
-        for (int col = 0; col < supported_indices.cols(); ++col) {
-            int support_idx = supported_indices(row, col);
-
-            if (support_idx == -2) {
-                std::cout << "  Validation View " << col << ": No support found.\n";
-            } else {
-                std::cout << "  Validation View " << col << ": Supporting edge index = " << support_idx << "\n";
+void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_indices) {
+    std::cout << "Printing all supported indices:\n";
+    
+    // Loop through all matrices in all_supported_indices
+    for (size_t idx = 0; idx < all_supported_indices.size(); ++idx) {
+        std::cout << "Supported Indices for frame " << idx << ":\n";
+        const Eigen::MatrixXd &matrix = all_supported_indices[idx];
+        
+        // Loop through each row and column of the matrix
+        for (int row = 0; row < matrix.rows(); ++row) {
+            for (int col = 0; col < matrix.cols(); ++col) {
+                std::cout << std::fixed << std::setprecision(4) << matrix(row, col) << " ";
             }
+            std::cout << std::endl;  // Move to the next line after printing all columns of a row
         }
-
-        std::cout << std::endl;
+        std::cout << std::endl;  // Space between different matrices
     }
 }
+
 
 void getInteriorBuckets(
   const vgl_polygon_CH<double> &p, bool boundary_in, 
@@ -252,22 +248,13 @@ while(thresh_EDG >= THRESEDGFORALL) {
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   
     std::cout<< "Threshold is : " << thresh_EDG << std::endl;
-    // std::cout<< "Number of edges in hypothesis view 1: " << Edges_HYPO1.rows() << std::endl;
-    // std::cout<< "Number of edges in hypothesis view 2: " << Edges_HYPO2.rows() << std::endl;
-    //Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
-    //Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
-    //remove edge in H2
-   // std::cout<< "Edges_HYPO2.rows(): " << Edges_HYPO2.rows() << std::endl;
-
-    //<<<<<<<<< OpenMp Operation >>>>>>>>>//
-// #if defined(_OPENMP)
-// #endif
-      unsigned nthreads = NUM_OF_OPENMP_THREADS;
-      omp_set_num_threads(nthreads);
-      int ID = omp_get_thread_num();
-      itime = omp_get_wtime();
-      std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
-      std::cout << "nthreads: " << nthreads << "." << std::endl;
+   
+    unsigned nthreads = NUM_OF_OPENMP_THREADS;
+    omp_set_num_threads(nthreads);
+    int ID = omp_get_thread_num();
+    itime = omp_get_wtime();
+    std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
+    std::cout << "nthreads: " << nthreads << "." << std::endl;
 
   #pragma omp parallel
   {
@@ -396,7 +383,7 @@ while(thresh_EDG >= THRESEDGFORALL) {
           Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(v_intersection.data(), v_intersection.size());
           Eigen::MatrixXd inliner(idxVector);
           
-          // Caluclate orientation of gamma 3
+          // Calculate orientation of gamma 3
           Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
           // Get support from validation view for this gamma 3
           double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
@@ -417,18 +404,10 @@ while(thresh_EDG >= THRESEDGFORALL) {
         supported_indices.col(VALID_idx) << supported_indice_current.col(0);
         VALID_idx++;
       } 
-      // std::cout << supported_indices.rows() << ", " << supported_indices.cols() << std::endl;
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
-      //printSupportedIndices(supported_indices);
 
       //> Now, for each local thread, stack the supported indices
       local_thread_supported_indices.push_back(supported_indices);
-
-      // all_supported_indices.push_back(supported_indices);
-      // std::string output_file_path = "../../outputs/supported_indices_" + std::to_string(edge_idx) + ".txt";
-
-      // Instead of pushing it to all_supported_indices, write it to a file
-      // writeSupportedIndicesToFile(supported_indices, output_file_path);
 
 
       //Check for Empty Supported Indices
@@ -566,12 +545,6 @@ while(thresh_EDG >= THRESEDGFORALL) {
           std::cout << "No valid matches found for edge " << pair_idx << " at threshold " << thresh_EDG << std::endl;
           continue;
         }
-        // if (edgels_HYPO2_corrected.rows() < 1 || edgels_HYPO2_corrected.cols() < 8) {
-        //     std::cout << "Error: edgels_HYPO2_corrected has incorrect dimensions at index " << pair_idx
-        //               << ". Rows: " << edgels_HYPO2_corrected.rows()
-        //               << ", Cols: " << edgels_HYPO2_corrected.cols() << std::endl;
-        //     continue;  // Skip this iteration if the dimensions are incorrect
-        // }
 
         Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
         Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
@@ -594,6 +567,31 @@ while(thresh_EDG >= THRESEDGFORALL) {
         Gamma1s.row(pair_idx)<< edge_pt_3D(0),edge_pt_3D(1),edge_pt_3D(2);
         edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, HYPO1_VIEW_INDX);
         edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, HYPO2_VIEW_INDX);
+
+        ///////////////////////////////// Add support from validation views /////////////////////////////////
+        std::vector<std::pair<int, Eigen::Vector2d>> validation_support_edges;
+
+        // Loop through validation views to find the supporting edges
+        for (int val_idx = 0; val_idx < DATASET_NUM_OF_FRAMES; ++val_idx) {
+            if (val_idx == HYPO1_VIEW_INDX || val_idx == HYPO2_VIEW_INDX) {
+                continue;  // Skip hypothesis views
+            }
+
+            // Retrieve support index from paired_edge for the current validation view
+            int support_idx = paired_edge_final(pair_idx, val_idx + 2);  // +2 accounts for the first two columns for HYPO1 and HYPO2
+            if (support_idx != -2) {
+                // Retrieve the supporting edge from the validation view
+                Eigen::MatrixXd edges_for_val_frame = All_Edgels[val_idx];
+                Eigen::Vector2d supporting_edge = edges_for_val_frame.row(support_idx).head<2>();
+
+                // Store validation view and the supporting edge
+                validation_support_edges.emplace_back(val_idx, supporting_edge);
+
+                // Add the supporting edge to the edgeMapping for the 3D edge
+                edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
+            }
+        }
+        ///////////////////////////////// Add support from validation views /////////////////////////////////
       }
     }
 
@@ -648,8 +646,6 @@ while(thresh_EDG >= THRESEDGFORALL) {
           Edges_HYPO2.row(int(paired_edge(pair_idx,1))) << 0,0,0,0;
           pair_num++;
         }
-        //std::cout << "Processing pair index: " << pair_idx << " with sizes: "
-        //  << "Edges_HYPO1_all size: " << Edges_HYPO1_all.rows() << "x" << Edges_HYPO1_all.cols() << std::endl;
       }
     }
     else {
@@ -663,18 +659,24 @@ while(thresh_EDG >= THRESEDGFORALL) {
       myfile2.close();
     }
 
+    // After all operations in the main function, add the following to print the structure
 
-    std::cout << "Printing all 3D edges and their corresponding 2D supporting edges:\n";
-    
+    std::cout << "Printing all 3D edges and their corresponding supporting edges:\n";
+
     for (const auto& [edge_3D, supporting_edges] : edgeMapping.edge_3D_to_supporting_edges) {
         // Print the 3D edge
         std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
 
         // Print all supporting 2D edges and their image numbers
         for (const auto& [supporting_edge, image_number] : supporting_edges) {
-            std::cout << "    Supporting 2D Edge: [" << supporting_edge(0) << ", " << supporting_edge(1)
+            std::cout << "    Supporting Edge: [" << supporting_edge(0) << ", " << supporting_edge(1) 
                       << "] from Image " << image_number << "\n";
         }
     }
+
+
+
+   
+
   }
 }

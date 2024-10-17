@@ -17,6 +17,16 @@ struct HashEigenVector3d {
     }
 };
 
+struct EigenMatrixHash {
+    std::size_t operator()(const Eigen::Matrix<double, 3, 1>& matrix) const {
+        std::size_t seed = 0;
+        for (int i = 0; i < matrix.size(); ++i) {
+            seed ^= std::hash<double>()(matrix(i)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
+
 
 class EdgeMapping {
 public:
