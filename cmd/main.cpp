@@ -701,7 +701,7 @@ int main(int argc, char **argv) {
       projectedEdgesList.push_back(projectedEdges);
     }
 
-    std::vector<Eigen::MatrixXd> observedEdgesList;  // This should be filled with your observed edges in each view
+    std::vector<Eigen::MatrixXd> observedEdgesList;  
     std::vector<std::vector<int>> claimedEdgesList;
     double threshold = 1.0;  
 
