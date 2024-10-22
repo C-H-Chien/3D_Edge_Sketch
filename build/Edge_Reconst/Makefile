@@ -308,6 +308,30 @@ getSupportedEdgels.cpp.s:
 	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/getSupportedEdgels.cpp.s
 .PHONY : getSupportedEdgels.cpp.s
 
+iteration.o: iteration.cpp.o
+.PHONY : iteration.o
+
+# target to build an object file
+iteration.cpp.o:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/iteration.cpp.o
+.PHONY : iteration.cpp.o
+
+iteration.i: iteration.cpp.i
+.PHONY : iteration.i
+
+# target to preprocess a source file
+iteration.cpp.i:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/iteration.cpp.i
+.PHONY : iteration.cpp.i
+
+iteration.s: iteration.cpp.s
+.PHONY : iteration.s
+
+# target to generate assembly for a file
+iteration.cpp.s:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/iteration.cpp.s
+.PHONY : iteration.cpp.s
+
 lemsvpe_CH/vgl_point_2d_CH.o: lemsvpe_CH/vgl_point_2d_CH.cpp.o
 .PHONY : lemsvpe_CH/vgl_point_2d_CH.o
 
@@ -411,6 +435,9 @@ help:
 	@echo "... getSupportedEdgels.o"
 	@echo "... getSupportedEdgels.i"
 	@echo "... getSupportedEdgels.s"
+	@echo "... iteration.o"
+	@echo "... iteration.i"
+	@echo "... iteration.s"
 	@echo "... lemsvpe_CH/vgl_point_2d_CH.o"
 	@echo "... lemsvpe_CH/vgl_point_2d_CH.i"
 	@echo "... lemsvpe_CH/vgl_point_2d_CH.s"

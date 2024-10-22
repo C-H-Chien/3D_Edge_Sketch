@@ -15,6 +15,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/edge_reconstruction.dir/getReprojectedEdgel.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/getSupportedEdgels.cpp.o"
   "CMakeFiles/edge_reconstruction.dir/getSupportedEdgels.cpp.o.d"
+  "CMakeFiles/edge_reconstruction.dir/iteration.cpp.o"
+  "CMakeFiles/edge_reconstruction.dir/iteration.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_point_2d_CH.cpp.o"
   "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_point_2d_CH.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.o"

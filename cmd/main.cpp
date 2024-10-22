@@ -32,7 +32,7 @@
 //Qiwu
 #include "../Edge_Reconst/file_reader.hpp"
 #include "../Edge_Reconst/edge_mapping.hpp"
-
+#include "../Edge_Reconst/iteration.hpp"
 
 // using namespace std;
 using namespace MultiviewGeometryUtil;
@@ -666,6 +666,7 @@ Eigen::MatrixXd core_pipeline(
     return Gamma1s;
   }
 }
+
 
 
 
