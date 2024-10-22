@@ -155,53 +155,41 @@ void getEdgelsFromInteriorQuadrilateral(
 
 
 
-void core_pipeline(int hyp01_view_indx, int hyp02_view_indx){
+Eigen::MatrixXd core_pipeline(
+    const int hyp01_view_indx, 
+    const int hyp02_view_indx,
+    const std::vector<Eigen::Matrix3d>& All_R, 
+    const std::vector<Eigen::Vector3d>& All_T,
+    const std::vector<Eigen::Matrix3d>& All_K,
+    const Eigen::Matrix3d K,
+    double rd_data,
+    int d,
+    int q){
+
   std::cout<< "pipeline start" <<std::endl;
-    
+  
   clock_t tstart, tend;
   double itime, ftime, exec_time, totaltime=0;
   int thresh_EDG = THRESHEDG;
 
   std::vector< Eigen::MatrixXd > all_supported_indices;
   EdgeMapping edgeMapping;
-
   //> Multi-thresholding!!!!!!
   while(thresh_EDG >= THRESEDGFORALL) {
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< READ FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     std::fstream Edge_File;
-    std::fstream Rmatrix_File;
-    std::fstream Tmatrix_File;
-    std::fstream Kmatrix_File;
 
     std::vector<Eigen::MatrixXd> All_Edgels; 
     std::vector<Eigen::MatrixXd> All_Edgels_H12;  
-    std::vector<Eigen::Matrix3d> All_R;
-    std::vector<Eigen::Vector3d> All_T;
-    std::vector<Eigen::Matrix3d> All_K;
-    
-    Eigen::Vector4d row_edge;
-    Eigen::Matrix3d R_matrix;
-    Eigen::Vector3d row_R;
-    Eigen::Vector3d T_matrix;
-    Eigen::Matrix3d K;
-    Eigen::Matrix3d K_matrix;
-    Eigen::Vector3d row_K;
 
-    double rd_data;
+    Eigen::Vector4d row_edge;
     int file_idx = 0;
-    int d = 0;
-    int q = 0;
     int H_idx = 0;
     
     // Read edgel files
     readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, thresh_EDG);  
-    //> Read edgels of hypothesis view 1 and 2
     readHypothesisEdgelFiles(hyp01_view_indx, hyp02_view_indx, All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
-    readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
-    //> Start reading translation vectors
-    readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
-    readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
-
+  
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< PREPROCESSING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     clock_t tstart_pre, tend_pre;
     tstart_pre = clock();
@@ -675,8 +663,9 @@ void core_pipeline(int hyp01_view_indx, int hyp02_view_indx){
                       << "] from Image " << image_number << "\n";
         }
     }
+    return Gamma1s;
   }
-  }
+}
 
 
 
@@ -684,6 +673,31 @@ int main(int argc, char **argv) {
 
   int hyp01_view_indx = 6;
   int hyp02_view_indx = 8;
-  core_pipeline(hyp01_view_indx, hyp02_view_indx);
+
+  std::vector<Eigen::Matrix3d> All_R;
+  std::vector<Eigen::Vector3d> All_T;
+  std::vector<Eigen::Matrix3d> All_K;
+
+  std::fstream Rmatrix_File;
+  std::fstream Tmatrix_File;
+  std::fstream Kmatrix_File;
+
+  Eigen::Matrix3d R_matrix;
+  Eigen::Vector3d row_R;
+  Eigen::Vector3d T_matrix;
+  Eigen::Matrix3d K;
+  Eigen::Matrix3d K_matrix;
+  Eigen::Vector3d row_K;
+
+  double rd_data;
+  int d = 0;
+  int q = 0;
+
+  readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
+  readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
+  readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
+
+
+  core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
 
 }
