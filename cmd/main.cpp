@@ -152,12 +152,10 @@ void getEdgelsFromInteriorQuadrilateral(
   //std::cout << "number of edges in this quadrilateral found by bucketing: "<< Edgel_Indices.size() <<std::endl;
 }
 
-int main(int argc, char **argv) {
-
-  int hyp01_view_indx = 6;
-  int hyp02_view_indx = 8;
 
 
+
+void core_pipeline(int hyp01_view_indx, int hyp02_view_indx){
   std::cout<< "pipeline start" <<std::endl;
     
   clock_t tstart, tend;
@@ -677,10 +675,15 @@ int main(int argc, char **argv) {
                       << "] from Image " << image_number << "\n";
         }
     }
-
-
-
-   
-
   }
+  }
+
+
+
+int main(int argc, char **argv) {
+
+  int hyp01_view_indx = 6;
+  int hyp02_view_indx = 8;
+  core_pipeline(hyp01_view_indx, hyp02_view_indx);
+
 }
