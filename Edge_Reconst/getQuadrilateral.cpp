@@ -31,15 +31,15 @@ namespace GetQuadrilateral {
     
     get_Quadrilateral::get_Quadrilateral( ) { }
     
-    Eigen::MatrixXd get_Quadrilateral::getQuadrilateralPoints(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3) {
+    Eigen::MatrixXd get_Quadrilateral::getQuadrilateralPoints(int hyp01_view_indx, int hyp02_view_indx, Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e2  = {0,1,0};
         Eigen::Vector3d e3  = {0,0,1};
-        Eigen::Matrix3d R1  = All_R[HYPO1_VIEW_INDX];
-        Eigen::Vector3d T1  = All_T[HYPO1_VIEW_INDX];
-        Eigen::Matrix3d R2  = All_R[HYPO2_VIEW_INDX];
-        Eigen::Vector3d T2  = All_T[HYPO2_VIEW_INDX];
+        Eigen::Matrix3d R1  = All_R[hyp01_view_indx];
+        Eigen::Vector3d T1  = All_T[hyp01_view_indx];
+        Eigen::Matrix3d R2  = All_R[hyp02_view_indx];
+        Eigen::Vector3d T2  = All_T[hyp02_view_indx];
         Eigen::Matrix3d R3  = All_R[VALID_INDX];
         Eigen::Vector3d T3  = All_T[VALID_INDX];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
@@ -105,8 +105,8 @@ namespace GetQuadrilateral {
         return QuadrilateralPoints;
     }
     
-    Eigen::MatrixXd get_Quadrilateral::getInliner(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3, Eigen::MatrixXd TO_Edges_VALID) {
-        Eigen::MatrixXd QuadrilateralPoints = getQuadrilateralPoints(pt_edge_HYPO1, pt_edge_HYPO2, All_R, All_T, VALID_INDX, K1, K2, K3);
+    Eigen::MatrixXd get_Quadrilateral::getInliner(int hyp01_view_indx, int hyp02_view_indx, Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd pt_edge_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3, Eigen::MatrixXd TO_Edges_VALID) {
+        Eigen::MatrixXd QuadrilateralPoints = getQuadrilateralPoints(hyp01_view_indx, hyp02_view_indx, pt_edge_HYPO1, pt_edge_HYPO2, All_R, All_T, VALID_INDX, K1, K2, K3);
         Eigen::Vector2d v1 = {double(QuadrilateralPoints(1,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(1,1) - QuadrilateralPoints(0,1))};
         Eigen::Vector2d v2 = {double(QuadrilateralPoints(2,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(2,1) - QuadrilateralPoints(0,1))};
         Eigen::Vector2d v3 = {double(QuadrilateralPoints(3,0) - QuadrilateralPoints(0,0)),double(QuadrilateralPoints(3,1) - QuadrilateralPoints(0,1))};

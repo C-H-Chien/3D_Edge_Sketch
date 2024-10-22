@@ -43,17 +43,17 @@ namespace GetReprojectedEdgel {
         return tgt_meters;
     }
 
-    Eigen::MatrixXd get_Reprojected_Edgel::getGamma3Pos(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3) {
+    Eigen::MatrixXd get_Reprojected_Edgel::getGamma3Pos(int hyp01_view_indx, int hyp02_view_indx, Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2, Eigen::Matrix3d K3) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::Vector3d pt_edgel_HYPO1;
         pt_edgel_HYPO1 << pt_edge_HYPO1(0,0), pt_edge_HYPO1(0,1), 1;
         Eigen::Vector3d Gamma1 = K1.inverse() * pt_edgel_HYPO1;
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e3  = {0,0,1};
-        Eigen::Matrix3d R1  = All_R[HYPO1_VIEW_INDX];
-        Eigen::Vector3d T1  = All_T[HYPO1_VIEW_INDX];
-        Eigen::Matrix3d R2  = All_R[HYPO2_VIEW_INDX];
-        Eigen::Vector3d T2  = All_T[HYPO2_VIEW_INDX];
+        Eigen::Matrix3d R1  = All_R[hyp01_view_indx];
+        Eigen::Vector3d T1  = All_T[hyp01_view_indx];
+        Eigen::Matrix3d R2  = All_R[hyp02_view_indx];
+        Eigen::Vector3d T2  = All_T[hyp02_view_indx];
         Eigen::Matrix3d R3  = All_R[VALID_INDX];
         Eigen::Vector3d T3  = All_T[VALID_INDX];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
@@ -85,17 +85,17 @@ namespace GetReprojectedEdgel {
         return edge_pos_gamma3;
     }
     
-    Eigen::MatrixXd get_Reprojected_Edgel::getGamma3Tgt(Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2) {
+    Eigen::MatrixXd get_Reprojected_Edgel::getGamma3Tgt(int hyp01_view_indx, int hyp02_view_indx, Eigen::MatrixXd pt_edge_HYPO1, Eigen::MatrixXd edgels_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, int VALID_INDX, Eigen::Matrix3d K1, Eigen::Matrix3d K2) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::Vector3d pt_edgel_HYPO1;
         // pt_edgel_HYPO1 << pt_edge_HYPO1(0,0), pt_edge_HYPO1(0,1), 1;
         // Eigen::Vector3d Gamma1 = K1.inverse() * pt_edgel_HYPO1;
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e3  = {0,0,1};
-        Eigen::Matrix3d R1  = All_R[HYPO1_VIEW_INDX];
-        Eigen::Vector3d T1  = All_T[HYPO1_VIEW_INDX];
-        Eigen::Matrix3d R2  = All_R[HYPO2_VIEW_INDX];
-        Eigen::Vector3d T2  = All_T[HYPO2_VIEW_INDX];
+        Eigen::Matrix3d R1  = All_R[hyp01_view_indx];
+        Eigen::Vector3d T1  = All_T[hyp01_view_indx];
+        Eigen::Matrix3d R2  = All_R[hyp02_view_indx];
+        Eigen::Vector3d T2  = All_T[hyp02_view_indx];
         Eigen::Matrix3d R3  = All_R[VALID_INDX];
         Eigen::Vector3d T3  = All_T[VALID_INDX];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);

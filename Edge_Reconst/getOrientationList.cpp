@@ -352,7 +352,7 @@ namespace GetOrientationList {
             }
             
             /*
-            if(VALID_INDX == 39 && REFIDX == HYPO2_VIEW_INDX){
+            if(VALID_INDX == 39 && REFIDX == hyp02_view_indx){
                 std::cout << "VALID_INDX: \n" << VALID_INDX <<std::endl;
                 std::cout << "p1_xy: \n" << p1_xy.row(idx_pt12) <<std::endl;
                 std::cout << "p2_xy: \n" << p2_xy.row(idx_pt12) <<std::endl;
@@ -442,17 +442,17 @@ namespace GetOrientationList {
         return OreListBardegree;
     }
 
-    Eigen::MatrixXd get_OrientationList::getOreList(Eigen::MatrixXd Edges_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2) {
+    Eigen::MatrixXd get_OrientationList::getOreList(int hyp01_view_indx, int hyp02_view_indx, Eigen::MatrixXd Edges_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::MatrixXd OreListBar_raw;
         OreListBar_raw.conservativeResize(Edges_HYPO2.rows(),2);
         Eigen::Vector3d e1  = {1,0,0};
         Eigen::Vector3d e2  = {0,1,0};
         Eigen::Vector3d e3  = {0,0,1};
-        Eigen::Matrix3d R1  = All_R[HYPO1_VIEW_INDX];
-        Eigen::Vector3d T1  = All_T[HYPO1_VIEW_INDX];
-        Eigen::Matrix3d R2  = All_R[HYPO2_VIEW_INDX];
-        Eigen::Vector3d T2  = All_T[HYPO2_VIEW_INDX];
+        Eigen::Matrix3d R1  = All_R[hyp01_view_indx];
+        Eigen::Vector3d T1  = All_T[hyp01_view_indx];
+        Eigen::Matrix3d R2  = All_R[hyp02_view_indx];
+        Eigen::Vector3d T2  = All_T[hyp02_view_indx];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
         Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
         Eigen::Matrix3d F   = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R21, T21);

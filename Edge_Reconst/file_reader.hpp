@@ -9,7 +9,7 @@
 
 void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &file_idx, int &d, int &q, int thresh_EDG);
 
-void readHypothesisEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG);
+void readHypothesisEdgelFiles(int hyp01_view_indx, int hyp02_view_indx, std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG);
 
 void readRmatrix(std::vector<Eigen::Matrix3d> &All_R, Eigen::Matrix3d &R_matrix, std::fstream &Rmatrix_File, double &rd_data, Eigen::Vector3d &row_R, int &d, int &q);
 

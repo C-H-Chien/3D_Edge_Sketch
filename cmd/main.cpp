@@ -154,17 +154,21 @@ void getEdgelsFromInteriorQuadrilateral(
 
 int main(int argc, char **argv) {
 
-std::cout<< "pipeline start" <<std::endl;
-  
-clock_t tstart, tend;
-double itime, ftime, exec_time, totaltime=0;
-int thresh_EDG = THRESHEDG;
+  int hyp01_view_indx = 6;
+  int hyp02_view_indx = 8;
 
-std::vector< Eigen::MatrixXd > all_supported_indices;
-EdgeMapping edgeMapping;
 
-//> Multi-thresholding!!!!!!
-while(thresh_EDG >= THRESEDGFORALL) {
+  std::cout<< "pipeline start" <<std::endl;
+    
+  clock_t tstart, tend;
+  double itime, ftime, exec_time, totaltime=0;
+  int thresh_EDG = THRESHEDG;
+
+  std::vector< Eigen::MatrixXd > all_supported_indices;
+  EdgeMapping edgeMapping;
+
+  //> Multi-thresholding!!!!!!
+  while(thresh_EDG >= THRESEDGFORALL) {
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< READ FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     std::fstream Edge_File;
     std::fstream Rmatrix_File;
@@ -194,7 +198,7 @@ while(thresh_EDG >= THRESEDGFORALL) {
     // Read edgel files
     readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, thresh_EDG);  
     //> Read edgels of hypothesis view 1 and 2
-    readHypothesisEdgelFiles(All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
+    readHypothesisEdgelFiles(hyp01_view_indx, hyp02_view_indx, All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
     readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
     //> Start reading translation vectors
     readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
@@ -212,20 +216,20 @@ while(thresh_EDG >= THRESEDGFORALL) {
     
     // Assign variables required for Hypo1 and Hypo2
     Eigen::MatrixXd Edges_HYPO1 = All_Edgels_H12[0];
-    Eigen::MatrixXd Edges_pairs = All_Edgels[HYPO1_VIEW_INDX];
-    Eigen::Matrix3d R1          = All_R[HYPO1_VIEW_INDX];
-    Eigen::Vector3d T1          = All_T[HYPO1_VIEW_INDX];
+    Eigen::MatrixXd Edges_pairs = All_Edgels[hyp01_view_indx];
+    Eigen::Matrix3d R1          = All_R[hyp01_view_indx];
+    Eigen::Vector3d T1          = All_T[hyp01_view_indx];
     Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
-    Eigen::Matrix3d R2          = All_R[HYPO2_VIEW_INDX];
-    Eigen::Vector3d T2          = All_T[HYPO2_VIEW_INDX];
-    Eigen::MatrixXd Edges_HYPO1_all = All_Edgels[HYPO1_VIEW_INDX];
-    Eigen::MatrixXd Edges_HYPO2_all = All_Edgels[HYPO2_VIEW_INDX];
+    Eigen::Matrix3d R2          = All_R[hyp02_view_indx];
+    Eigen::Vector3d T2          = All_T[hyp02_view_indx];
+    Eigen::MatrixXd Edges_HYPO1_all = All_Edgels[hyp01_view_indx];
+    Eigen::MatrixXd Edges_HYPO2_all = All_Edgels[hyp02_view_indx];
     // deal with multiple K scenario
     Eigen::Matrix3d K1;
     Eigen::Matrix3d K2;
     if(IF_MULTIPLE_K == 1){
-      K1 = All_K[HYPO1_VIEW_INDX];
-      K2 = All_K[HYPO2_VIEW_INDX];
+      K1 = All_K[hyp01_view_indx];
+      K2 = All_K[hyp02_view_indx];
     }else{
       K1 = K;
       K2 = K;
@@ -242,8 +246,8 @@ while(thresh_EDG >= THRESEDGFORALL) {
     // Initializations for paired edges between Hypo1 and Hypo 2
     Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_pairs.rows(),50,-2);
     // Compute epipolar wedges angles rance between Hypo1 and Hypo2 and find the angle range 1, defining a valid range for matching edges in Hypo2
-    Eigen::MatrixXd OreListdegree    = getOre.getOreList(Edges_HYPO2, All_R, All_T, K1, K2);
-    Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, HYPO2_VIEW_INDX, HYPO1_VIEW_INDX);
+    Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
+    Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
     
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   
@@ -321,7 +325,7 @@ while(thresh_EDG >= THRESEDGFORALL) {
 
       for (int VALID_INDX = 0; VALID_INDX < DATASET_NUM_OF_FRAMES; VALID_INDX++) {
         //> Skip the two hypothesis views
-        if(VALID_INDX == HYPO1_VIEW_INDX || VALID_INDX == HYPO2_VIEW_INDX)
+        if(VALID_INDX == hyp01_view_indx || VALID_INDX == hyp02_view_indx)
           continue;
 
         // Get camera pose and other info for current validation view
@@ -341,13 +345,13 @@ while(thresh_EDG >= THRESEDGFORALL) {
         
         // Calculate the angle range for epipolar lines (Hypo1 --> Vali)
         Eigen::MatrixXd pt_edge            = Edges_HYPO1_final;
-        Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
-        Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
-        Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, HYPO1_VIEW_INDX);
+        Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
+        Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
+        Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
 
         // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
-        Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
-        Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, HYPO2_VIEW_INDX);
+        Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+        Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
@@ -565,15 +569,15 @@ while(thresh_EDG >= THRESEDGFORALL) {
         }
 
         Gamma1s.row(pair_idx)<< edge_pt_3D(0),edge_pt_3D(1),edge_pt_3D(2);
-        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, HYPO1_VIEW_INDX);
-        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, HYPO2_VIEW_INDX);
+        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, hyp01_view_indx);
+        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, hyp02_view_indx);
 
         ///////////////////////////////// Add support from validation views /////////////////////////////////
         std::vector<std::pair<int, Eigen::Vector2d>> validation_support_edges;
 
         // Loop through validation views to find the supporting edges
         for (int val_idx = 0; val_idx < DATASET_NUM_OF_FRAMES; ++val_idx) {
-            if (val_idx == HYPO1_VIEW_INDX || val_idx == HYPO2_VIEW_INDX) {
+            if (val_idx == hyp01_view_indx || val_idx == hyp02_view_indx) {
                 continue;  // Skip hypothesis views
             }
 
@@ -604,9 +608,9 @@ while(thresh_EDG >= THRESEDGFORALL) {
     if (thresh_EDG >= 1) {
       while(file_idx < 3) {
         if(file_idx == 1){
-          H_idx = HYPO1_VIEW_INDX;
+          H_idx = hyp01_view_indx;
         }else{
-          H_idx = HYPO2_VIEW_INDX;
+          H_idx = hyp02_view_indx;
         }
        std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
 #if DEBUG_READ_FILES
@@ -652,7 +656,7 @@ while(thresh_EDG >= THRESEDGFORALL) {
       std::cout<< "pipeline finished" <<std::endl;
       std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
       std::ofstream myfile2;
-      std::string Output_File_Path2 = "../../outputs/Gamma1s_" + DATASET_NAME + "_" + SCENE_NAME + "_" + std::to_string(HYPO1_VIEW_INDX)+"n"+std::to_string(HYPO2_VIEW_INDX)+"_t32to"+std::to_string(thresh_EDG) + "_delta" + deltastr +"_theta" + std::to_string(OREN_THRESH) + "_N" + std::to_string(MAX_NUM_OF_SUPPORT_VIEWS) + ".txt";
+      std::string Output_File_Path2 = "../../outputs/Gamma1s_" + DATASET_NAME + "_" + SCENE_NAME + "_" + std::to_string(hyp01_view_indx)+"n"+std::to_string(hyp02_view_indx)+"_t32to"+std::to_string(thresh_EDG) + "_delta" + deltastr +"_theta" + std::to_string(OREN_THRESH) + "_N" + std::to_string(MAX_NUM_OF_SUPPORT_VIEWS) + ".txt";
       std::cout << Output_File_Path2 << std::endl;
       myfile2.open (Output_File_Path2);
       myfile2 << Gamma1s;

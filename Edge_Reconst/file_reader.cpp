@@ -40,12 +40,12 @@ void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge
 
 
 
-void readHypothesisEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG){
+void readHypothesisEdgelFiles(int hyp01_view_indx, int hyp02_view_indx, std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG){
     while(file_idx < 3) {
         if(file_idx == 1){
-            H_idx = HYPO1_VIEW_INDX;
+            H_idx = hyp01_view_indx;
         }else{
-            H_idx = HYPO2_VIEW_INDX;
+            H_idx = hyp02_view_indx;
         }
         std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_"+std::to_string(H_idx)+"_t" + std::to_string(thresh_EDG) + ".txt"; 
         #if DEBUG_READ_FILES
