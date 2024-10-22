@@ -155,8 +155,7 @@ void readK(std::fstream &Kmatrix_File, std::vector<Eigen::Matrix3d> &All_K, Eige
       }
       Kmatrix_File.close();
     }
-  }
-  else {
+  }else {
     if (DATASET_NAME == "ABC-NEF") 
       K << 1111.11136542426,	0,	399.500000000000, 0,	1111.11136542426,	399.500000000000, 0,	0,	1;
     else if (DATASET_NAME == "Replica")

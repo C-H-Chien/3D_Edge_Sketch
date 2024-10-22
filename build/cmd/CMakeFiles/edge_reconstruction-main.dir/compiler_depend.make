@@ -546,6 +546,20 @@ cmd/CMakeFiles/edge_reconstruction-main.dir/main.cpp.o: ../cmd/main.cpp \
   /usr/include/c++/11/bits/stl_tree.h \
   /usr/include/c++/11/bits/stl_map.h \
   /usr/include/c++/11/bits/stl_multimap.h \
+  ../Edge_Reconst/iteration.hpp \
+  ../Edge_Reconst/util.hpp \
+  ../Edge_Reconst/PairEdgeHypo.hpp \
+  ../Edge_Reconst/getReprojectedEdgel.hpp \
+  ../Edge_Reconst/getQuadrilateral.hpp \
+  ../Edge_Reconst/getSupportedEdgels.hpp \
+  ../Edge_Reconst/getOrientationList.hpp \
+  ../Edge_Reconst/linearTriangulationUtil.hpp \
+  ../Edge_Reconst/definitions.h \
+  ../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp \
+  ../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp \
+  ../Edge_Reconst/subpixel_point_set.hpp \
+  ../Edge_Reconst/file_reader.hpp \
+  ../Edge_Reconst/edge_mapping.hpp \
   ../Edge_Reconst/iteration.hpp
 
 

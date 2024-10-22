@@ -15,6 +15,7 @@ set ( control_sources
   getOrientationList.hpp
   getOrientationList.cpp
   linearTriangulationUtil.hpp
+  linearTriangulationUtil.cpp
 
   subpixel_point_set.hpp
 

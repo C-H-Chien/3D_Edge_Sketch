@@ -21,6 +21,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_point_2d_CH.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.o"
   "CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.o.d"
+  "CMakeFiles/edge_reconstruction.dir/linearTriangulationUtil.cpp.o"
+  "CMakeFiles/edge_reconstruction.dir/linearTriangulationUtil.cpp.o.d"
   "CMakeFiles/edge_reconstruction.dir/util.cpp.o"
   "CMakeFiles/edge_reconstruction.dir/util.cpp.o.d"
 )

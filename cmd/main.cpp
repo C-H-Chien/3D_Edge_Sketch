@@ -156,15 +156,16 @@ void getEdgelsFromInteriorQuadrilateral(
 
 
 Eigen::MatrixXd core_pipeline(
-    const int hyp01_view_indx, 
-    const int hyp02_view_indx,
-    const std::vector<Eigen::Matrix3d>& All_R, 
-    const std::vector<Eigen::Vector3d>& All_T,
-    const std::vector<Eigen::Matrix3d>& All_K,
-    const Eigen::Matrix3d K,
-    double rd_data,
-    int d,
-    int q){
+  const int hyp01_view_indx, 
+  const int hyp02_view_indx,
+  const std::vector<Eigen::Matrix3d>& All_R, 
+  const std::vector<Eigen::Vector3d>& All_T,
+  const std::vector<Eigen::Matrix3d>& All_K,
+  const Eigen::Matrix3d K,
+  double rd_data,
+  int d,
+  int q){
+
 
   std::cout<< "pipeline start" <<std::endl;
   
@@ -176,7 +177,7 @@ Eigen::MatrixXd core_pipeline(
   EdgeMapping edgeMapping;
   //> Multi-thresholding!!!!!!
   while(thresh_EDG >= THRESEDGFORALL) {
-  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< READ FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< READ FILES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     std::fstream Edge_File;
 
     std::vector<Eigen::MatrixXd> All_Edgels; 
@@ -672,33 +673,54 @@ Eigen::MatrixXd core_pipeline(
 
 int main(int argc, char **argv) {
 
-  int hyp01_view_indx = 6;
-  int hyp02_view_indx = 8;
+    int hyp01_view_indx = 6;
+    int hyp02_view_indx = 8;
 
-  std::vector<Eigen::Matrix3d> All_R;
-  std::vector<Eigen::Vector3d> All_T;
-  std::vector<Eigen::Matrix3d> All_K;
+    std::vector<Eigen::Matrix3d> All_R;
+    std::vector<Eigen::Vector3d> All_T;
+    std::vector<Eigen::Matrix3d> All_K;
+    std::fstream Rmatrix_File, Tmatrix_File, Kmatrix_File;
+    Eigen::Matrix3d R_matrix, K_matrix;
+    Eigen::Vector3d row_R, row_K, T_matrix;
+    Eigen::Matrix3d K;
 
-  std::fstream Rmatrix_File;
-  std::fstream Tmatrix_File;
-  std::fstream Kmatrix_File;
+    // Read all required matrices (rotation, translation, and camera matrices)
+    double rd_data;
+    int d = 0, q = 0;
+    readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
+    readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
+    readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
 
-  Eigen::Matrix3d R_matrix;
-  Eigen::Vector3d row_R;
-  Eigen::Vector3d T_matrix;
-  Eigen::Matrix3d K;
-  Eigen::Matrix3d K_matrix;
-  Eigen::Vector3d row_K;
+    // Call the core pipeline function to reconstruct 3D edges
+    Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
 
-  double rd_data;
-  int d = 0;
-  int q = 0;
+    // Project the 3D edges to each view (assuming we want to project back to all views for validation)
+    std::vector<Eigen::MatrixXd> projectedEdgesList;
+    for (int i = 0; i < DATASET_NUM_OF_FRAMES; ++i) {
+      Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K);
+      projectedEdgesList.push_back(projectedEdges);
+    }
 
-  readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
-  readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
-  readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
+    std::vector<Eigen::MatrixXd> observedEdgesList;  // This should be filled with your observed edges in each view
+    std::vector<std::vector<int>> claimedEdgesList;
+    double threshold = 1.0;  
 
+    // for (int i = 0; i < projectedEdgesList.size(); ++i) {
+    //     std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], observedEdgesList[i], threshold);
+    //     claimedEdgesList.push_back(claimedEdges);
+    // }
 
-  core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+    // // Use the selectBestViews function to determine the best pair of views for further analysis
+    // std::vector<Eigen::Vector3d> cameraPositions;  // Fill with the positions of each camera view
+    // double baselineThreshold = 0.5;  // Minimum baseline distance to consider
+    // std::pair<int, int> bestViews = selectBestViews(claimedEdgesList, cameraPositions, baselineThreshold);
 
+    // // Print the selected best views
+    // std::cout << "Best views selected: " << bestViews.first << " and " << bestViews.second << std::endl;
+
+    // // Print or save the reconstructed 3D edges and other results as needed
+    // std::cout << "Reconstructed 3D edges:\n" << Edges_3D << std::endl;
+
+    // return 0;
 }
+

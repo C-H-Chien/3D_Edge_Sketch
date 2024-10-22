@@ -380,6 +380,30 @@ lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.s:
 	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.s
 .PHONY : lemsvpe_CH/vgl_polygon_scan_iterator_CH.cpp.s
 
+linearTriangulationUtil.o: linearTriangulationUtil.cpp.o
+.PHONY : linearTriangulationUtil.o
+
+# target to build an object file
+linearTriangulationUtil.cpp.o:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/linearTriangulationUtil.cpp.o
+.PHONY : linearTriangulationUtil.cpp.o
+
+linearTriangulationUtil.i: linearTriangulationUtil.cpp.i
+.PHONY : linearTriangulationUtil.i
+
+# target to preprocess a source file
+linearTriangulationUtil.cpp.i:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/linearTriangulationUtil.cpp.i
+.PHONY : linearTriangulationUtil.cpp.i
+
+linearTriangulationUtil.s: linearTriangulationUtil.cpp.s
+.PHONY : linearTriangulationUtil.s
+
+# target to generate assembly for a file
+linearTriangulationUtil.cpp.s:
+	cd /gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build && $(MAKE) $(MAKESILENT) -f Edge_Reconst/CMakeFiles/edge_reconstruction.dir/build.make Edge_Reconst/CMakeFiles/edge_reconstruction.dir/linearTriangulationUtil.cpp.s
+.PHONY : linearTriangulationUtil.cpp.s
+
 util.o: util.cpp.o
 .PHONY : util.o
 
@@ -444,6 +468,9 @@ help:
 	@echo "... lemsvpe_CH/vgl_polygon_scan_iterator_CH.o"
 	@echo "... lemsvpe_CH/vgl_polygon_scan_iterator_CH.i"
 	@echo "... lemsvpe_CH/vgl_polygon_scan_iterator_CH.s"
+	@echo "... linearTriangulationUtil.o"
+	@echo "... linearTriangulationUtil.i"
+	@echo "... linearTriangulationUtil.s"
 	@echo "... util.o"
 	@echo "... util.i"
 	@echo "... util.s"

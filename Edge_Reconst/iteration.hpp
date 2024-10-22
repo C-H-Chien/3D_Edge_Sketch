@@ -5,6 +5,32 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <chrono>
+#include <assert.h>
+#include <string>
+#include <ctime>
+#include <omp.h>
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include "../Edge_Reconst/util.hpp"
+#include "../Edge_Reconst/PairEdgeHypo.hpp"
+#include "../Edge_Reconst/getReprojectedEdgel.hpp"
+#include "../Edge_Reconst/getQuadrilateral.hpp"
+#include "../Edge_Reconst/getSupportedEdgels.hpp"
+#include "../Edge_Reconst/getOrientationList.hpp"
+#include "../Edge_Reconst/linearTriangulationUtil.hpp"
+#include "../Edge_Reconst/definitions.h"
+#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
+#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
+#include "../Edge_Reconst/subpixel_point_set.hpp"
+#include "../Edge_Reconst/file_reader.hpp"
+#include "../Edge_Reconst/edge_mapping.hpp"
+#include "../Edge_Reconst/iteration.hpp"
 
 // Forward declarations of any classes or structs used
 class EdgeMapping;
