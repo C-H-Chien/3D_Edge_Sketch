@@ -52,6 +52,15 @@ using namespace MultiviewGeometryUtil;
 //> Yilin Zheng (yilin_zheng@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
 // =========================================================================================================================
+
+Eigen::Vector3d transformToWorldCoordinates(const Eigen::Vector3d& point, 
+                                            const Eigen::Matrix3d& R, 
+                                            const Eigen::Vector3d& T) {
+    // Apply the inverse transformation to convert the point to world coordinates
+    return R.transpose() * (point - T);
+}
+
+
 void printEdge3DToHypothesisAndSupports(
     const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
                              std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
@@ -709,6 +718,16 @@ int main(int argc, char **argv) {
           // Project 3D edges to view i
           Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
           projectedEdgesList.push_back(projectedEdges);
+      }
+
+      Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
+      Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
+
+      Eigen::MatrixXd Gamma1s_world(Edges_3D.rows(), 3);
+      for (int i = 0; i < Edges_3D.rows(); ++i) {
+          Eigen::Vector3d point_camera = Edges_3D.row(i).transpose();
+          Eigen::Vector3d point_world = transformToWorldCoordinates(point_camera, R_ref, T_ref);
+          Gamma1s_world.row(i) = point_world.transpose();
       }
 
       readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
