@@ -489,8 +489,8 @@ Eigen::MatrixXd core_pipeline(
       ftime = omp_get_wtime();
       exec_time = ftime - itime;
       totaltime += exec_time;
-      std::cout << "It took "<< exec_time <<" second(s) to finish this round."<<std::endl;
-      std::cout << "End of using OpenMP parallelization." << std::endl;
+      //std::cout << "It took "<< exec_time <<" second(s) to finish this round."<<std::endl;
+      //std::cout << "End of using OpenMP parallelization." << std::endl;
     // #endif
   } //> End of pragma omp parallel
     
@@ -587,7 +587,7 @@ Eigen::MatrixXd core_pipeline(
     }
 
     tend = clock() - tstart; 
-    std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to generate the final edge pair for output file."<<std::endl;
+    //std::cout << "It took "<< double(tend)/double(CLOCKS_PER_SEC) <<" second(s) to generate the final edge pair for output file."<<std::endl;
     std::cout << "Number of pairs found till this round: " << paired_edge_final.rows()<<std::endl;
 
     thresh_EDG /= 2; 
@@ -697,37 +697,44 @@ int main(int argc, char **argv) {
     readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
     readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
 
-    for (int iteration = 0; iteration < 1; iteration++) {
-        // Call the core pipeline function to reconstruct 3D edges
-        Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+    for (int iteration = 0; iteration < 2; iteration++) {
 
-        // Project the 3D edges to each view 
-        std::vector<Eigen::MatrixXd> projectedEdgesList;
-        for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
-            // Project 3D edges to view i
-            Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
-            projectedEdgesList.push_back(projectedEdges);
-        }
+      std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
-        readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
+      Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
 
-        std::vector<std::vector<int>> claimedEdgesList;
-        double threshold = 2.0;  
+      // Project the 3D edges to each view 
+      std::vector<Eigen::MatrixXd> projectedEdgesList;
+      for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
+          // Project 3D edges to view i
+          Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
+          projectedEdgesList.push_back(projectedEdges);
+      }
 
-        // Find the claimed edges for each frame
-        for (int i = 0; i < projectedEdgesList.size(); ++i) {
-            std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
-            claimedEdgesList.push_back(claimedEdges);
-        }
+      readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
 
-        // Use the selectBestViews function to determine the two frames with the least supported edges
-        std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
-        
-        // Assign the best views to the hypothesis indices
-        hyp01_view_indx = bestViews.first;
-        hyp02_view_indx = bestViews.second;
+      std::vector<std::vector<int>> claimedEdgesList;
+      double threshold = 2.0;  
 
-        std::cout << "Iteration " << iteration+1 << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
+      // Find the claimed edges for each frame
+      for (int i = 0; i < projectedEdgesList.size(); ++i) {
+          std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
+          claimedEdgesList.push_back(claimedEdges);
+      }
+
+      // Use the selectBestViews function to determine the two frames with the least supported edges
+      std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
+      
+      // Assign the best views to the hypothesis indices
+      hyp01_view_indx = bestViews.first;
+      hyp02_view_indx = bestViews.second;
+
+      All_Edgels.clear();
+      projectedEdgesList.clear();
+      claimedEdgesList.clear();
+      d = 0;
+      q = 0;
+      file_idx = 0;
     }
 
     return 0;

@@ -1,7 +1,7 @@
 //> Macros
 
 //> 3D Edge Sketch Settings
-#define NUM_OF_OPENMP_THREADS      (32)                 //> Number of CPU cores to run 3D Edge Sketch in parallel
+#define NUM_OF_OPENMP_THREADS      (1)                 //> Number of CPU cores to run 3D Edge Sketch in parallel
 //#define HYPO1_VIEW_INDX            (6)                  //> Index of the 1st hypothesis view
 //#define HYPO2_VIEW_INDX            (8)                  //> Index of the 2nd hypothesis view
 #define delta                      (0.3)                //> edge location perturbation
