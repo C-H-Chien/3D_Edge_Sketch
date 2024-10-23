@@ -649,13 +649,23 @@ Eigen::MatrixXd core_pipeline(
       }
     }
     else {
+      Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
+      Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
+
+      Eigen::MatrixXd Gamma1s_world(Gamma1s.rows(), 3);
+      for (int i = 0; i < Gamma1s.rows(); ++i) {
+          Eigen::Vector3d point_camera = Gamma1s.row(i).transpose();
+          Eigen::Vector3d point_world = transformToWorldCoordinates(point_camera, R_ref, T_ref);
+          Gamma1s_world.row(i) = point_world.transpose();
+      }
+
       std::cout<< "pipeline finished" <<std::endl;
       std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
       std::ofstream myfile2;
       std::string Output_File_Path2 = "../../outputs/Gamma1s_" + DATASET_NAME + "_" + SCENE_NAME + "_" + std::to_string(hyp01_view_indx)+"n"+std::to_string(hyp02_view_indx)+"_t32to"+std::to_string(thresh_EDG) + "_delta" + deltastr +"_theta" + std::to_string(OREN_THRESH) + "_N" + std::to_string(MAX_NUM_OF_SUPPORT_VIEWS) + ".txt";
       std::cout << Output_File_Path2 << std::endl;
       myfile2.open (Output_File_Path2);
-      myfile2 << Gamma1s;
+      myfile2 << Gamma1s_world;
       myfile2.close();
     }
 
@@ -673,6 +683,7 @@ Eigen::MatrixXd core_pipeline(
     //                   << "] from Image " << image_number << "\n";
     //     }
     // }
+    
     return Gamma1s;
   }
 }
@@ -718,16 +729,6 @@ int main(int argc, char **argv) {
           // Project 3D edges to view i
           Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
           projectedEdgesList.push_back(projectedEdges);
-      }
-
-      Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
-      Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
-
-      Eigen::MatrixXd Gamma1s_world(Edges_3D.rows(), 3);
-      for (int i = 0; i < Edges_3D.rows(); ++i) {
-          Eigen::Vector3d point_camera = Edges_3D.row(i).transpose();
-          Eigen::Vector3d point_world = transformToWorldCoordinates(point_camera, R_ref, T_ref);
-          Gamma1s_world.row(i) = point_world.transpose();
       }
 
       readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
