@@ -28,7 +28,7 @@
 
 //> Debugging purpose
 #define DEBUG                      (0)
-#define DEBUG_READ_FILES           (true)
+#define DEBUG_READ_FILES           (false)
 
 //> Some useful macros
 #define LOG_INFOR_MESG(info_msg)        printf("\033[1;32m[INFO] %s\033[0m\n", std::string(info_msg).c_str() );

@@ -17,6 +17,10 @@
 #include <omp.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <vector>
+#include <Eigen/Dense>
+#include <algorithm> 
+#include <utility>  
 #include "../Edge_Reconst/util.hpp"
 #include "../Edge_Reconst/PairEdgeHypo.hpp"
 #include "../Edge_Reconst/getReprojectedEdgel.hpp"
@@ -39,7 +43,9 @@ Eigen::MatrixXd project3DEdgesToView(
     const Eigen::MatrixXd& edges3D, 
     const Eigen::Matrix3d& R, 
     const Eigen::Vector3d& T, 
-    const Eigen::Matrix3d& K
+    const Eigen::Matrix3d& K,
+    const Eigen::Matrix3d& R_hyp01, 
+    const Eigen::Vector3d& T_hpy01
 );
 
 std::vector<int> findClosestObservedEdges(
@@ -49,9 +55,7 @@ std::vector<int> findClosestObservedEdges(
 );
 
 std::pair<int, int> selectBestViews(
-    const std::vector<std::vector<int>>& claimedEdges, 
-    const std::vector<Eigen::Vector3d>& cameraPositions, 
-    double baselineThreshold
+    const std::vector<std::vector<int>>& claimedEdges
 );
 
 #endif  // ITERATION_HPP

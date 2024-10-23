@@ -14,6 +14,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+
 //> Include functions
 #include "../Edge_Reconst/util.hpp"
 #include "../Edge_Reconst/PairEdgeHypo.hpp"
@@ -493,7 +494,6 @@ Eigen::MatrixXd core_pipeline(
     // #endif
   } //> End of pragma omp parallel
     
-
     //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
     // .....
     //Finalize Paired Edges
@@ -604,7 +604,7 @@ Eigen::MatrixXd core_pipeline(
         std::cout << Edge_File_PathH12 << std::endl;
 #endif
         file_idx ++;
-        Eigen::MatrixXd Edgels; //> Declare loclly, ensuring the memory addresses are different for different frames
+        Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
         Edge_File.open(Edge_File_PathH12, std::ios_base::in);
         if (!Edge_File) { 
           LOG_FILE_ERROR("Edge file not existed!\n"); exit(1); 
@@ -652,75 +652,83 @@ Eigen::MatrixXd core_pipeline(
 
     // After all operations in the main function, add the following to print the structure
 
-    std::cout << "Printing all 3D edges and their corresponding supporting edges:\n";
+    // std::cout << "Printing all 3D edges and their corresponding supporting edges:\n";
 
-    for (const auto& [edge_3D, supporting_edges] : edgeMapping.edge_3D_to_supporting_edges) {
-        // Print the 3D edge
-        std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
+    // for (const auto& [edge_3D, supporting_edges] : edgeMapping.edge_3D_to_supporting_edges) {
+    //     // Print the 3D edge
+    //     std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
 
-        // Print all supporting 2D edges and their image numbers
-        for (const auto& [supporting_edge, image_number] : supporting_edges) {
-            std::cout << "    Supporting Edge: [" << supporting_edge(0) << ", " << supporting_edge(1) 
-                      << "] from Image " << image_number << "\n";
-        }
-    }
+    //     // Print all supporting 2D edges and their image numbers
+    //     for (const auto& [supporting_edge, image_number] : supporting_edges) {
+    //         std::cout << "    Supporting Edge: [" << supporting_edge(0) << ", " << supporting_edge(1) 
+    //                   << "] from Image " << image_number << "\n";
+    //     }
+    // }
     return Gamma1s;
   }
 }
 
 
 
-
 int main(int argc, char **argv) {
 
-    int hyp01_view_indx = 6;
-    int hyp02_view_indx = 8;
+    int hyp01_view_indx  = 6;
+    int hyp02_view_indx  = 8;
 
     std::vector<Eigen::Matrix3d> All_R;
     std::vector<Eigen::Vector3d> All_T;
     std::vector<Eigen::Matrix3d> All_K;
+    std::vector<Eigen::MatrixXd> All_Edgels; 
+
     std::fstream Rmatrix_File, Tmatrix_File, Kmatrix_File;
+    std::fstream Edge_File;
+    
     Eigen::Matrix3d R_matrix, K_matrix;
     Eigen::Vector3d row_R, row_K, T_matrix;
     Eigen::Matrix3d K;
+    Eigen::Vector4d row_edge;
 
     // Read all required matrices (rotation, translation, and camera matrices)
     double rd_data;
     int d = 0, q = 0;
+    int file_idx = 0;
+
     readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
     readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
     readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
 
-    // Call the core pipeline function to reconstruct 3D edges
-    Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+    for (int iteration = 0; iteration < 1; iteration++) {
+        // Call the core pipeline function to reconstruct 3D edges
+        Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
 
-    // Project the 3D edges to each view (assuming we want to project back to all views for validation)
-    std::vector<Eigen::MatrixXd> projectedEdgesList;
-    for (int i = 0; i < DATASET_NUM_OF_FRAMES; ++i) {
-      Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K);
-      projectedEdgesList.push_back(projectedEdges);
+        // Project the 3D edges to each view 
+        std::vector<Eigen::MatrixXd> projectedEdgesList;
+        for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
+            // Project 3D edges to view i
+            Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
+            projectedEdgesList.push_back(projectedEdges);
+        }
+
+        readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
+
+        std::vector<std::vector<int>> claimedEdgesList;
+        double threshold = 2.0;  
+
+        // Find the claimed edges for each frame
+        for (int i = 0; i < projectedEdgesList.size(); ++i) {
+            std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
+            claimedEdgesList.push_back(claimedEdges);
+        }
+
+        // Use the selectBestViews function to determine the two frames with the least supported edges
+        std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
+        
+        // Assign the best views to the hypothesis indices
+        hyp01_view_indx = bestViews.first;
+        hyp02_view_indx = bestViews.second;
+
+        std::cout << "Iteration " << iteration+1 << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
     }
 
-    std::vector<Eigen::MatrixXd> observedEdgesList;  
-    std::vector<std::vector<int>> claimedEdgesList;
-    double threshold = 1.0;  
-
-    // for (int i = 0; i < projectedEdgesList.size(); ++i) {
-    //     std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], observedEdgesList[i], threshold);
-    //     claimedEdgesList.push_back(claimedEdges);
-    // }
-
-    // // Use the selectBestViews function to determine the best pair of views for further analysis
-    // std::vector<Eigen::Vector3d> cameraPositions;  // Fill with the positions of each camera view
-    // double baselineThreshold = 0.5;  // Minimum baseline distance to consider
-    // std::pair<int, int> bestViews = selectBestViews(claimedEdgesList, cameraPositions, baselineThreshold);
-
-    // // Print the selected best views
-    // std::cout << "Best views selected: " << bestViews.first << " and " << bestViews.second << std::endl;
-
-    // // Print or save the reconstructed 3D edges and other results as needed
-    // std::cout << "Reconstructed 3D edges:\n" << Edges_3D << std::endl;
-
-    // return 0;
+    return 0;
 }
-

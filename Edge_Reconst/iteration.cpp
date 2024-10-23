@@ -3,13 +3,14 @@
 using namespace MultiviewGeometryUtil;
 
 
-Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen::Matrix3d& R, const Eigen::Vector3d& T, const Eigen::Matrix3d& K) {
+Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen::Matrix3d& R, const Eigen::Vector3d& T, const Eigen::Matrix3d& K, const Eigen::Matrix3d& R_hyp01, const Eigen::Vector3d& T_hpy01) {
 
     Eigen::MatrixXd edges2D(edges3D.rows(), 2);
 
     for (int i = 0; i < edges3D.rows(); ++i) {
         Eigen::Vector3d point3D = edges3D.row(i).transpose();
-        Eigen::Vector3d point_camera = R * point3D + T;
+        Eigen::Vector3d world_point3D = R_hyp01.transpose() * (point3D - T_hpy01);
+        Eigen::Vector3d point_camera = R * world_point3D + T;
 
         // Check if the Z value is zero to avoid division by zero
         if (point_camera(2) == 0) {
@@ -49,22 +50,23 @@ std::vector<int> findClosestObservedEdges(const Eigen::MatrixXd& projectedEdges,
 
 
 
-std::pair<int, int> selectBestViews(const std::vector<std::vector<int>>& claimedEdges, const std::vector<Eigen::Vector3d>& cameraPositions, double baselineThreshold) {
-    int bestView1 = -1, bestView2 = -1;
-    int minClaimedEdges = std::numeric_limits<int>::max();
+std::pair<int, int> selectBestViews(const std::vector<std::vector<int>>& claimedEdges) {
+    std::vector<std::pair<int, int>> frameSupportCounts;
 
-    for (int i = 0; i < claimedEdges.size(); ++i) {
-        for (int j = i + 1; j < claimedEdges.size(); ++j) {
-            double baseline = (cameraPositions[i] - cameraPositions[j]).norm();
-            if (baseline > baselineThreshold) {
-                int totalClaimedEdges = claimedEdges[i].size() + claimedEdges[j].size();
-                if (totalClaimedEdges < minClaimedEdges) {
-                    minClaimedEdges = totalClaimedEdges;
-                    bestView1 = i;
-                    bestView2 = j;
-                }
-            }
-        }
+    for (int i = 0; i < claimedEdges.size(); i++) {
+        int numSupportedEdges = claimedEdges[i].size();
+        frameSupportCounts.push_back({i, numSupportedEdges});
     }
+
+    std::sort(frameSupportCounts.begin(), frameSupportCounts.end(), 
+              [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+                  return a.second < b.second;
+              });
+
+    int bestView1 = frameSupportCounts[0].first;
+    int bestView2 = frameSupportCounts[1].first;
+
+    std::cout << "Selected frames with the least supported edges: " << bestView1 << " and " << bestView2 << std::endl;
+
     return {bestView1, bestView2};
 }
