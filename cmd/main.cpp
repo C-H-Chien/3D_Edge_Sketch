@@ -717,7 +717,7 @@ int main(int argc, char **argv) {
     readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
     readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
 
-    for (int iteration = 0; iteration < 2; iteration++) {
+    for (int iteration = 0; iteration < 5; iteration++) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 

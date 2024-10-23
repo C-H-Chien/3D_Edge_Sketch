@@ -1,57 +1,43 @@
-%> Read from the output .txt 3D edges file and plot 3D edges as 3D points
-%
-%> TODO: add 3D tangents
+%> Automatically plot every 3D edge file in the folder with a different color
 %
 %> (c) LEMS, Brown University
 %> chiang-heng chien
 
-% Define the path from which the output 3D edges file comes
+% Define the folder path containing the 3D edge output files
 data_folder_path = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/outputs/";
 
-% Some settings which define the output file name
-dataset_name = "ABC-NEF";
-object_name  = "00000006";
-delta        = "03";
-theta        = "15";
-N            = "4";
+% Specify the common pattern in the file names
+file_pattern = "Gamma1s_*.txt";
 
-% Define the first set of indices (6 and 8)
-H1_index_1 = "6";
-H2_index_1 = "8";
+% Get all files matching the pattern
+edge_files = dir(fullfile(data_folder_path, file_pattern));
 
-output_file_name_1 = strcat("Gamma1s_", dataset_name, "_", object_name, "_", H1_index_1, "n", H2_index_1, ...
-                          "_t32to0_delta", delta, "_theta", theta, "_N", N, ".txt");
+% Define a set of colors to be used for different files
+colors = lines(length(edge_files));  % Generate a set of distinct colors using the 'lines' colormap
 
-% Define the second set of indices (28 and 47)
-H1_index_2 = "28";
-H2_index_2 = "47";
-
-output_file_name_2 = strcat("Gamma1s_", dataset_name, "_", object_name, "_", H1_index_2, "n", H2_index_2, ...
-                          "_t32to0_delta", delta, "_theta", theta, "_N", N, ".txt");
-
-% Read the first file
-edges_file_read_1 = fopen(fullfile(data_folder_path, output_file_name_1), 'r');
-ldata_1 = textscan(edges_file_read_1, '%f\t%f\t%f', 'CollectOutput', true);
-edges_3d_1 = double(ldata_1{1,1});
-fclose(edges_file_read_1);
-
-% Read the second file
-edges_file_read_2 = fopen(fullfile(data_folder_path, output_file_name_2), 'r');
-ldata_2 = textscan(edges_file_read_2, '%f\t%f\t%f', 'CollectOutput', true);
-edges_3d_2 = double(ldata_2{1,1});
-fclose(edges_file_read_2);
-
-% Plot the first set of edges
-figure(2);
+% Create a figure for plotting
+figure;
 hold on;
-plot3(edges_3d_1(:,1), edges_3d_1(:,2), -edges_3d_1(:,3), 'Color', 'r', 'Marker', '.', 'LineStyle', 'none');
 
-% Plot the second set of edges
-plot3(edges_3d_2(:,1), edges_3d_2(:,2), -edges_3d_2(:,3), 'Color', 'b', 'Marker', '.', 'LineStyle', 'none');
+% Loop through each file and plot its edges in 3D
+for i = 1:length(edge_files)
+    % Read the current file
+    current_file_path = fullfile(data_folder_path, edge_files(i).name);
+    edges_file_read = fopen(current_file_path, 'r');
+    ldata = textscan(edges_file_read, '%f\t%f\t%f', 'CollectOutput', true);
+    edges_3d = double(ldata{1,1});
+    fclose(edges_file_read);
+
+    % Plot the edges using a different color for each file
+    plot3(edges_3d(:,1), edges_3d(:,2), -edges_3d(:,3), 'Color', colors(i, :), 'Marker', '.', 'LineStyle', 'none');
+end
 
 % Set the plot settings
 [az, el] = view(gca);
 axis equal;
 axis off;
 set(gcf, 'color', 'w');
-legend('H1=6, H2=8', 'H1=28, H2=47');
+
+% Add a legend for each file
+legend({edge_files.name}, 'Interpreter', 'none');
+hold off;
