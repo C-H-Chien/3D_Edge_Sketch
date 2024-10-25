@@ -5,17 +5,18 @@ import yaml.loadFile
 
 %> Set 1 to Write_to_Projmatrix_Files is writing projection matrices as a 
 %  series of .projmatrix files, if necessary. This is mainly used for multiview curve sketch
-Write_to_Projmatrix_Files = 1;
+Write_to_Projmatrix_Files = 0;
 Write_rotations_and_translations_in_files = 1;
 
 %> curve points sampled from ABC dataset's parametrized representation
 % input_curves = load("curves.mat").curve_points;
 
 %> yml file containing matrices of all the views
-media_storage = "/oscar/data/bkimia/zqiwu/3D_Edge_Sketch/datasets/";
-dataset_name = "ABC-NEF/";
-object_tag_name = "00000006";
-mfiledir = strcat(media_storage, "/oscar/data/bkimia/zqiwu/3D_Edge_Sketch/datasets/", dataset_name);
+media_storage   = "/oscar/data/bkimia/Datasets/";
+dataset_name    = "ABC-NEF/";
+object_tag_name = "00000568";
+RnT_folder_name = "RnT/";
+mfiledir = strcat(media_storage, dataset_name);
 ymlPath = fullfile(mfiledir, object_tag_name, "transforms_train.json");
 
 data = yaml.loadFile(ymlPath);
@@ -98,8 +99,8 @@ end
 
 %> Write rotations and translations for the use of edge sketch
 if Write_rotations_and_translations_in_files == 1
-    rot_path = fullfile(mfiledir, object_tag_name, "R_matrix.txt");
-    transl_path = fullfile(mfiledir, object_tag_name, "T_matrix.txt");
+    rot_path = fullfile(mfiledir, object_tag_name, RnT_folder_name, "R_matrix.txt");
+    transl_path = fullfile(mfiledir, object_tag_name, RnT_folder_name, "T_matrix.txt");
     writematrix(rotation_matrix_by_view, rot_path, "FileType", "text", "Delimiter", "\t");
     writematrix(translation_vector_by_view, transl_path, "FileType", "text", "Delimiter", "\t");
 end

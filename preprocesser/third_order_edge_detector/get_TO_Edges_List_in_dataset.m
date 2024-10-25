@@ -10,16 +10,20 @@
 
 % mfiledir = fileparts(mfilename('fullpath'));
 %> Path to where the dataset is
-Dataset_Path = '/oscar/data/bkimia/zqiwu/3D_Edge_Sketch/datasets/';
-Dataset_Name = 'ABC-NEF/';      %> ABC-NEF or Replica
-Scene_Name = '00000006/';          %> 00009779
-Image_Folder_Name = 'train_img/';   %> train_img for ABC-NEF, color for Replica
-postfix = '.png';               %> .png for ABC-NEF, .jpg for Replica
+Dataset_Path        = '/oscar/data/bkimia/Datasets/';
+Dataset_Name        = 'ABC-NEF/';      %> ABC-NEF or Replica
+Scene_Name          = '00000568/';          %> 00009779
+Image_Folder_Name   = 'train_img/';   %> train_img for ABC-NEF, color for Replica
+postfix             = '.png';               %> .png for ABC-NEF, .jpg for Replica
+Edges_Folder_Name   = 'Edges/';
 All_Images = dir(strcat(Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name, '*', postfix));
 Full_Accessible_Path = [Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name];
 
+%> Whether to save .edg files for curve sketch
+save_edg_files = 0;
+
 %> Settings for the Third-Order Edge Detector
-thresh = 2;
+thresh = 1;
 sigma = 1;
 n = 1;
 format long;
@@ -39,12 +43,14 @@ for i = 1:size(All_Images, 1)
     TO_edges(yy,:) = [];
 
     %> Save as .edg file
-    save_edg([Full_Accessible_Path, TO_Edges_Name, '.edg'], TO_edges, [size(img_, 1), size(img_, 2)]);
+    if save_edg_files == 1
+        save_edg([Full_Accessible_Path, TO_Edges_Name, '.edg'], TO_edges, [size(img_, 1), size(img_, 2)]);
+    end
 
     %> Save as .txt file
     img_index               = extractBefore(string(All_Images(i).name), "_");
     output_edges_file_txt   = strcat("Edge_", img_index, "_t", string(thresh), ".txt");
-    output_file_path        = fullfile(Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name, output_edges_file_txt);
+    output_file_path        = fullfile(Dataset_Path, Dataset_Name, Scene_Name, Edges_Folder_Name, output_edges_file_txt);
     writematrix(TO_edges, output_file_path, 'Delimiter', 'tab');
     
     %> Monitor the progress

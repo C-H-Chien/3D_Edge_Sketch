@@ -153,7 +153,10 @@ namespace PairEdgeHypothesis {
         return edgels_HYPO2;
     }
 
-    Eigen::MatrixXd pair_edge_hypothesis::edgelsHYPO2correct(Eigen::MatrixXd edgels_HYPO2,  Eigen::MatrixXd edgel_HYPO1, Eigen::Matrix3d F21, Eigen::Matrix3d F12, Eigen::MatrixXd HYPO2_idx_raw){
+    Eigen::MatrixXd pair_edge_hypothesis::edgelsHYPO2correct(
+        Eigen::MatrixXd edgels_HYPO2,  Eigen::MatrixXd edgel_HYPO1, 
+        Eigen::Matrix3d F21, Eigen::Matrix3d F12, Eigen::MatrixXd HYPO2_idx_raw)
+    {
         Eigen::MatrixXd edgels_HYPO2_corrected;
         Eigen::MatrixXd xy1_H1;
         xy1_H1.conservativeResize(1,3);
@@ -202,8 +205,10 @@ namespace PairEdgeHypothesis {
             double dist1    = sqrt((x_currH1 - edgel_HYPO1(0,0))*(x_currH1 - edgel_HYPO1(0,0))+(y_currH1 - edgel_HYPO1(0,1))*(y_currH1 - edgel_HYPO1(0,1)));
             if(dist1 < circleR && dist2 < circleR){
                 edgels_HYPO2_corrected.conservativeResize(idx_correct+1,10);
-                edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), x_currH2, y_currH2,  edgels_HYPO2(idx_hypo2,2),  edgels_HYPO2(idx_hypo2,3), HYPO2_idx_raw(idx_hypo2), idx_hypo2;
-                idx_correct +=1;
+                edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), \
+                                                           x_currH2, y_currH2, edgels_HYPO2(idx_hypo2,2), edgels_HYPO2(idx_hypo2,3), \
+                                                           HYPO2_idx_raw(idx_hypo2), idx_hypo2;
+                idx_correct++;
             }
             //std::cout << "dist1: " << dist1 << ", dist2: " << dist2 << ", circleR: " << circleR << std::endl;
 

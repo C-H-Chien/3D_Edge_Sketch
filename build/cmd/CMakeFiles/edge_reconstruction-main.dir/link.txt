@@ -1,1 +1,0 @@
-/usr/bin/c++   -fopenmp -O3 -DNDEBUG -march=native -ffast-math CMakeFiles/edge_reconstruction-main.dir/main.cpp.o -o ../bin/edge_reconstruction-main  ../lib/libedge_reconstruction.a -L/usr/lib64 -lpthread 

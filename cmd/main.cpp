@@ -60,7 +60,6 @@ Eigen::Vector3d transformToWorldCoordinates(const Eigen::Vector3d& point,
     return R.transpose() * (point - T);
 }
 
-
 void printEdge3DToHypothesisAndSupports(
     const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
                              std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
@@ -108,64 +107,8 @@ void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_
     }
 }
 
-
-void getInteriorBuckets(
-  const vgl_polygon_CH<double> &p, bool boundary_in, 
-  std::vector<Eigen::Vector2d> &InteriorBucketCoordinates
-)
-{
-  // iterate
-  vgl_polygon_scan_iterator_CH<double> it(p, boundary_in); 
-
-  //std::cout << "Interior points:\n";
-  for (it.reset(); it.next(); ) {
-    int y = it.scany();
-    for (int x = it.startx(); x <= it.endx(); ++x) {
-      //std::cout << "(" << x << "," << y << ") ";
-      Eigen::Vector2d Bucket_Coordinate;
-      Bucket_Coordinate << x, y;
-      InteriorBucketCoordinates.push_back( Bucket_Coordinate );
-    }
-  }
-  //std::cout << std::endl;
-}
-
-void getEdgelsFromInteriorQuadrilateral( 
-  const subpixel_point_set &sp_pts, 
-  const std::vector<Eigen::Vector2d> &InteriorBucketCoordinates,
-  std::vector< unsigned > &Edgel_Indices 
-)
-{
-  //> Traverse all buckets inside the quadrilateral
-  //std::cout << "Number of interior bucket coordinates: " << InteriorBucketCoordinates.size()<<std::endl;
-  //std::cout<<"bucket coordinates(starts from 0) are shown below: "<<std::endl;
-  for (int bi = 0; bi < InteriorBucketCoordinates.size(); bi++) {
-    
-    unsigned const i_col = InteriorBucketCoordinates[bi](0);  //> x
-    unsigned const i_row = InteriorBucketCoordinates[bi](1);  //> y
-
-    //std::cout<< "coordinate " << bi << ": "<< i_col<< ", "<< i_row <<std::endl;
-    //std::cout<< i_col << ", "<< i_row << ";" <<std::endl;
-
-
-    //> Ignore if bucket coordinate exceeds image boundary
-    if (i_row >= sp_pts.nrows() || i_col >= sp_pts.ncols()) continue;
-
-    //> Traverse all edgels inside the bucket
-    for (unsigned k = 0; k < sp_pts.cells()[i_row][i_col].size(); ++k) {
-      unsigned const p2_idx = sp_pts.cells()[i_row][i_col][k];
-      //std::cout<< "inlier edge index(starts from 0): " << p2_idx <<std::endl;
-      Edgel_Indices.push_back(p2_idx);
-    }
-    //std::cout << "sp_pts.cells()[i_row][i_col].size(): " << sp_pts.cells()[i_row][i_col].size() <<std::endl;
-  }
-  //std::cout << "number of edges in this quadrilateral found by bucketing: "<< Edgel_Indices.size() <<std::endl;
-}
-
-
-
-
 Eigen::MatrixXd core_pipeline(
+  file_reader& Data_Reader,
   const int hyp01_view_indx, 
   const int hyp02_view_indx,
   const std::vector<Eigen::Matrix3d>& All_R, 
@@ -174,11 +117,10 @@ Eigen::MatrixXd core_pipeline(
   const Eigen::Matrix3d K,
   double rd_data,
   int d,
-  int q){
+  int q )
+{  
+  LOG_INFOR_MESG("pipeline start");
 
-
-  std::cout<< "pipeline start" <<std::endl;
-  
   clock_t tstart, tend;
   double itime, ftime, exec_time, totaltime=0;
   int thresh_EDG = THRESHEDG;
@@ -198,8 +140,8 @@ Eigen::MatrixXd core_pipeline(
     int H_idx = 0;
     
     // Read edgel files
-    readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, thresh_EDG);  
-    readHypothesisEdgelFiles(hyp01_view_indx, hyp02_view_indx, All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
+    Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, thresh_EDG);  
+    Data_Reader.readHypothesisEdgelFiles(hyp01_view_indx, hyp02_view_indx, All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
   
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< PREPROCESSING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     clock_t tstart_pre, tend_pre;
@@ -265,6 +207,7 @@ Eigen::MatrixXd core_pipeline(
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< First loop: loop over all edgels from hypothesis view 1 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     //<<<<<<<<<<< Identify pairs of edge, correct the positions of the edges from Hypo2, and store the paired edges >>>>>>>>>>>>>>>>//
     //#pragma omp for schedule(static, nthreads)
+    LOG_INFOR_MESG(std::to_string(Edges_HYPO1.rows()));
     for (int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++) {
 
       //Edge Boundary Check: not too close to boundary
@@ -371,7 +314,7 @@ Eigen::MatrixXd core_pipeline(
                       fabs(thresh_ore31_1 - thresh_ore32_2),
                       fabs(thresh_ore31_2 - thresh_ore32_1),
                       fabs(thresh_ore31_2 - thresh_ore32_2);
-          if(anglediff.maxCoeff() <= parallelangle){
+          if(anglediff.maxCoeff() <= PARALLEL_EPIPOLAR_LINE_ANGLE){
             isparallel.row(idx_pair) << 0;
           }
 
@@ -608,7 +551,7 @@ Eigen::MatrixXd core_pipeline(
         }else{
           H_idx = hyp02_view_indx;
         }
-       std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
+       std::string Edge_File_PathH12 = DATASET_PATH + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
 #if DEBUG_READ_FILES
         std::cout << Edge_File_PathH12 << std::endl;
 #endif
@@ -697,6 +640,9 @@ int main(int argc, char **argv) {
     int hyp01_view_indx  = 6;
     int hyp02_view_indx  = 8;
 
+    //> Initiate a file_reader class object
+    file_reader Data_Reader; 
+
     std::vector<Eigen::Matrix3d> All_R;
     std::vector<Eigen::Vector3d> All_T;
     std::vector<Eigen::Matrix3d> All_K;
@@ -717,15 +663,15 @@ int main(int argc, char **argv) {
     int file_idx = 0;
 
 ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
-    readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
-    readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
-    readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
+    Data_Reader.readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
+    Data_Reader.readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
+    Data_Reader.readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
 
     for (int iteration = 0; iteration < 5; iteration++) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
-      Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+      Eigen::MatrixXd Edges_3D = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
 
       if (all_Edges_3D.rows() == 0) {
         all_Edges_3D = Edges_3D;
@@ -742,7 +688,7 @@ int main(int argc, char **argv) {
           projectedEdgesList.push_back(projectedEdges);
       }
 
-      readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
+      Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
 
       std::vector<std::vector<int>> claimedEdgesList;
       double threshold = 2.0;  

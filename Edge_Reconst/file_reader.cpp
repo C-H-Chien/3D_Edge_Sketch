@@ -1,12 +1,17 @@
 #include "file_reader.hpp"
 
+file_reader::file_reader() {
+  // dataset_name_sequence_path = std::to_string(DATASET_PATH) + std::to_string(DATASET_NAME) + std::to_string(SCENE_NAME);
+  dataset_name_sequence_path = DATASET_PATH + DATASET_NAME + "/" + SCENE_NAME;
+}
+
 // Function to read edgel files
-void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &file_idx, int &d, int &q, int thresh_EDG) {
+void file_reader::readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &file_idx, int &d, int &q, int thresh_EDG) {
     std::cout << "Reading edgel files ...\n";
     
     //> Looping over all frames and read corresponding third-order edgels
     while(file_idx < DATASET_NUM_OF_FRAMES) {
-        std::string Edge_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(file_idx) + "_t" + std::to_string(thresh_EDG) + ".txt";
+        std::string Edge_File_Path = dataset_name_sequence_path + "/Edges/Edge_" + std::to_string(file_idx) + "_t" + std::to_string(thresh_EDG) + ".txt";
         #if DEBUG_READ_FILES
             std::cout << Edge_File_Path << std::endl;
         #endif
@@ -14,7 +19,8 @@ void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge
         Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
         Edge_File.open(Edge_File_Path, std::ios_base::in);
         if (!Edge_File) {
-            LOG_FILE_ERROR("Edge file not existed!"); exit(1);
+            LOG_FILE_ERROR("Edge file not existed!"); 
+            exit(1);
         }else {
             Edgels.resize(1,4);
             while (Edge_File >> rd_data) {
@@ -37,17 +43,14 @@ void readEdgelFiles(std::vector<Eigen::MatrixXd> &All_Edgels, std::fstream &Edge
     std::cout << "Edge file loading finished" << std::endl;
 }
 
-
-
-
-void readHypothesisEdgelFiles(int hyp01_view_indx, int hyp02_view_indx, std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG){
+void file_reader::readHypothesisEdgelFiles(int hyp01_view_indx, int hyp02_view_indx, std::vector<Eigen::MatrixXd> &All_Edgels_H12, std::fstream &Edge_File, double &rd_data, Eigen::Vector4d &row_edge, int &H_idx, int &file_idx, int &d, int &q, int thresh_EDG){
     while(file_idx < 3) {
         if(file_idx == 1){
             H_idx = hyp01_view_indx;
         }else{
             H_idx = hyp02_view_indx;
         }
-        std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_"+std::to_string(H_idx)+"_t" + std::to_string(thresh_EDG) + ".txt"; 
+        std::string Edge_File_PathH12 = dataset_name_sequence_path + "/Edges/Edge_"+std::to_string(H_idx)+"_t" + std::to_string(thresh_EDG) + ".txt"; 
         #if DEBUG_READ_FILES
             std::cout << Edge_File_PathH12 << std::endl;
         #endif
@@ -79,12 +82,13 @@ void readHypothesisEdgelFiles(int hyp01_view_indx, int hyp02_view_indx, std::vec
 }
 
 
-void readRmatrix(std::vector<Eigen::Matrix3d> &All_R, Eigen::Matrix3d &R_matrix, std::fstream &Rmatrix_File, double &rd_data, Eigen::Vector3d &row_R, int &d, int &q){
+void file_reader::readRmatrix(std::vector<Eigen::Matrix3d> &All_R, Eigen::Matrix3d &R_matrix, std::fstream &Rmatrix_File, double &rd_data, Eigen::Vector3d &row_R, int &d, int &q){
   
-  std::string Rmatrix_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/RnT/R_matrix.txt";
+  std::string Rmatrix_File_Path = dataset_name_sequence_path + "/RnT/R_matrix.txt";
   Rmatrix_File.open(Rmatrix_File_Path, std::ios_base::in);
   if (!Rmatrix_File) { 
-    LOG_FILE_ERROR("R_matrix file not existed!"); exit(1); 
+    std::cout << Rmatrix_File_Path << std::endl;
+    LOG_FILE_ERROR("R_matrix"); exit(1); 
   }
   else {
     while (Rmatrix_File >> rd_data) {
@@ -107,9 +111,9 @@ void readRmatrix(std::vector<Eigen::Matrix3d> &All_R, Eigen::Matrix3d &R_matrix,
   std::cout<< "R matrix loading finished" <<std::endl;
 }
 
-void readTmatrix(std::vector<Eigen::Vector3d> &All_T, Eigen::Vector3d &T_matrix, std::fstream &Tmatrix_File, double &rd_data, int &d, int &q){
+void file_reader::readTmatrix(std::vector<Eigen::Vector3d> &All_T, Eigen::Vector3d &T_matrix, std::fstream &Tmatrix_File, double &rd_data, int &d, int &q){
 
-    std::string Tmatrix_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/RnT/T_matrix.txt";
+    std::string Tmatrix_File_Path = dataset_name_sequence_path + "/RnT/T_matrix.txt";
     Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
     if (!Tmatrix_File) { 
         LOG_FILE_ERROR("T_matrix file not existed!"); exit(1); 
@@ -131,9 +135,9 @@ void readTmatrix(std::vector<Eigen::Vector3d> &All_T, Eigen::Vector3d &T_matrix,
 }
 
 
-void readK(std::fstream &Kmatrix_File, std::vector<Eigen::Matrix3d> &All_K, Eigen::Matrix3d &K, Eigen::Matrix3d &K_matrix, Eigen::Vector3d &row_K, double &rd_data, int &d, int &q){
+void file_reader::readK(std::fstream &Kmatrix_File, std::vector<Eigen::Matrix3d> &All_K, Eigen::Matrix3d &K, Eigen::Matrix3d &K_matrix, Eigen::Vector3d &row_K, double &rd_data, int &d, int &q){
     if(IF_MULTIPLE_K == 1){
-        std::string Kmatrix_File_Path = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/RnT/K_matrix.txt";
+        std::string Kmatrix_File_Path = dataset_name_sequence_path + "/RnT/K_matrix.txt";
         Kmatrix_File.open(Kmatrix_File_Path, std::ios_base::in);
     if (!Kmatrix_File) { 
       LOG_FILE_ERROR("K_matrix file not existed!"); exit(1);
