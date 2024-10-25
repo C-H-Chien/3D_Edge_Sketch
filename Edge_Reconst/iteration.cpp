@@ -9,8 +9,8 @@ Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen
 
     for (int i = 0; i < edges3D.rows(); ++i) {
         Eigen::Vector3d point3D = edges3D.row(i).transpose();
-        Eigen::Vector3d world_point3D = R_hyp01.transpose() * (point3D - T_hpy01);
-        Eigen::Vector3d point_camera = R * world_point3D + T;
+        //Eigen::Vector3d world_point3D = R_hyp01.transpose() * (point3D - T_hpy01);
+        Eigen::Vector3d point_camera = R * point3D + T;
 
         // Check if the Z value is zero to avoid division by zero
         if (point_camera(2) == 0) {

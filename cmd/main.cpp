@@ -257,14 +257,14 @@ Eigen::MatrixXd core_pipeline(
     std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
     std::cout << "nthreads: " << nthreads << "." << std::endl;
 
-  #pragma omp parallel
-  {
+  //#pragma omp parallel
+  //{
     //> Local array stacking all supported indices
     std::vector<Eigen::MatrixXd> local_thread_supported_indices;
 
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< First loop: loop over all edgels from hypothesis view 1 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     //<<<<<<<<<<< Identify pairs of edge, correct the positions of the edges from Hypo2, and store the paired edges >>>>>>>>>>>>>>>>//
-    #pragma omp for schedule(static, nthreads)
+    //#pragma omp for schedule(static, nthreads)
     for (int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++) {
 
       //Edge Boundary Check: not too close to boundary
@@ -490,7 +490,7 @@ Eigen::MatrixXd core_pipeline(
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of first loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
 
     //> A critical session to stack all local supported indices
-    #pragma omp critical
+    //#pragma omp critical
     all_supported_indices.insert(all_supported_indices.end(), local_thread_supported_indices.begin(), local_thread_supported_indices.end());
 
     //OpenMP Parallelization Time Reporting
@@ -501,7 +501,7 @@ Eigen::MatrixXd core_pipeline(
       //std::cout << "It took "<< exec_time <<" second(s) to finish this round."<<std::endl;
       //std::cout << "End of using OpenMP parallelization." << std::endl;
     // #endif
-  } //> End of pragma omp parallel
+  //} //> End of pragma omp parallel
     
     //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
     // .....
@@ -667,6 +667,8 @@ Eigen::MatrixXd core_pipeline(
       myfile2.open (Output_File_Path2);
       myfile2 << Gamma1s_world;
       myfile2.close();
+      Gamma1s = Gamma1s_world;
+
     }
 
     // After all operations in the main function, add the following to print the structure
@@ -707,12 +709,14 @@ int main(int argc, char **argv) {
     Eigen::Vector3d row_R, row_K, T_matrix;
     Eigen::Matrix3d K;
     Eigen::Vector4d row_edge;
+    Eigen::MatrixXd all_Edges_3D;
 
     // Read all required matrices (rotation, translation, and camera matrices)
     double rd_data;
     int d = 0, q = 0;
     int file_idx = 0;
 
+///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
     readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
     readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
     readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
@@ -723,11 +727,18 @@ int main(int argc, char **argv) {
 
       Eigen::MatrixXd Edges_3D = core_pipeline(hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
 
+      if (all_Edges_3D.rows() == 0) {
+        all_Edges_3D = Edges_3D;
+      } else {
+          all_Edges_3D.conservativeResize(all_Edges_3D.rows() + Edges_3D.rows(), 3);
+          all_Edges_3D.bottomRows(Edges_3D.rows()) = Edges_3D;
+      }
+
       // Project the 3D edges to each view 
       std::vector<Eigen::MatrixXd> projectedEdgesList;
       for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
           // Project 3D edges to view i
-          Eigen::MatrixXd projectedEdges = project3DEdgesToView(Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
+          Eigen::MatrixXd projectedEdges = project3DEdgesToView(all_Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
           projectedEdgesList.push_back(projectedEdges);
       }
 

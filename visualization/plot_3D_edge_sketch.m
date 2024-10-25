@@ -21,9 +21,11 @@ hold on;
 
 % Loop through each file and plot its edges in 3D
 for i = 1:length(edge_files)
+%for i = 3:4
     % Read the current file
     current_file_path = fullfile(data_folder_path, edge_files(i).name);
     edges_file_read = fopen(current_file_path, 'r');
+    disp(current_file_path);
     ldata = textscan(edges_file_read, '%f\t%f\t%f', 'CollectOutput', true);
     edges_3d = double(ldata{1,1});
     fclose(edges_file_read);
