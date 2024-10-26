@@ -42,14 +42,14 @@ using namespace MultiviewGeometryUtil;
 // main function
 //
 // Modifications
-//    Chiang-Heng Chien  23-07-18    Initially create a blank repository with minor multiview geometry utility functions.
-//    Chiang-Heng Chien  23-08-19    Add edited bucketing method from VXL. If this repo is to be integrated under LEMSVPE 
-//                                   scheme, simply use vgl library from VXL. This is very easy to be handled.
-//    Chiang-Heng Chien  23-08-27    Add bucket building and fetching edgels from bucket coordinate code for efficient edgel
-//                                   accessing from buckets inside a given quadrilateral.
+//    Chien  24-07-06    Yilin finalizes the implementation of 3D edge sketch for reconstructing 3D edges from only one pair 
+//                       of hypothesis view.
+//    Chien  24-10-24    Qiwu continues the implementation enabling 3D edge sketch from multiple pairs of hypothesis images
+//                       selected based on the projecting the 3D edges to 2D images.
 //
 //> (c) LEMS, Brown University
 //> Yilin Zheng (yilin_zheng@brown.edu)
+//> Qiwu Zhang (qiwu_zhang@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
 // =========================================================================================================================
 
@@ -62,8 +62,8 @@ Eigen::Vector3d transformToWorldCoordinates(const Eigen::Vector3d& point,
 
 void printEdge3DToHypothesisAndSupports(
     const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
-                             std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
-                             EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
+    std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
+    EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
 {
     for (const auto& [edge_3D, value] : edge_3D_to_hypothesis_and_supports) {
         // Extract 3D edge
@@ -117,10 +117,10 @@ Eigen::MatrixXd core_pipeline(
   const Eigen::Matrix3d K,
   double rd_data,
   int d,
-  int q )
-{  
-  LOG_INFOR_MESG("pipeline start");
-
+  int q)
+{
+  std::cout<< "pipeline start" <<std::endl;
+  
   clock_t tstart, tend;
   double itime, ftime, exec_time, totaltime=0;
   int thresh_EDG = THRESHEDG;
@@ -155,7 +155,6 @@ Eigen::MatrixXd core_pipeline(
     
     // Assign variables required for Hypo1 and Hypo2
     Eigen::MatrixXd Edges_HYPO1 = All_Edgels_H12[0];
-    Eigen::MatrixXd Edges_pairs = All_Edgels[hyp01_view_indx];
     Eigen::Matrix3d R1          = All_R[hyp01_view_indx];
     Eigen::Vector3d T1          = All_T[hyp01_view_indx];
     Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
@@ -178,12 +177,12 @@ Eigen::MatrixXd core_pipeline(
     Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
     Eigen::Matrix3d Tx  = util.getSkewSymmetric(T21);
     Eigen::Matrix3d E   = util.getEssentialMatrix(R21, T21);
-    Eigen::Matrix3d F   = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
+    Eigen::Matrix3d F21 = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
     Eigen::Matrix3d R12 = util.getRelativePose_R21(R2, R1);
     Eigen::Vector3d T12 = util.getRelativePose_T21(R2, R1, T2, T1);  
     Eigen::Matrix3d F12 = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R12, T12);  
     // Initializations for paired edges between Hypo1 and Hypo 2
-    Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_pairs.rows(),50,-2);
+    Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1_all.rows(),50,-2);
     // Compute epipolar wedges angles rance between Hypo1 and Hypo2 and find the angle range 1, defining a valid range for matching edges in Hypo2
     Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
     Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
@@ -191,24 +190,18 @@ Eigen::MatrixXd core_pipeline(
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   
     std::cout<< "Threshold is : " << thresh_EDG << std::endl;
-   
-    unsigned nthreads = NUM_OF_OPENMP_THREADS;
-    omp_set_num_threads(nthreads);
-    int ID = omp_get_thread_num();
     itime = omp_get_wtime();
-    std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
-    std::cout << "nthreads: " << nthreads << "." << std::endl;
 
-  //#pragma omp parallel
-  //{
+  #pragma omp parallel
+  {
     //> Local array stacking all supported indices
     std::vector<Eigen::MatrixXd> local_thread_supported_indices;
+    int edge_idx;
 
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< First loop: loop over all edgels from hypothesis view 1 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     //<<<<<<<<<<< Identify pairs of edge, correct the positions of the edges from Hypo2, and store the paired edges >>>>>>>>>>>>>>>>//
-    //#pragma omp for schedule(static, nthreads)
-    LOG_INFOR_MESG(std::to_string(Edges_HYPO1.rows()));
-    for (int edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++) {
+    #pragma omp for schedule(static, NUM_OF_OPENMP_THREADS)
+    for (edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++) {
 
       //Edge Boundary Check: not too close to boundary
       if(Edges_HYPO1(edge_idx,0) < 10 || Edges_HYPO1(edge_idx,0) > IMGCOLS-10 || Edges_HYPO1(edge_idx,1) < 10 || Edges_HYPO1(edge_idx,1) > IMGROWS-10){
@@ -236,7 +229,7 @@ Eigen::MatrixXd core_pipeline(
       Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
       //Correct Edgels in Hypo2 Based on Epipolar Constraints
       Eigen::MatrixXd edgel_HYPO1  = Edges_HYPO1.row(edge_idx);
-      Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F, F12, HYPO2_idx_raw);
+      Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
       //Organize the Final Edge Data
       Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
       Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
@@ -314,8 +307,10 @@ Eigen::MatrixXd core_pipeline(
                       fabs(thresh_ore31_1 - thresh_ore32_2),
                       fabs(thresh_ore31_2 - thresh_ore32_1),
                       fabs(thresh_ore31_2 - thresh_ore32_2);
-          if(anglediff.maxCoeff() <= PARALLEL_EPIPOLAR_LINE_ANGLE){
+          if(anglediff.maxCoeff() <= PARALLEL_EPIPOLAR_LINE_ANGLE) {
             isparallel.row(idx_pair) << 0;
+            supported_indice_current.row(idx_pair) << -2;
+            continue;
           }
 
           // Find all the edges fall inside the two epipolar wedges intersection on validation view 
@@ -332,13 +327,21 @@ Eigen::MatrixXd core_pipeline(
           // Get support from validation view for this gamma 3
           double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
 
-          // Get the supporting edge idx from this validation view (if isnotparallel)
-          if (isparallel(idx_pair,0) != 0){
-            supported_indice_current.row(idx_pair) << supported_link_indx;
-          }else{
-            supported_indice_current.row(idx_pair) << -2;
+          if (supported_link_indx >= TO_Edges_VALID.rows()) {
+            LOG_ERROR("Something fishy here!\n");
+            std::cout << "(VALID_INDX, supported_link_indx, TO_Edges_VALID.rows())) = (" << VALID_INDX << ", " << supported_link_indx << ", " << TO_Edges_VALID.rows() << ")" << std::endl;
           }
-          if (supported_link_indx != -2 && isparallel(idx_pair,0) != 0){
+
+          // Get the supporting edge idx from this validation view
+          supported_indice_current.row(idx_pair) << supported_link_indx;
+          // supported_indice_current.row(idx_pair) << (isparallel(idx_pair,0) != 0) ? supported_link_indx : (-2);
+          // if (isparallel(idx_pair,0) != 0){
+          //   supported_indice_current.row(idx_pair) << supported_link_indx;
+          // }
+          // else{
+          //   supported_indice_current.row(idx_pair) << -2;
+          // }
+          if (supported_link_indx != -2) {
             supported_indices_stack.conservativeResize(stack_idx+1,2);
             supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
             isempty_link = false;
@@ -381,7 +384,7 @@ Eigen::MatrixXd core_pipeline(
       int numofmax = std::count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
       
       //Threshold Check
-      if( double(max_support) < MAX_NUM_OF_SUPPORT_VIEWS){
+      if( max_support < MAX_NUM_OF_SUPPORT_VIEWS){
         continue;
       }
       int finalpair = -2;
@@ -401,7 +404,7 @@ Eigen::MatrixXd core_pipeline(
 
         //Select the Final Paired Edge
         Eigen::Vector3d coeffs;
-        coeffs = F * pt_edgel_HYPO1;
+        coeffs = F21 * pt_edgel_HYPO1;
         Eigen::MatrixXd Edge_Pts;
         Edge_Pts.conservativeResize(max_index.size(),2);
         for(int maxidx = 0; maxidx<max_index.size(); maxidx++){
@@ -413,10 +416,8 @@ Eigen::MatrixXd core_pipeline(
         double denomDist = coeffs(0)*coeffs(0) + coeffs(1)*coeffs(1);
         denomDist = sqrt(denomDist);
         Eigen::VectorXd dist = numDist.cwiseAbs()/denomDist;
-        //std::cout << dist <<std::endl;
         Eigen::VectorXd::Index   minIndex;
         double min_dist = dist.minCoeff(&minIndex);
-        // std::cout << "min_dist: "<< min_dist <<std::endl;
         if(min_dist > DIST_THRESH){
           continue;
         }
@@ -424,44 +425,48 @@ Eigen::MatrixXd core_pipeline(
       }
       else {
         finalpair = int(indices_stack_unique[int(maxIndex)]);
-        // std::cout << "single: " << finalpair <<std::endl;
       }
-      // linearTriangulation code already exist
+
+      //> paired_edge is a row vector continaing (hypo1 edge index), (paired hypo2 edge index), (paired validation edge indices)
       paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
       //std::cout << "paired_edge.row(edge_idx): \n" << paired_edge.row(edge_idx) <<std::endl;
     }
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of first loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
 
     //> A critical session to stack all local supported indices
-    //#pragma omp critical
+    #pragma omp critical
     all_supported_indices.insert(all_supported_indices.end(), local_thread_supported_indices.begin(), local_thread_supported_indices.end());
-
-    //OpenMP Parallelization Time Reporting
-    // #if defined(_OPENMP)
-      ftime = omp_get_wtime();
-      exec_time = ftime - itime;
-      totaltime += exec_time;
-      //std::cout << "It took "<< exec_time <<" second(s) to finish this round."<<std::endl;
-      //std::cout << "End of using OpenMP parallelization." << std::endl;
-    // #endif
-  //} //> End of pragma omp parallel
+  } //> End of pragma omp parallel
+  ftime = omp_get_wtime();
+  exec_time = ftime - itime;
+  totaltime += exec_time;
     
-    //> CH: Make pair_edge locally, and merge them to a global variable once the for loop is finished.
-    // .....
-    //Finalize Paired Edges
+    //> Finalize Paired Edges
     tstart = clock();
     int pair_num = 0;
-    Eigen::MatrixXd paired_edge_final;
-    for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++){
-      if(paired_edge(pair_idx,0) != -2 && paired_edge(pair_idx,0) != -3){
-        paired_edge_final.conservativeResize(pair_num+1,50);
-        paired_edge_final.row(pair_num) << paired_edge.row(pair_idx);
+    std::vector<int> valid_pair_index;
+    for(int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++) {
+      if(paired_edge(pair_idx,0) != -2 && paired_edge(pair_idx,0) != -3) {
+        valid_pair_index.push_back(pair_idx);
         pair_num++;
       }
     }
-    //std::cout << "number of pairs is: "<< pair_num << std::endl;
-    Eigen::MatrixXd Gamma1s;
+    Eigen::MatrixXd paired_edge_final = Eigen::MatrixXd::Constant(pair_num,50,-2);
+    for(int i = 0; i < pair_num; i++){
+      paired_edge_final.row(i) << paired_edge.row(valid_pair_index[i]);
+    }
+    std::string info_str = "Number of pairs is: " + std::to_string(pair_num);
+    LOG_INFOR_MESG(info_str);
 
+#if DEBUG_PAIRED_EDGES
+    std::ofstream debug_file_paired_edges;
+    std::string Output_File_Path_Paired_Edges = "../../outputs/paired_edge_final.txt";
+    debug_file_paired_edges.open(Output_File_Path_Paired_Edges);
+    debug_file_paired_edges << paired_edge_final;
+    debug_file_paired_edges.close();
+#endif
+    
+    Eigen::MatrixXd Gamma1s;
     // gamma3 calculation, next view index pre
     if(thresh_EDG == 1) {
       std::vector<Eigen::Matrix3d> Rs;
@@ -477,12 +482,17 @@ Eigen::MatrixXd core_pipeline(
       std::cout << paired_edge_final.rows() << std::endl;
       Gamma1s.conservativeResize(paired_edge_final.rows(),3);
       for (int pair_idx = 0; pair_idx < paired_edge_final.rows(); pair_idx++) {
-        Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1_all.row(int(paired_edge_final(pair_idx,0)));
-        Eigen::MatrixXd edgels_HYPO2  = Edges_HYPO2_all.row(int(paired_edge_final(pair_idx,1)));
-        Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));
+        // std::cout << pair_idx << ", ";
+        // std::cout << paired_edge_final(pair_idx,0) << ", " << paired_edge_final(pair_idx,1) << ", ";
+        Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1_all.row(int(paired_edge_final(pair_idx,0)));  //> edge index in hypo 1
+        Eigen::MatrixXd edgel_HYPO2   = Edges_HYPO2_all.row(int(paired_edge_final(pair_idx,1)));  //> edge index in hypo 2
+        // Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));      //> WTF is this? Edges_HYPO1 = Edges_HYPO1_all
+        Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));
 
+        // std::cout << "P0, ";
+        Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgel_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
 
-        Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F, F12, HYPO2_idx_raw);
+        // std::cout << "P1, ";
 
         if (HYPO2_idx_raw.rows() == 0 || edgels_HYPO2_corrected.rows() == 0) {
           std::cout << "No valid matches found for edge " << pair_idx << " at threshold " << thresh_EDG << std::endl;
@@ -493,6 +503,8 @@ Eigen::MatrixXd core_pipeline(
         Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
         Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(),4);
         Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
+
+        // std::cout << "P2, ";
         
         Eigen::Vector2d pt_H1 = Edges_HYPO1_final.row(0);
         Eigen::Vector2d pt_H2 = Edges_HYPO2_final.row(0);
@@ -500,31 +512,46 @@ Eigen::MatrixXd core_pipeline(
         pts.push_back(pt_H1);
         pts.push_back(pt_H2);
 
-        Eigen::Vector3d edge_pt_3D = linearTriangulation(2, pts, Rs,Ts,K1_v);
+        //> The resultant edge_pt_3D is 3D edges under the first hypothesis view coordinate
+        Eigen::Vector3d edge_pt_3D = linearTriangulation(2, pts, Rs, Ts, K1_v);
+
+        // std::cout << "P3, ";
 
         if (edge_pt_3D.hasNaN()) {
-          std::cerr << "Error: NaN values detected in edge_pt_3D for pair_idx: " << pair_idx << std::endl;
+          LOG_ERROR("NaN values detected in edge_pt_3D for pair_idx: ");
+          Gamma1s.row(pair_idx)<< 0, 0, 0;  //> TBD
+          std::cerr << pair_idx << std::endl;
           continue;
         }
 
-        Gamma1s.row(pair_idx)<< edge_pt_3D(0),edge_pt_3D(1),edge_pt_3D(2);
+        Gamma1s.row(pair_idx) << edge_pt_3D(0), edge_pt_3D(1), edge_pt_3D(2);
         edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, hyp01_view_indx);
         edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, hyp02_view_indx);
+
+        // std::cout << "P4, ";
 
         ///////////////////////////////// Add support from validation views /////////////////////////////////
         std::vector<std::pair<int, Eigen::Vector2d>> validation_support_edges;
 
         // Loop through validation views to find the supporting edges
+        int val_indx_in_paired_edge_array = 2; // +2 accounts for the first two columns for HYPO1 and HYPO2
         for (int val_idx = 0; val_idx < DATASET_NUM_OF_FRAMES; ++val_idx) {
             if (val_idx == hyp01_view_indx || val_idx == hyp02_view_indx) {
-                continue;  // Skip hypothesis views
+              continue;  // Skip hypothesis views
             }
 
             // Retrieve support index from paired_edge for the current validation view
-            int support_idx = paired_edge_final(pair_idx, val_idx + 2);  // +2 accounts for the first two columns for HYPO1 and HYPO2
+            int support_idx = paired_edge_final(pair_idx, val_indx_in_paired_edge_array);  
             if (support_idx != -2) {
                 // Retrieve the supporting edge from the validation view
                 Eigen::MatrixXd edges_for_val_frame = All_Edgels[val_idx];
+
+                if (edges_for_val_frame.rows() <= support_idx) {
+                  LOG_ERROR("Something buggy here!\n");
+                  std::cout << "(pair_idx, val_idx, edges_for_val_frame.rows(), support_idx) = (" << pair_idx << ", " << val_idx << ", " << edges_for_val_frame.rows() << ", " << support_idx << ")" << std::endl;
+                  Eigen::Vector2d supporting_edge = edges_for_val_frame.row(support_idx).head<2>();
+                }
+
                 Eigen::Vector2d supporting_edge = edges_for_val_frame.row(support_idx).head<2>();
 
                 // Store validation view and the supporting edge
@@ -533,9 +560,14 @@ Eigen::MatrixXd core_pipeline(
                 // Add the supporting edge to the edgeMapping for the 3D edge
                 edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
             }
+            val_indx_in_paired_edge_array++;
         }
+
+        // std::cout << "P5, " << paired_edge_final.rows() << std::endl;
+        
         ///////////////////////////////// Add support from validation views /////////////////////////////////
       }
+      std::cout << "Finish for-loop" << std::endl;
     }
 
     tend = clock() - tstart; 
@@ -551,7 +583,7 @@ Eigen::MatrixXd core_pipeline(
         }else{
           H_idx = hyp02_view_indx;
         }
-       std::string Edge_File_PathH12 = DATASET_PATH + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
+       std::string Edge_File_PathH12 = "../../datasets/" + DATASET_NAME + "/" + SCENE_NAME + "/Edges/Edge_" + std::to_string(H_idx)+"_t"+std::to_string(thresh_EDG)+".txt"; 
 #if DEBUG_READ_FILES
         std::cout << Edge_File_PathH12 << std::endl;
 #endif
@@ -611,7 +643,6 @@ Eigen::MatrixXd core_pipeline(
       myfile2 << Gamma1s_world;
       myfile2.close();
       Gamma1s = Gamma1s_world;
-
     }
 
     // After all operations in the main function, add the following to print the structure
@@ -630,17 +661,15 @@ Eigen::MatrixXd core_pipeline(
     // }
     
     return Gamma1s;
-  }
+  } //> while-loop
 }
-
-
 
 int main(int argc, char **argv) {
 
     int hyp01_view_indx  = 6;
     int hyp02_view_indx  = 8;
 
-    //> Initiate a file_reader class object
+    //> initiate data reader class object
     file_reader Data_Reader; 
 
     std::vector<Eigen::Matrix3d> All_R;
@@ -662,12 +691,18 @@ int main(int argc, char **argv) {
     int d = 0, q = 0;
     int file_idx = 0;
 
-///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
+    ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
     Data_Reader.readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
     Data_Reader.readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
     Data_Reader.readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
 
-    for (int iteration = 0; iteration < 5; iteration++) {
+    unsigned nthreads = NUM_OF_OPENMP_THREADS;
+    omp_set_num_threads(nthreads);
+    int ID = omp_get_thread_num();
+    std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
+    std::cout << "nthreads: " << nthreads << "." << std::endl;
+
+    for (int iteration = 0; iteration < 2; iteration++) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
@@ -675,9 +710,10 @@ int main(int argc, char **argv) {
 
       if (all_Edges_3D.rows() == 0) {
         all_Edges_3D = Edges_3D;
-      } else {
-          all_Edges_3D.conservativeResize(all_Edges_3D.rows() + Edges_3D.rows(), 3);
-          all_Edges_3D.bottomRows(Edges_3D.rows()) = Edges_3D;
+      } 
+      else {
+        all_Edges_3D.conservativeResize(all_Edges_3D.rows() + Edges_3D.rows(), 3);
+        all_Edges_3D.bottomRows(Edges_3D.rows()) = Edges_3D;
       }
 
       // Project the 3D edges to each view 
@@ -713,6 +749,7 @@ int main(int argc, char **argv) {
       q = 0;
       file_idx = 0;
     }
+    LOG_INFOR_MESG("3D Edge Sketch is Finished!");
 
     return 0;
 }
