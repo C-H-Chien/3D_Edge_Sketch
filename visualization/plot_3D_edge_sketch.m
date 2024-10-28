@@ -6,8 +6,8 @@
 % Define the folder path containing the 3D edge output files
 data_folder_path = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/outputs/";
 
-% Specify the common pattern in the file names
-file_pattern = "Gamma1s_*.txt";
+% Specify the common pattern in the file names to only include '00000568'
+file_pattern = "Gamma1s_*00000568*.txt";
 
 % Get all files matching the pattern
 edge_files = dir(fullfile(data_folder_path, file_pattern));
@@ -21,7 +21,6 @@ hold on;
 
 % Loop through each file and plot its edges in 3D
 for i = 1:length(edge_files)
-%for i = 3:4
     % Read the current file
     current_file_path = fullfile(data_folder_path, edge_files(i).name);
     edges_file_read = fopen(current_file_path, 'r');

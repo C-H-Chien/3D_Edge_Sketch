@@ -18,7 +18,7 @@
 //> Dataset specific
 #define DATASET_PATH                  std::string("/gpfs/data/bkimia/Datasets/")
 #define DATASET_NAME                  std::string("ABC-NEF")   //> ABC-NEF/
-#define SCENE_NAME                    std::string("00000006")
+#define SCENE_NAME                    std::string("00000568")
 #define DATASET_NUM_OF_FRAMES         (50)
 #define IMGCOLS                       (800)
 #define IMGROWS                       (800)

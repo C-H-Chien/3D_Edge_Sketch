@@ -702,7 +702,7 @@ int main(int argc, char **argv) {
     std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
     std::cout << "nthreads: " << nthreads << "." << std::endl;
 
-    for (int iteration = 0; iteration < 2; iteration++) {
+    for (int iteration = 0; iteration < 10; iteration++) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
