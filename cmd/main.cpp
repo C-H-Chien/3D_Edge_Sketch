@@ -60,6 +60,7 @@ Eigen::Vector3d transformToWorldCoordinates(const Eigen::Vector3d& point,
     return R.transpose() * (point - T);
 }
 
+
 void printEdge3DToHypothesisAndSupports(
     const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
     std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
@@ -106,6 +107,8 @@ void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_
         std::cout << std::endl;  // Space between different matrices
     }
 }
+
+
 
 Eigen::MatrixXd core_pipeline(
   file_reader& Data_Reader,
@@ -664,10 +667,12 @@ Eigen::MatrixXd core_pipeline(
   } //> while-loop
 }
 
+
+
 int main(int argc, char **argv) {
 
-    int hyp01_view_indx  = 6;
-    int hyp02_view_indx  = 8;
+    int hyp01_view_indx  = 29;
+    int hyp02_view_indx  = 31;
 
     //> initiate data reader class object
     file_reader Data_Reader; 
@@ -702,7 +707,10 @@ int main(int argc, char **argv) {
     std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
     std::cout << "nthreads: " << nthreads << "." << std::endl;
 
-    for (int iteration = 0; iteration < 2; iteration++) {
+    bool sufficient_reconstruct = false;
+    int iteration = 0;
+
+    while (!sufficient_reconstruct) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
@@ -729,11 +737,18 @@ int main(int argc, char **argv) {
       std::vector<std::vector<int>> claimedEdgesList;
       double threshold = 2.0;  
 
-      // Find the claimed edges for each frame
+      int num_frames_with_sufficient_edges = 0;
       for (int i = 0; i < projectedEdgesList.size(); ++i) {
           std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
           claimedEdgesList.push_back(claimedEdges);
+          
+          if (All_Edgels[i].rows() > 0 && claimedEdges.size() >= 0.9 * All_Edgels[i].rows()) {
+              num_frames_with_sufficient_edges++;
+          }
       }
+
+      sufficient_reconstruct = (num_frames_with_sufficient_edges == DATASET_NUM_OF_FRAMES);
+
 
       // Use the selectBestViews function to determine the two frames with the least supported edges
       std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
@@ -742,12 +757,35 @@ int main(int argc, char **argv) {
       hyp01_view_indx = bestViews.first;
       hyp02_view_indx = bestViews.second;
 
+      if(iteration == 0){
+        std::string outputFilePath = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/bin/projected_vs_observed_edges.txt";
+        std::ofstream edgeFile(outputFilePath);
+        if (!edgeFile.is_open()) {
+            std::cerr << "Error opening file to write projected and observed edges." << std::endl;
+            return -1;
+        }
+
+        for (int frameIdx = 0; frameIdx < DATASET_NUM_OF_FRAMES; ++frameIdx) {
+            edgeFile << "Frame " << frameIdx + 1 << "\n";
+            edgeFile << "Projected Edges:\n";
+            for (int i = 0; i < projectedEdgesList[frameIdx].rows(); i++) {
+                edgeFile << projectedEdgesList[frameIdx](i, 0) << " " << projectedEdgesList[frameIdx](i, 1) << "\n";
+            }
+            edgeFile << "Observed Edges:\n";
+            for (int i = 0; i < All_Edgels[frameIdx].rows(); i++) {
+                edgeFile << All_Edgels[frameIdx](i, 0) << " " << All_Edgels[frameIdx](i, 1) << "\n";
+            }
+        }
+        edgeFile.close();
+      }
+
       All_Edgels.clear();
       projectedEdgesList.clear();
       claimedEdgesList.clear();
       d = 0;
       q = 0;
       file_idx = 0;
+      iteration++;
     }
     LOG_INFOR_MESG("3D Edge Sketch is Finished!");
 
