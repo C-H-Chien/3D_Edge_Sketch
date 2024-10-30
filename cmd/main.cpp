@@ -14,6 +14,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+//> YAML file data reader 
+#include <yaml-cpp/yaml.h>
 
 //> Include functions
 #include "../Edge_Reconst/util.hpp"
@@ -22,13 +24,13 @@
 #include "../Edge_Reconst/getQuadrilateral.hpp"
 #include "../Edge_Reconst/getSupportedEdgels.hpp"
 #include "../Edge_Reconst/getOrientationList.hpp"
-#include "../Edge_Reconst/linearTriangulationUtil.hpp"
+// #include "../Edge_Reconst/linearTriangulationUtil.hpp"
 #include "../Edge_Reconst/definitions.h"
 
 //> Added by CH: Efficient Bucketing Method
-#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
-#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
-#include "../Edge_Reconst/subpixel_point_set.hpp"
+// #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
+// #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
+// #include "../Edge_Reconst/subpixel_point_set.hpp"
 
 //Qiwu
 #include "../Edge_Reconst/file_reader.hpp"
@@ -52,63 +54,6 @@ using namespace MultiviewGeometryUtil;
 //> Qiwu Zhang (qiwu_zhang@brown.edu)
 //> Chiang-Heng Chien (chiang-heng_chien@brown.edu)
 // =========================================================================================================================
-
-Eigen::Vector3d transformToWorldCoordinates(const Eigen::Vector3d& point, 
-                                            const Eigen::Matrix3d& R, 
-                                            const Eigen::Vector3d& T) {
-    // Apply the inverse transformation to convert the point to world coordinates
-    return R.transpose() * (point - T);
-}
-
-
-void printEdge3DToHypothesisAndSupports(
-    const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
-    std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
-    EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
-{
-    for (const auto& [edge_3D, value] : edge_3D_to_hypothesis_and_supports) {
-        // Extract 3D edge
-        std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
-
-        // Extract the hypothesis edges from view 6 and view 8
-        const Eigen::Vector2d& hypothesis_edge_view6 = std::get<0>(value);
-        const Eigen::Vector2d& hypothesis_edge_view8 = std::get<1>(value);
-
-        std::cout << "    Hypothesis Edge (View 6): [" << hypothesis_edge_view6(0) << ", " << hypothesis_edge_view6(1) << "]\n";
-        std::cout << "    Hypothesis Edge (View 8): [" << hypothesis_edge_view8(0) << ", " << hypothesis_edge_view8(1) << "]\n";
-
-        // Extract the supporting edges with validation view numbers
-        const std::vector<std::pair<int, Eigen::Vector2d>>& validation_support_edges = std::get<2>(value);
-
-        // Loop through and print each supporting edge and its corresponding validation view number
-        for (size_t i = 0; i < validation_support_edges.size(); ++i) {
-            const auto& [val_view_num, support_edge] = validation_support_edges[i];
-            std::cout << "    Validation View " << val_view_num << ": Supporting Edge = [" 
-                      << support_edge(0) << ", " << support_edge(1) << "]\n";
-        }
-    }
-}
-
-void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_indices) {
-    std::cout << "Printing all supported indices:\n";
-    
-    // Loop through all matrices in all_supported_indices
-    for (size_t idx = 0; idx < all_supported_indices.size(); ++idx) {
-        std::cout << "Supported Indices for frame " << idx << ":\n";
-        const Eigen::MatrixXd &matrix = all_supported_indices[idx];
-        
-        // Loop through each row and column of the matrix
-        for (int row = 0; row < matrix.rows(); ++row) {
-            for (int col = 0; col < matrix.cols(); ++col) {
-                std::cout << std::fixed << std::setprecision(4) << matrix(row, col) << " ";
-            }
-            std::cout << std::endl;  // Move to the next line after printing all columns of a row
-        }
-        std::cout << std::endl;  // Space between different matrices
-    }
-}
-
-
 
 Eigen::MatrixXd core_pipeline(
   file_reader& Data_Reader,
@@ -157,38 +102,34 @@ Eigen::MatrixXd core_pipeline(
     GetOrientationList::get_OrientationList        getOre;
     
     // Assign variables required for Hypo1 and Hypo2
-    Eigen::MatrixXd Edges_HYPO1 = All_Edgels_H12[0];
-    Eigen::Matrix3d R1          = All_R[hyp01_view_indx];
-    Eigen::Vector3d T1          = All_T[hyp01_view_indx];
-    Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
-    Eigen::Matrix3d R2          = All_R[hyp02_view_indx];
-    Eigen::Vector3d T2          = All_T[hyp02_view_indx];
-    Eigen::MatrixXd Edges_HYPO1_all = All_Edgels[hyp01_view_indx];
-    Eigen::MatrixXd Edges_HYPO2_all = All_Edgels[hyp02_view_indx];
+    // Eigen::MatrixXd Edges_HYPO1 = All_Edgels_H12[0];
+    // Eigen::Matrix3d R1          = All_R[hyp01_view_indx];
+    // Eigen::Vector3d T1          = All_T[hyp01_view_indx];
+    // Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
+    // Eigen::Matrix3d R2          = All_R[hyp02_view_indx];
+    // Eigen::Vector3d T2          = All_T[hyp02_view_indx];
     // deal with multiple K scenario
-    Eigen::Matrix3d K1;
-    Eigen::Matrix3d K2;
-    if(IF_MULTIPLE_K == 1){
-      K1 = All_K[hyp01_view_indx];
-      K2 = All_K[hyp02_view_indx];
-    }else{
-      K1 = K;
-      K2 = K;
-    }
+    // Eigen::Matrix3d K1;
+    // Eigen::Matrix3d K2;
+    // if(IF_MULTIPLE_K == 1){
+    //   K1 = All_K[hyp01_view_indx];
+    //   K2 = All_K[hyp02_view_indx];
+    // }else{
+    //   K1 = K;
+    //   K2 = K;
+    // }
     // Relative pose calculation
-    Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
-    Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
-    Eigen::Matrix3d Tx  = util.getSkewSymmetric(T21);
-    Eigen::Matrix3d E   = util.getEssentialMatrix(R21, T21);
-    Eigen::Matrix3d F21 = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
-    Eigen::Matrix3d R12 = util.getRelativePose_R21(R2, R1);
-    Eigen::Vector3d T12 = util.getRelativePose_T21(R2, R1, T2, T1);  
-    Eigen::Matrix3d F12 = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R12, T12);  
-    // Initializations for paired edges between Hypo1 and Hypo 2
-    Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1_all.rows(),50,-2);
-    // Compute epipolar wedges angles rance between Hypo1 and Hypo2 and find the angle range 1, defining a valid range for matching edges in Hypo2
-    Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
-    Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
+    // Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
+    // Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
+    // Eigen::Matrix3d F21 = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
+    // Eigen::Matrix3d R12 = util.getRelativePose_R21(R2, R1);
+    // Eigen::Vector3d T12 = util.getRelativePose_T21(R2, R1, T2, T1);  
+    // Eigen::Matrix3d F12 = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R12, T12);  
+    
+    // Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+    
+    // Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
+    // Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
     
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   
@@ -487,9 +428,9 @@ Eigen::MatrixXd core_pipeline(
       for (int pair_idx = 0; pair_idx < paired_edge_final.rows(); pair_idx++) {
         // std::cout << pair_idx << ", ";
         // std::cout << paired_edge_final(pair_idx,0) << ", " << paired_edge_final(pair_idx,1) << ", ";
-        Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1_all.row(int(paired_edge_final(pair_idx,0)));  //> edge index in hypo 1
-        Eigen::MatrixXd edgel_HYPO2   = Edges_HYPO2_all.row(int(paired_edge_final(pair_idx,1)));  //> edge index in hypo 2
-        // Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));      //> WTF is this? Edges_HYPO1 = Edges_HYPO1_all
+        Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));  //> edge index in hypo 1
+        Eigen::MatrixXd edgel_HYPO2   = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));  //> edge index in hypo 2
+        // Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));      //> WTF is this? Edges_HYPO1 = Edges_HYPO1
         Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));
 
         // std::cout << "P0, ";
@@ -516,7 +457,7 @@ Eigen::MatrixXd core_pipeline(
         pts.push_back(pt_H2);
 
         //> The resultant edge_pt_3D is 3D edges under the first hypothesis view coordinate
-        Eigen::Vector3d edge_pt_3D = linearTriangulation(2, pts, Rs, Ts, K1_v);
+        Eigen::Vector3d edge_pt_3D = util.linearTriangulation(2, pts, Rs, Ts, K1_v);
 
         // std::cout << "P3, ";
 
@@ -633,7 +574,7 @@ Eigen::MatrixXd core_pipeline(
       Eigen::MatrixXd Gamma1s_world(Gamma1s.rows(), 3);
       for (int i = 0; i < Gamma1s.rows(); ++i) {
           Eigen::Vector3d point_camera = Gamma1s.row(i).transpose();
-          Eigen::Vector3d point_world = transformToWorldCoordinates(point_camera, R_ref, T_ref);
+          Eigen::Vector3d point_world = util.transformToWorldCoordinates(point_camera, R_ref, T_ref);
           Gamma1s_world.row(i) = point_world.transpose();
       }
 
@@ -667,50 +608,35 @@ Eigen::MatrixXd core_pipeline(
   } //> while-loop
 }
 
-
-
 int main(int argc, char **argv) {
 
-    int hyp01_view_indx  = 29;
-    int hyp02_view_indx  = 31;
+  //> YAML file path
+  std::string Edge_Sketch_Settings_Path = "../../3D_Edge_Sketch_Settings.yaml";
 
-    //> initiate data reader class object
-    file_reader Data_Reader; 
+  YAML::Node Edge_Sketch_Settings_Map;
+  try {
+		Edge_Sketch_Settings_Map = YAML::LoadFile(Edge_Sketch_Settings_Path);
+#if SHOW_EDGE_SKETCH_SETTINGS
+		std::cout << std::endl << Edge_Sketch_Settings_Map << std::endl << std::endl;
+#endif
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Exception: " << e.what() << std::endl;
+    return 0;
+	}
 
-    std::vector<Eigen::Matrix3d> All_R;
-    std::vector<Eigen::Vector3d> All_T;
-    std::vector<Eigen::Matrix3d> All_K;
-    std::vector<Eigen::MatrixXd> All_Edgels; 
+  EdgeSketch_Core( Edge_Sketch_Settings_Map );
 
-    std::fstream Rmatrix_File, Tmatrix_File, Kmatrix_File;
-    std::fstream Edge_File;
-    
-    Eigen::Matrix3d R_matrix, K_matrix;
-    Eigen::Vector3d row_R, row_K, T_matrix;
-    Eigen::Matrix3d K;
-    Eigen::Vector4d row_edge;
-    Eigen::MatrixXd all_Edges_3D;
+    // int hyp01_view_indx  = 6;
+    // int hyp02_view_indx  = 8;
 
     // Read all required matrices (rotation, translation, and camera matrices)
-    double rd_data;
-    int d = 0, q = 0;
     int file_idx = 0;
 
     ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
-    Data_Reader.readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
-    Data_Reader.readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
-    Data_Reader.readK(Kmatrix_File, All_K, K, K_matrix, row_K, rd_data, d, q);
+    
 
-    unsigned nthreads = NUM_OF_OPENMP_THREADS;
-    omp_set_num_threads(nthreads);
-    int ID = omp_get_thread_num();
-    std::cout << "Using " << nthreads << " threads for OpenMP parallelization." << std::endl;
-    std::cout << "nthreads: " << nthreads << "." << std::endl;
-
-    bool sufficient_reconstruct = false;
-    int iteration = 0;
-
-    while (!sufficient_reconstruct) {
+    for (int iteration = 0; iteration < 5; iteration++) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
@@ -737,18 +663,11 @@ int main(int argc, char **argv) {
       std::vector<std::vector<int>> claimedEdgesList;
       double threshold = 2.0;  
 
-      int num_frames_with_sufficient_edges = 0;
+      // Find the claimed edges for each frame
       for (int i = 0; i < projectedEdgesList.size(); ++i) {
           std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
           claimedEdgesList.push_back(claimedEdges);
-          
-          if (All_Edgels[i].rows() > 0 && claimedEdges.size() >= 0.9 * All_Edgels[i].rows()) {
-              num_frames_with_sufficient_edges++;
-          }
       }
-
-      sufficient_reconstruct = (num_frames_with_sufficient_edges == DATASET_NUM_OF_FRAMES);
-
 
       // Use the selectBestViews function to determine the two frames with the least supported edges
       std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
@@ -757,35 +676,12 @@ int main(int argc, char **argv) {
       hyp01_view_indx = bestViews.first;
       hyp02_view_indx = bestViews.second;
 
-      if(iteration == 0){
-        std::string outputFilePath = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/bin/projected_vs_observed_edges.txt";
-        std::ofstream edgeFile(outputFilePath);
-        if (!edgeFile.is_open()) {
-            std::cerr << "Error opening file to write projected and observed edges." << std::endl;
-            return -1;
-        }
-
-        for (int frameIdx = 0; frameIdx < DATASET_NUM_OF_FRAMES; ++frameIdx) {
-            edgeFile << "Frame " << frameIdx + 1 << "\n";
-            edgeFile << "Projected Edges:\n";
-            for (int i = 0; i < projectedEdgesList[frameIdx].rows(); i++) {
-                edgeFile << projectedEdgesList[frameIdx](i, 0) << " " << projectedEdgesList[frameIdx](i, 1) << "\n";
-            }
-            edgeFile << "Observed Edges:\n";
-            for (int i = 0; i < All_Edgels[frameIdx].rows(); i++) {
-                edgeFile << All_Edgels[frameIdx](i, 0) << " " << All_Edgels[frameIdx](i, 1) << "\n";
-            }
-        }
-        edgeFile.close();
-      }
-
       All_Edgels.clear();
       projectedEdgesList.clear();
       claimedEdgesList.clear();
       d = 0;
       q = 0;
       file_idx = 0;
-      iteration++;
     }
     LOG_INFOR_MESG("3D Edge Sketch is Finished!");
 

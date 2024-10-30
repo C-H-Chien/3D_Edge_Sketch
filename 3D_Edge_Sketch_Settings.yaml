@@ -1,0 +1,32 @@
+# %YAML:1.0
+
+#> 3D Edge Sketch Settings
+Num_Of_OMP_Threads: 32         #> Number of CPU cores to run 3D Edge Sketch in parallel
+Init_Hypo1_View_Index: 6
+Init_Hypo2_View_Index: 8
+delta: 0.3                        #> edge location perturbation
+delta_theta: 15                   #> \Delta \theta: orientation threshold
+Max_Num_Of_Support_Views: 4       #> N: minimal number of validation views supporting a hypothesis edge pair
+Multi_Thresh_Init_Thresh: 1       #> third-order edge threshold for 1st round of multi-thresholding
+Multi_Thresh_Final_Thresh: 1                 #> third-order edge threshold for last round of multi-thresholding
+Parallel_Epipolar_Line_Angle: 15  #> decide if the picked hypothesis view should be abandoned by the angle between two epipolar lines
+Reproj_Dist_Thresh: 2                    #> distance threshold between observed edge and reprojected edge on the validation view (probably not in use)
+circleR: 55                       #> threshold determining whether the distance between edges in hypothesis view 1 and 2 is small enough for them to be considered a match
+#NOT1STROUND: 0                    #> not sure what it is
+
+
+#> Dataset Settings
+Dataset_Path: /gpfs/data/bkimia/Datasets/
+Dataset_Name: ABC-NEF
+Scene_Name: 00000006
+Total_Num_Of_Images: 50
+fx: 1111.11136542426
+fy: 1111.11136542426
+cx: 399.500000000000
+cy: 399.500000000000
+Image_Rows: 800
+Image_Cols: 800
+Use_Multiple_K: false
+
+#> Others
+deltastr: 03                      #> string of delta value (used as part of the output file name). Must be consistent with the value of delta to reflect the setting in the file name.

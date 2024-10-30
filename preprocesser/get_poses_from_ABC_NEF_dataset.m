@@ -58,6 +58,9 @@ for i = 1:viewCnt
     %> Projection matrix. Before multiply K, let x be -x
     projMat = K * [-1 0 0; 0 1 0; 0 0 1] * trans;
 
+    %> The transformation matrix also has to make x become -x
+    trans = [-1 0 0; 0 1 0; 0 0 1] * trans;
+
     %> Rotation matrix.
     rotation_matrix_by_view(3*(i-1)+1:3*(i-1)+3, :) = trans(1:3, 1:3);
 
