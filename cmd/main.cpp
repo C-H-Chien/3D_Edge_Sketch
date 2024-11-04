@@ -289,11 +289,11 @@ CorePipelineOutput core_pipeline(
         Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
         // Compute Orientation Lists for Hypo1 and Validation View (Vali)
         Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
-        Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
+        auto [OreListdegree31, epipole_center_31] = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
 
         // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
         Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
-        Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+        auto [OreListdegree32, epipole_center_32] = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
         // Identify Parallel Edges
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
@@ -322,16 +322,17 @@ CorePipelineOutput core_pipeline(
           Eigen::MatrixXd edgels_32  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
 
 
-
           if (debug_print && written_frames.find(VALID_INDX) == written_frames.end()) {
               // Add frame to the set to mark it as written
               written_frames.insert(VALID_INDX);
 
-              // Write threshold values to the file
               std::ofstream thresh_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/threshold_ranges.txt", std::ios::app);
               if (thresh_file.is_open()) {
                   thresh_file << "frame #: " << VALID_INDX << "\n";
-                  thresh_file << "Thresh_ore21_1: " << thresh_ore21_1 << ", Thresh_ore21_2: " << thresh_ore21_2 << "\n\n";
+                  thresh_file << "Thresh_ore31_1: " << thresh_ore31_1 << ", Thresh_ore31_2: " << thresh_ore31_2 << "\n";
+                  thresh_file << "Thresh_ore32_1: " << thresh_ore32_1 << ", Thresh_ore32_2: " << thresh_ore32_2 << "\n";
+                  thresh_file << "Epipole Center Hypo1: (" << epipole_center_31(0) << ", " << epipole_center_31(1) << ")\n";
+                  thresh_file << "Epipole Center Hypo2: (" << epipole_center_32(0) << ", " << epipole_center_32(1) << ")\n\n";
                   thresh_file.close();
               } else {
                   std::cerr << "Error opening file to save threshold values.\n";
