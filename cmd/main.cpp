@@ -246,6 +246,9 @@ CorePipelineOutput core_pipeline(
         }
       }
 
+    
+
+
 
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Second loop:loop over all validation views >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
       // Initializations for all validation views
@@ -282,24 +285,26 @@ CorePipelineOutput core_pipeline(
         // Calculate the angle range for epipolar lines (Hypo1 --> Vali)
         Eigen::MatrixXd pt_edge            = Edges_HYPO1_final;
         Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
+        // Compute Orientation Lists for Hypo1 and Validation View (Vali)
         Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
         Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
 
         // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
         Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
         Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+        // Identify Parallel Edges
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
         //std::cout<<"total number of hypothesis edge pairs is: "<<Edges_HYPO2_final.rows()<<std::endl;
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
+        bool debug_print = false;
         for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
-            if (Edges_HYPO1_final(idx_pair, 0) == target_point_hypo1(0) &&
-                Edges_HYPO1_final(idx_pair, 1) == target_point_hypo1(1) &&
-                Edges_HYPO2_final(idx_pair, 0) == target_point_hypo2(0) &&
-                Edges_HYPO2_final(idx_pair, 1) == target_point_hypo2(1)) {
-                std::cout << "Found target pairs" << std::endl;
-            }
-          ///////////////////////debug /////////////////////////////////////////////
+          double epsilon = 1e-4; 
+          if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
+              std::abs(Edges_HYPO1_final(idx_pair, 1) - target_point_hypo1(1)) < epsilon) {
+                debug_print = true;
+          }
+                
           double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
           double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
           double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
@@ -326,17 +331,27 @@ CorePipelineOutput core_pipeline(
 
           // Find all the edges fall inside the two epipolar wedges intersection on validation view 
           // (Hypo1 --> Vali) && (Hypo2 --> Vali)
+          // This vector will store the indices that are common between vali_idx31 and vali_idx32
           std::vector<double> v_intersection;
+          // Convert Eigen Matrices to Standard Vectors
           std::vector<double> v1(vali_idx31.data(), vali_idx31.data() + vali_idx31.rows());
           std::vector<double> v2(vali_idx32.data(), vali_idx32.data() + vali_idx32.rows());
+          // Find Intersection
           set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), back_inserter(v_intersection));
+          // Convert Intersection to Eigen Vector
           Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(v_intersection.data(), v_intersection.size());
+          // Create Eigen Matrix Representation of Inliers
           Eigen::MatrixXd inliner(idxVector);
+
+          // Print inliner before calling getSupportIdx
+          if (debug_print){
+            std::cout << "Inliner indices before getSupportIdx:\n" << inliner << std::endl;
+          }
           
           // Calculate orientation of gamma 3
           Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
           // Get support from validation view for this gamma 3
-          double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
+          double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner, debug_print);
 
           if (supported_link_indx >= TO_Edges_VALID.rows()) {
             LOG_ERROR("Something fishy here!\n");
@@ -345,21 +360,39 @@ CorePipelineOutput core_pipeline(
 
           // Get the supporting edge idx from this validation view
           supported_indice_current.row(idx_pair) << supported_link_indx;
-          // supported_indice_current.row(idx_pair) << (isparallel(idx_pair,0) != 0) ? supported_link_indx : (-2);
-          // if (isparallel(idx_pair,0) != 0){
-          //   supported_indice_current.row(idx_pair) << supported_link_indx;
-          // }
-          // else{
-          //   supported_indice_current.row(idx_pair) << -2;
-          // }
+
           if (supported_link_indx != -2) {
             supported_indices_stack.conservativeResize(stack_idx+1,2);
             supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
             isempty_link = false;
             stack_idx++;
           }
+
+          ///////////////////////debug /////////////////////////////////////////////
+          if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
+              std::abs(Edges_HYPO1_final(idx_pair, 1) - target_point_hypo1(1)) < epsilon) {
+              std::cout << "!!!!Appending!!!!!" << std::endl;
+              // File to save the supporting edge points
+              std::ofstream support_edge_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/supporting_edge_points.txt", std::ios::app);
+              if (!support_edge_file.is_open()) {
+                  std::cout << "Failed to open the supporting edge file for writing.\n"<<std::endl;
+              }
+              int support_idx = supported_indice_current(idx_pair);
+              std::cout<<"validation view "<<VALID_INDX<< ",   support idx is: "<<support_idx<<std::endl;
+              if (support_idx != -2 && support_idx < TO_Edges_VALID.rows()) {
+                  Eigen::Vector2d supporting_edge = TO_Edges_VALID.row(support_idx).head<2>();
+                  support_edge_file << "Validation View " << VALID_INDX << ": "
+                                    << supporting_edge(0) << " " << supporting_edge(1) << "\n";
+              }
+
+              // Close the file after processing all validation views for this idx_pair
+              support_edge_file.close();
+          }
+          debug_print = false;
+        ///////////////////////debug /////////////////////////////////////////////
         }
         supported_indices.col(VALID_idx) << supported_indice_current.col(0);
+
         VALID_idx++;
       } 
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
