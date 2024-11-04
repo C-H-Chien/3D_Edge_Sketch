@@ -82,6 +82,7 @@ namespace PairEdgeHypothesis {
         return edgels_HYPO2;
     }
 
+    //find edges in Hypothesis whose orientations fall within thresh_ore21_1 and thresh_ore21_2
     Eigen::MatrixXd pair_edge_hypothesis::getHYPO2_idx_Ore(Eigen::MatrixXd OreListdegree, double thresh_ore21_1, double thresh_ore21_2) {
         int idx_hypopair = 0;
         Eigen::MatrixXd HYPO2_idx;
