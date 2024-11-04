@@ -4,7 +4,7 @@
 #define NUM_OF_OPENMP_THREADS         (32)                 //> Number of CPU cores to run 3D Edge Sketch in parallel
 //#define HYPO1_VIEW_INDX             (6)                  //> Index of the 1st hypothesis view
 //#define HYPO2_VIEW_INDX             (8)                  //> Index of the 2nd hypothesis view
-#define delta                         (0.3)                //> edge location perturbation
+#define DELTA                         (0.5)//(0.3)                //> edge location perturbation
 #define deltastr                      std::string("03")    //> string of delta value (used as part of the output file name)
 #define OREN_THRESH                   (15)                 //> \Delta \theta: orientation threshold
 #define MAX_NUM_OF_SUPPORT_VIEWS      (4)                  //> N: minimal number of validation views supporting a hypothesis edge pair
