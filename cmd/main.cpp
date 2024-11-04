@@ -61,33 +61,7 @@ Eigen::Vector3d transformToWorldCoordinates(const Eigen::Vector3d& point,
 }
 
 
-void printEdge3DToHypothesisAndSupports(
-    const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
-    std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
-    EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
-{
-    for (const auto& [edge_3D, value] : edge_3D_to_hypothesis_and_supports) {
-        // Extract 3D edge
-        std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
 
-        // Extract the hypothesis edges from view 6 and view 8
-        const Eigen::Vector2d& hypothesis_edge_view6 = std::get<0>(value);
-        const Eigen::Vector2d& hypothesis_edge_view8 = std::get<1>(value);
-
-        std::cout << "    Hypothesis Edge (View 6): [" << hypothesis_edge_view6(0) << ", " << hypothesis_edge_view6(1) << "]\n";
-        std::cout << "    Hypothesis Edge (View 8): [" << hypothesis_edge_view8(0) << ", " << hypothesis_edge_view8(1) << "]\n";
-
-        // Extract the supporting edges with validation view numbers
-        const std::vector<std::pair<int, Eigen::Vector2d>>& validation_support_edges = std::get<2>(value);
-
-        // Loop through and print each supporting edge and its corresponding validation view number
-        for (size_t i = 0; i < validation_support_edges.size(); ++i) {
-            const auto& [val_view_num, support_edge] = validation_support_edges[i];
-            std::cout << "    Validation View " << val_view_num << ": Supporting Edge = [" 
-                      << support_edge(0) << ", " << support_edge(1) << "]\n";
-        }
-    }
-}
 
 void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_indices) {
     std::cout << "Printing all supported indices:\n";
@@ -109,8 +83,23 @@ void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_
 }
 
 
+void writeMatrixToFile(const std::string& filename, const Eigen::MatrixXd& matrix) {
+    std::ofstream file(filename, std::ios::app); // Open in append mode
+    if (file.is_open()) {
+        for (int i = 0; i < matrix.rows(); ++i) {
+            for (int j = 0; j < matrix.cols(); ++j) {
+                file << std::fixed << std::setprecision(4) << matrix(i, j) << " ";
+            }
+            file << "\n";
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file " << filename << "\n";
+    }
+}
 
-Eigen::MatrixXd core_pipeline(
+
+CorePipelineOutput core_pipeline(
   file_reader& Data_Reader,
   const int hyp01_view_indx, 
   const int hyp02_view_indx,
@@ -122,6 +111,9 @@ Eigen::MatrixXd core_pipeline(
   int d,
   int q)
 {
+    Eigen::Vector2d target_point_hypo1(520.5543, 426.4240);
+    Eigen::Vector2d target_point_hypo2(519.6100, 407.3082);
+
   std::cout<< "pipeline start" <<std::endl;
   
   clock_t tstart, tend;
@@ -246,6 +238,14 @@ Eigen::MatrixXd core_pipeline(
         continue;
       }
 
+      if (HYPO2_idx.rows() > 0) {
+        {
+            // Append matrices to file
+            writeMatrixToFile("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/48_edge.txt", Edges_HYPO1_final);
+            writeMatrixToFile("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/43_edge.txt", Edges_HYPO2_final);
+        }
+      }
+
 
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Second loop:loop over all validation views >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
       // Initializations for all validation views
@@ -290,8 +290,16 @@ Eigen::MatrixXd core_pipeline(
         Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
+        //std::cout<<"total number of hypothesis edge pairs is: "<<Edges_HYPO2_final.rows()<<std::endl;
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
         for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
+            if (Edges_HYPO1_final(idx_pair, 0) == target_point_hypo1(0) &&
+                Edges_HYPO1_final(idx_pair, 1) == target_point_hypo1(1) &&
+                Edges_HYPO2_final(idx_pair, 0) == target_point_hypo2(0) &&
+                Edges_HYPO2_final(idx_pair, 1) == target_point_hypo2(1)) {
+                std::cout << "Found target pairs" << std::endl;
+            }
+          ///////////////////////debug /////////////////////////////////////////////
           double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
           double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
           double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
@@ -648,22 +656,25 @@ Eigen::MatrixXd core_pipeline(
       Gamma1s = Gamma1s_world;
     }
 
-    // After all operations in the main function, add the following to print the structure
 
-    // std::cout << "Printing all 3D edges and their corresponding supporting edges:\n";
+    CorePipelineOutput output;
+    output.Gamma1s = Gamma1s;
 
-    // for (const auto& [edge_3D, supporting_edges] : edgeMapping.edge_3D_to_supporting_edges) {
-    //     // Print the 3D edge
-    //     std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
+    // Directly add to the frame-to-edge mapping while processing edges
+    for (const auto& [edge_3D, supporting_edges] : edgeMapping.edge_3D_to_supporting_edges) {
+      for (const auto& [supporting_edge, image_number] : supporting_edges) {
+        // Directly update the frame-to-edge mapping
+        edgeMapping.add3DToFrameMapping(edge_3D, supporting_edge, image_number);
+      }
+    }
 
-    //     // Print all supporting 2D edges and their image numbers
-    //     for (const auto& [supporting_edge, image_number] : supporting_edges) {
-    //         std::cout << "    Supporting Edge: [" << supporting_edge(0) << ", " << supporting_edge(1) 
-    //                   << "] from Image " << image_number << "\n";
-    //     }
-    // }
-    
-    return Gamma1s;
+    // Set the frame-to-edge mapping in the output structure
+    output.frame_to_edge_to_3D_map = edgeMapping.frame_to_edge_to_3D_map;
+
+    std::cout << "pipeline finished" << std::endl;
+    std::cout << "It took " << totaltime << " second(s) to finish the whole pipeline." << std::endl;
+
+    return output;
   } //> while-loop
 }
 
@@ -671,8 +682,8 @@ Eigen::MatrixXd core_pipeline(
 
 int main(int argc, char **argv) {
 
-    int hyp01_view_indx  = 29;
-    int hyp02_view_indx  = 31;
+    int hyp01_view_indx  = 47;
+    int hyp02_view_indx  = 42;
 
     //> initiate data reader class object
     file_reader Data_Reader; 
@@ -696,6 +707,9 @@ int main(int argc, char **argv) {
     int d = 0, q = 0;
     int file_idx = 0;
 
+    // Cumulative storage for all frames and edges to 3D mappings across iterations
+    std::map<int, std::unordered_map<Eigen::Vector2d, std::vector<Eigen::Vector3d>, HashEigenVector2d>> cumulative_frame_to_edge_to_3D_map;
+
     ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
     Data_Reader.readRmatrix(All_R, R_matrix, Rmatrix_File, rd_data, row_R, d, q);
     Data_Reader.readTmatrix(All_T, T_matrix, Tmatrix_File, rd_data, d, q);
@@ -710,11 +724,23 @@ int main(int argc, char **argv) {
     bool sufficient_reconstruct = false;
     int iteration = 0;
 
-    while (!sufficient_reconstruct) {
+    //while (!sufficient_reconstruct) {
+    while (iteration < 1) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
-      Eigen::MatrixXd Edges_3D = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+      CorePipelineOutput result = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+
+      Eigen::MatrixXd Edges_3D = result.Gamma1s;
+
+      // Merge the current iteration's frame-to-edge-to-3D map into the cumulative map
+      for (const auto& [frame, edge_to_3D_map] : result.frame_to_edge_to_3D_map) {
+          for (const auto& [edge_2D, corresponding_3D_edges] : edge_to_3D_map) {
+              // Add to the cumulative map for each frame and each 2D edge
+              auto& cumulative_edges = cumulative_frame_to_edge_to_3D_map[frame][edge_2D];
+              cumulative_edges.insert(cumulative_edges.end(), corresponding_3D_edges.begin(), corresponding_3D_edges.end());
+          }
+      }
 
       if (all_Edges_3D.rows() == 0) {
         all_Edges_3D = Edges_3D;
@@ -735,14 +761,15 @@ int main(int argc, char **argv) {
       Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
 
       std::vector<std::vector<int>> claimedEdgesList;
-      double threshold = 2.0;  
+      double threshold = 1.0;  
+
 
       int num_frames_with_sufficient_edges = 0;
       for (int i = 0; i < projectedEdgesList.size(); ++i) {
           std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
           claimedEdgesList.push_back(claimedEdges);
           
-          if (All_Edgels[i].rows() > 0 && claimedEdges.size() >= 0.9 * All_Edgels[i].rows()) {
+          if (All_Edgels[i].rows() > 0 && (claimedEdges.size() >= All_Edgels[i].rows())) {
               num_frames_with_sufficient_edges++;
           }
       }
@@ -757,8 +784,10 @@ int main(int argc, char **argv) {
       hyp01_view_indx = bestViews.first;
       hyp02_view_indx = bestViews.second;
 
-      if(iteration == 0){
-        std::string outputFilePath = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/build/bin/projected_vs_observed_edges.txt";
+      if(iteration==5){
+        
+        std::cout<<"printing to file"<<std::endl;
+        std::string outputFilePath = "/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/projected_vs_observed_edges.txt";
         std::ofstream edgeFile(outputFilePath);
         if (!edgeFile.is_open()) {
             std::cerr << "Error opening file to write projected and observed edges." << std::endl;
@@ -787,7 +816,45 @@ int main(int argc, char **argv) {
       file_idx = 0;
       iteration++;
     }
+
+    std::string allEdges3DFilePath = "/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/all_edges_3d.txt";
+    std::ofstream allEdges3DFile(allEdges3DFilePath);
+    if (!allEdges3DFile.is_open()) {
+        std::cerr << "Error opening file to write all edges 3D data." << std::endl;
+        return -1;
+    }
+
+    // Write the content of all_Edges_3D as a nested list
+    allEdges3DFile << "[\n"; 
+    for (int i = 0; i < all_Edges_3D.rows(); i++) {
+        allEdges3DFile << "  ["; 
+        allEdges3DFile << all_Edges_3D(i, 0) << ", "
+                       << all_Edges_3D(i, 1) << ", "
+                       << all_Edges_3D(i, 2);
+        allEdges3DFile << "]"; 
+        if (i != all_Edges_3D.rows() - 1) {
+            allEdges3DFile << ",\n"; 
+        } else {
+            allEdges3DFile << "\n"; 
+        }
+    }
+    allEdges3DFile << "]\n"; 
+
+    allEdges3DFile.close();
+
+    // for (const auto& [frame, edge_to_3D_map] : cumulative_frame_to_edge_to_3D_map) {
+    //     std::cout << "Frame " << frame << ":\n";
+    //     for (const auto& [edge_2D, corresponding_3D_edges] : edge_to_3D_map) {
+    //         std::cout << "  Edge (" << edge_2D(0) << ", " << edge_2D(1) << ") -> 3D Edges: ";
+    //         for (const auto& edge_3D : corresponding_3D_edges) {
+    //             std::cout << "(" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "), ";
+    //         }
+    //         std::cout << std::endl;
+    //     }
+    // }
+
+
     LOG_INFOR_MESG("3D Edge Sketch is Finished!");
 
     return 0;
-}
+} 
