@@ -14,6 +14,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <set>
+
 
 //> Include functions
 #include "../Edge_Reconst/util.hpp"
@@ -298,6 +300,8 @@ CorePipelineOutput core_pipeline(
         //std::cout<<"total number of hypothesis edge pairs is: "<<Edges_HYPO2_final.rows()<<std::endl;
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
         bool debug_print = false;
+        std::set<int> written_frames;
+
         for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
           double epsilon = 1e-4; 
           if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
@@ -316,7 +320,50 @@ CorePipelineOutput core_pipeline(
           // Find all the edges fall inside epipolar wedge on validation view (Hypo2 --> Vali)
           Eigen::MatrixXd vali_idx32 = PairHypo.getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
           Eigen::MatrixXd edgels_32  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
-          
+
+
+
+          if (debug_print && written_frames.find(VALID_INDX) == written_frames.end()) {
+              // Add frame to the set to mark it as written
+              written_frames.insert(VALID_INDX);
+
+              // Write threshold values to the file
+              std::ofstream thresh_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/threshold_ranges.txt", std::ios::app);
+              if (thresh_file.is_open()) {
+                  thresh_file << "frame #: " << VALID_INDX << "\n";
+                  thresh_file << "Thresh_ore21_1: " << thresh_ore21_1 << ", Thresh_ore21_2: " << thresh_ore21_2 << "\n\n";
+                  thresh_file.close();
+              } else {
+                  std::cerr << "Error opening file to save threshold values.\n";
+              }
+
+              // Save edgels_31 to file
+              std::ofstream edgels31_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/edgels_31.txt", std::ios::app);
+              if (edgels31_file.is_open()) {
+                  for (int i = 0; i < edgels_31.rows(); ++i) {
+                      edgels31_file << edgels_31(i, 0) << " " << edgels_31(i, 1) << "\n";
+                  }
+                  edgels31_file << "\n";  // Separate entries by an empty line
+                  edgels31_file.close();
+              } else {
+                  std::cerr << "Error opening file to save edgels_31 values.\n";
+              }
+
+              // Save edgels_32 to file
+              std::ofstream edgels32_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/edgels_32.txt", std::ios::app);
+              if (edgels32_file.is_open()) {
+                  for (int i = 0; i < edgels_32.rows(); ++i) {
+                      edgels32_file << edgels_32(i, 0) << " " << edgels_32(i, 1) << "\n";
+                  }
+                  edgels32_file << "\n";  // Separate entries by an empty line
+                  edgels32_file.close();
+              } else {
+                  std::cerr << "Error opening file to save edgels_32 values.\n";
+              }
+          }
+
+
+ 
           // Check if the two wedges could be considered as parallel to each other
           Eigen::MatrixXd anglediff(4,1);
           anglediff << fabs(thresh_ore31_1 - thresh_ore32_1), 
