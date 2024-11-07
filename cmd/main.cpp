@@ -96,7 +96,6 @@ Eigen::MatrixXd core_pipeline(
     MultiviewGeometryUtil::multiview_geometry_util util;
     PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
     GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
-    // GetQuadrilateral::get_Quadrilateral            getQuad;
     GetSupportedEdgels::get_SupportedEdgels        getSupport;
     GetOrientationList::get_OrientationList        getOre;
     
@@ -130,20 +129,6 @@ Eigen::MatrixXd core_pipeline(
     Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
     Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
 
-    // std::ofstream debug_file_edge1s_HYPO1;
-    // std::string Output_File_Path_Edgels_HYPO1 = "../../outputs/Edgels_HYPO1.txt";
-    // debug_file_edge1s_HYPO1.open(Output_File_Path_Edgels_HYPO1);
-    // for (int i = 0; i < Edges_HYPO1.rows(); i++) {
-    //   debug_file_edge1s_HYPO1 << Edges_HYPO1(i,0);
-    //   debug_file_edge1s_HYPO1 << "\t";
-    //   debug_file_edge1s_HYPO1 << Edges_HYPO1(i,1);
-    //   debug_file_edge1s_HYPO1 << "\n";
-    // }
-    // // debug_file_edge1s_HYPO1 << paired_edge_final;
-    // debug_file_edge1s_HYPO1.close();
-    
-    
-    
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   
     std::cout<< "Threshold is : " << thresh_EDG << std::endl;
@@ -656,11 +641,16 @@ int main(int argc, char **argv) {
     return 0;
 	}
 
-  EdgeSketch_Core MWV_Edge_Rec( Edge_Sketch_Settings_Map );
+  // EdgeSketch_Core MWV_Edge_Rec( Edge_Sketch_Settings_Map );
 
-  // MWV_Edge_Rec.Read_Sketch_Data();
+  // MWV_Edge_Rec.Read_Camera_Data();
+  // MWV_Edge_Rec.Read_Edgels_Data();
+  // MWV_Edge_Rec.Set_Hypothesis_Views_Camera();
+  // MWV_Edge_Rec.Set_Hypothesis_Views_Edgels();
+
   // MWV_Edge_Rec.Run_3D_Edge_Sketch();
   // MWV_Edge_Rec.Finalize_Edge_Pairs();
+  // MWV_Edge_Rec.Reconstruct_3D_Edges();
 
   // std::string out_str = "Number of pairs found till this round: " + std::to_string(MWV_Edge_Rec.paired_edge_final.rows());
   // LOG_INFOR_MESG(out_str);

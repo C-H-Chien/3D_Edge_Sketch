@@ -44,6 +44,7 @@ public:
     void Run_3D_Edge_Sketch();
     void Finalize_Edge_Pairs();
     void Clear_Data();
+    void Reconstruct_3D_Edges();
 
     //> Destructor
     ~EdgeSketch_Core();
@@ -59,6 +60,20 @@ public:
       return false;
     }
 
+    bool is_Epipolar_Wedges_in_Parallel(double thresh_ore31_1, double thresh_ore31_2, double thresh_ore32_1, double thresh_ore32_2, int idx_pair, Eigen::VectorXd &isparallel, Eigen::MatrixXd &supported_indice_current) {
+      Eigen::MatrixXd anglediff(4,1);
+      anglediff << fabs(thresh_ore31_1 - thresh_ore32_1), fabs(thresh_ore31_1 - thresh_ore32_2), \
+                   fabs(thresh_ore31_2 - thresh_ore32_1), fabs(thresh_ore31_2 - thresh_ore32_2);
+      if (anglediff.maxCoeff() <= Parallel_Epipolar_Line_Angle_Deg) {
+          isparallel.row(idx_pair) << 0;
+          supported_indice_current.row(idx_pair) << -2;
+          return true;
+      }
+      else {
+        return false;
+      }
+    }
+
     Eigen::MatrixXd paired_edge_final;
     double edge_sketch_time;
     int thresh_EDG;
@@ -66,6 +81,7 @@ public:
     int hyp02_view_indx;
 
     std::vector< Eigen::MatrixXd > all_supported_indices;
+    Eigen::MatrixXd Gamma1s;
     
 private:
     //> sharing the classes
