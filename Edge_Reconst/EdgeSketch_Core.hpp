@@ -31,6 +31,7 @@
 #include "getSupportedEdgels.hpp"
 #include "getOrientationList.hpp"
 #include "edge_mapping.hpp"
+#include "iteration.hpp"
     
 class EdgeSketch_Core {
 
@@ -42,9 +43,10 @@ public:
     void Set_Hypothesis_Views_Camera();
     void Set_Hypothesis_Views_Edgels();
     void Run_3D_Edge_Sketch();
-    void Finalize_Edge_Pairs();
+    void Finalize_Edge_Pairs_and_Reconstruct_3D_Edges();
     void Clear_Data();
-    void Reconstruct_3D_Edges();
+    void Stack_3D_Edges();
+    void Project_3D_Edges_and_Find_Next_Hypothesis_Views();
 
     //> Destructor
     ~EdgeSketch_Core();
@@ -82,6 +84,8 @@ public:
 
     std::vector< Eigen::MatrixXd > all_supported_indices;
     Eigen::MatrixXd Gamma1s;
+    Eigen::MatrixXd all_3D_Edges;
+    std::vector< std::vector<int> > claimedEdgesList;
     
 private:
     //> sharing the classes
@@ -105,6 +109,7 @@ private:
     int Edge_Detection_Final_Thresh;
     double Parallel_Epipolar_Line_Angle_Deg;
     double Reproj_Dist_Thresh;
+    double Stop_3D_Edge_Sketch_by_Ratio_Of_Claimed_Edges;
     int circleR; //> Unknown setting
 
     //> Input Dataset Settings

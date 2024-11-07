@@ -187,7 +187,6 @@ Eigen::MatrixXd core_pipeline(
         continue;
       }
 
-
       //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Second loop:loop over all validation views >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
       // Initializations for all validation views
       int VALID_idx = 0;
@@ -641,91 +640,96 @@ int main(int argc, char **argv) {
     return 0;
 	}
 
-  // EdgeSketch_Core MWV_Edge_Rec( Edge_Sketch_Settings_Map );
+  EdgeSketch_Core MWV_Edge_Rec( Edge_Sketch_Settings_Map );
 
-  // MWV_Edge_Rec.Read_Camera_Data();
-  // MWV_Edge_Rec.Read_Edgels_Data();
-  // MWV_Edge_Rec.Set_Hypothesis_Views_Camera();
-  // MWV_Edge_Rec.Set_Hypothesis_Views_Edgels();
+  MWV_Edge_Rec.Read_Camera_Data();
+  for (int iter = 0; iter < 2; iter++) {
+    std::cout << "Selected views for hypotheses are " << MWV_Edge_Rec.hyp01_view_indx << " and " << MWV_Edge_Rec.hyp02_view_indx << std::endl;
 
-  // MWV_Edge_Rec.Run_3D_Edge_Sketch();
-  // MWV_Edge_Rec.Finalize_Edge_Pairs();
-  // MWV_Edge_Rec.Reconstruct_3D_Edges();
+    //> Load necessary data (camera matrices, edgels, etc)
+    MWV_Edge_Rec.Read_Edgels_Data();
+    MWV_Edge_Rec.Set_Hypothesis_Views_Camera();
+    MWV_Edge_Rec.Set_Hypothesis_Views_Edgels();
 
-  // std::string out_str = "Number of pairs found till this round: " + std::to_string(MWV_Edge_Rec.paired_edge_final.rows());
-  // LOG_INFOR_MESG(out_str);
+    //> Reconstruct 3D Edges
+    MWV_Edge_Rec.Run_3D_Edge_Sketch();
+    MWV_Edge_Rec.Finalize_Edge_Pairs_and_Reconstruct_3D_Edges();
+    MWV_Edge_Rec.Stack_3D_Edges();
+    MWV_Edge_Rec.Project_3D_Edges_and_Find_Next_Hypothesis_Views();
+    MWV_Edge_Rec.Clear_Data();
+  }
+  
+    // int hyp01_view_indx  = 47;
+    // int hyp02_view_indx  = 42;
 
-    int hyp01_view_indx  = 47;
-    int hyp02_view_indx  = 42;
+    // // Read all required matrices (rotation, translation, and camera matrices)
+    // int file_idx = 0;
 
-    // Read all required matrices (rotation, translation, and camera matrices)
-    int file_idx = 0;
+    // ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
+    // std::string Dataset_Path = "/gpfs/data/bkimia/Datasets/";
+    // std::string Dataset_Name = "ABC-NEF";
+    // std::string Scene_Name = "00000006";
+    // file_reader Data_Reader( Dataset_Path, Dataset_Name, Scene_Name, DATASET_NUM_OF_FRAMES );
 
-    ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
-    std::string Dataset_Path = "/gpfs/data/bkimia/Datasets/";
-    std::string Dataset_Name = "ABC-NEF";
-    std::string Scene_Name = "00000006";
-    file_reader Data_Reader( Dataset_Path, Dataset_Name, Scene_Name, DATASET_NUM_OF_FRAMES );
+    // Eigen::MatrixXd all_Edges_3D;
+    // std::vector<Eigen::MatrixXd> All_Edgels; 
+    // std::vector<Eigen::Matrix3d> All_R;
+    // std::vector<Eigen::Vector3d> All_T;
+    // std::vector<Eigen::Matrix3d> All_K;
+    // Eigen::Matrix3d K;
+    // Data_Reader.readRmatrix( All_R );
+    // Data_Reader.readTmatrix( All_T );
+    // // Data_Reader.readK( All_K );
+    // K << 1111.11136542426,	0,	399.500000000000, 0,	1111.11136542426,	399.500000000000, 0,	0,	1;
 
-    Eigen::MatrixXd all_Edges_3D;
-    std::vector<Eigen::MatrixXd> All_Edgels; 
-    std::vector<Eigen::Matrix3d> All_R;
-    std::vector<Eigen::Vector3d> All_T;
-    std::vector<Eigen::Matrix3d> All_K;
-    Eigen::Matrix3d K;
-    Data_Reader.readRmatrix( All_R );
-    Data_Reader.readTmatrix( All_T );
-    // Data_Reader.readK( All_K );
-    K << 1111.11136542426,	0,	399.500000000000, 0,	1111.11136542426,	399.500000000000, 0,	0,	1;
+    // for (int iteration = 0; iteration < 2; iteration++) {
 
-    for (int iteration = 0; iteration < 1; iteration++) {
+    //   std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
-      std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
+    //   Eigen::MatrixXd Edges_3D = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K);
 
-      Eigen::MatrixXd Edges_3D = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K);
+    //   if (all_Edges_3D.rows() == 0) {
+    //     all_Edges_3D = Edges_3D;
+    //   } 
+    //   else {
+    //     all_Edges_3D.conservativeResize(all_Edges_3D.rows() + Edges_3D.rows(), 3);
+    //     all_Edges_3D.bottomRows(Edges_3D.rows()) = Edges_3D;
+    //   }
 
-      if (all_Edges_3D.rows() == 0) {
-        all_Edges_3D = Edges_3D;
-      } 
-      else {
-        all_Edges_3D.conservativeResize(all_Edges_3D.rows() + Edges_3D.rows(), 3);
-        all_Edges_3D.bottomRows(Edges_3D.rows()) = Edges_3D;
-      }
+    //   // Project the 3D edges to each view 
+    //   std::vector<Eigen::MatrixXd> projectedEdgesList;
+    //   for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
+    //       // Project 3D edges to view i
+    //       Eigen::MatrixXd projectedEdges = project3DEdgesToView(all_Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
+    //       projectedEdgesList.push_back(projectedEdges);
+    //   }
 
-      // Project the 3D edges to each view 
-      std::vector<Eigen::MatrixXd> projectedEdgesList;
-      for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
-          // Project 3D edges to view i
-          Eigen::MatrixXd projectedEdges = project3DEdgesToView(all_Edges_3D, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
-          projectedEdgesList.push_back(projectedEdges);
-      }
+    //   Data_Reader.read_All_Edgels( All_Edgels, THRESEDGFORALL );
+    //   // Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
 
-      Data_Reader.read_All_Edgels( All_Edgels, THRESEDGFORALL );
-      // Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
+    //   std::vector<std::vector<int>> claimedEdgesList;
+    //   double threshold = 2.0;  
 
-      std::vector<std::vector<int>> claimedEdgesList;
-      double threshold = 2.0;  
+    //   // Find the claimed edges for each frame
+    //   for (int i = 0; i < projectedEdgesList.size(); ++i) {
+    //       std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
+    //       claimedEdgesList.push_back(claimedEdges);
+    //   }
 
-      // Find the claimed edges for each frame
-      for (int i = 0; i < projectedEdgesList.size(); ++i) {
-          std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdgesList[i], All_Edgels[i], threshold);
-          claimedEdgesList.push_back(claimedEdges);
-      }
-
-      // Use the selectBestViews function to determine the two frames with the least supported edges
-      std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
+    //   // Use the selectBestViews function to determine the two frames with the least supported edges
+    //   std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
       
-      // Assign the best views to the hypothesis indices
-      hyp01_view_indx = bestViews.first;
-      hyp02_view_indx = bestViews.second;
+    //   // Assign the best views to the hypothesis indices
+    //   hyp01_view_indx = bestViews.first;
+    //   hyp02_view_indx = bestViews.second;
 
-      All_Edgels.clear();
-      projectedEdgesList.clear();
-      claimedEdgesList.clear();
-      // d = 0;
-      // q = 0;
-      file_idx = 0;
-    }
+    //   All_Edgels.clear();
+    //   projectedEdgesList.clear();
+    //   claimedEdgesList.clear();
+    //   // d = 0;
+    //   // q = 0;
+    //   file_idx = 0;
+    // }
     LOG_INFOR_MESG("3D Edge Sketch is Finished!");
 
     return 0;

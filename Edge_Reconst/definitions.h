@@ -24,6 +24,9 @@
 #define IMGROWS                       (800)
 #define IF_MULTIPLE_K                 (0)
 
+//> Write to the files
+#define WRITE_3D_EDGES                (false)
+
 //> Print out in terminal
 #define SHOW_EDGE_SKETCH_SETTINGS     (false)
 

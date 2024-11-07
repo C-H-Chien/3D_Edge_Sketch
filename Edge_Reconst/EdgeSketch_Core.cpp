@@ -35,17 +35,18 @@ EdgeSketch_Core::EdgeSketch_Core(YAML::Node Edge_Sketch_Setting_File)
 {
     //> Parse data from the YAML file
     //> (1) 3D Edge Sketch Settings
-    Num_Of_OMP_Threads                  = Edge_Sketch_Setting_YAML_File["Num_Of_OMP_Threads"].as<int>();
-    hyp01_view_indx                     = Edge_Sketch_Setting_YAML_File["Init_Hypo1_View_Index"].as<int>();
-    hyp02_view_indx                     = Edge_Sketch_Setting_YAML_File["Init_Hypo2_View_Index"].as<int>();
-    Edge_Loc_Pertubation                = Edge_Sketch_Setting_YAML_File["delta"].as<double>();
-    Orien_Thresh                        = Edge_Sketch_Setting_YAML_File["delta_theta"].as<double>();
-    Max_Num_Of_Support_Views            = Edge_Sketch_Setting_YAML_File["Max_Num_Of_Support_Views"].as<int>();
-    Edge_Detection_Init_Thresh          = Edge_Sketch_Setting_YAML_File["Multi_Thresh_Init_Thresh"].as<int>();
-    Edge_Detection_Final_Thresh         = Edge_Sketch_Setting_YAML_File["Multi_Thresh_Final_Thresh"].as<int>();
-    Parallel_Epipolar_Line_Angle_Deg    = Edge_Sketch_Setting_YAML_File["Parallel_Epipolar_Line_Angle"].as<double>();
-    Reproj_Dist_Thresh                  = Edge_Sketch_Setting_YAML_File["Reproj_Dist_Thresh"].as<double>();
-    circleR                             = Edge_Sketch_Setting_YAML_File["circleR"].as<double>(); //> Unknown setting
+    Num_Of_OMP_Threads                              = Edge_Sketch_Setting_YAML_File["Num_Of_OMP_Threads"].as<int>();
+    hyp01_view_indx                                 = Edge_Sketch_Setting_YAML_File["Init_Hypo1_View_Index"].as<int>();
+    hyp02_view_indx                                 = Edge_Sketch_Setting_YAML_File["Init_Hypo2_View_Index"].as<int>();
+    Edge_Loc_Pertubation                            = Edge_Sketch_Setting_YAML_File["delta"].as<double>();
+    Orien_Thresh                                    = Edge_Sketch_Setting_YAML_File["delta_theta"].as<double>();
+    Max_Num_Of_Support_Views                        = Edge_Sketch_Setting_YAML_File["Max_Num_Of_Support_Views"].as<int>();
+    Edge_Detection_Init_Thresh                      = Edge_Sketch_Setting_YAML_File["Multi_Thresh_Init_Thresh"].as<int>();
+    Edge_Detection_Final_Thresh                     = Edge_Sketch_Setting_YAML_File["Multi_Thresh_Final_Thresh"].as<int>();
+    Parallel_Epipolar_Line_Angle_Deg                = Edge_Sketch_Setting_YAML_File["Parallel_Epipolar_Line_Angle"].as<double>();
+    Reproj_Dist_Thresh                              = Edge_Sketch_Setting_YAML_File["Reproj_Dist_Thresh"].as<double>();
+    Stop_3D_Edge_Sketch_by_Ratio_Of_Claimed_Edges   = Edge_Sketch_Setting_YAML_File["Ratio_Of_Claimed_Edges_to_Stop"].as<double>();
+    circleR                                         = Edge_Sketch_Setting_YAML_File["circleR"].as<double>(); //> Unknown setting
     //> (2) Dataset Settings
     Dataset_Path                        = Edge_Sketch_Setting_YAML_File["Dataset_Path"].as<std::string>();
     Dataset_Name                        = Edge_Sketch_Setting_YAML_File["Dataset_Name"].as<std::string>();
@@ -347,7 +348,7 @@ void EdgeSketch_Core::Run_3D_Edge_Sketch() {
     }
 }
 
-void EdgeSketch_Core::Finalize_Edge_Pairs() {
+void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
 
     int pair_num = 0;
     std::vector<int> valid_pair_index;
@@ -409,7 +410,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
         pts.push_back(pt_H1);
         pts.push_back(pt_H2);
 
-        //> The resultant edge_pt_3D is 3D edges under the first hypothesis view coordinate
+        //> The resultant edge_pt_3D is 3D edges "under the first hypothesis view coordinate"
         Eigen::Vector3d edge_pt_3D = util->linearTriangulation(2, pts, Rs, Ts, K1_v);
 
         if (edge_pt_3D.hasNaN()) {
@@ -447,23 +448,23 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
 
                 Eigen::Vector2d supporting_edge = edges_for_val_frame.row(support_idx).head<2>();
 
-                // Store validation view and the supporting edge
+                //> Qiwu: Store validation view and the supporting edge
                 validation_support_edges.emplace_back(val_idx, supporting_edge);
 
-                // Add the supporting edge to the edgeMapping for the 3D edge
+                //> Qiwu: Add the supporting edge to the edgeMapping for the 3D edge
                 edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
             }
             val_indx_in_paired_edge_array++;
         }
-        ///////////////////////////////// Add support from validation views /////////////////////////////////
       }
     }
 }
 
-void EdgeSketch_Core::Reconstruct_3D_Edges() {
+void EdgeSketch_Core::Stack_3D_Edges() {
     Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
     Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
 
+    //> Transform the 3D edges from the first hypothesis view coordinate (Gamma1s) to the world coordinate (Gamma1s_world)
     Eigen::MatrixXd Gamma1s_world(Gamma1s.rows(), 3);
     for (int i = 0; i < Gamma1s.rows(); ++i) {
         Eigen::Vector3d point_camera = Gamma1s.row(i).transpose();
@@ -471,19 +472,53 @@ void EdgeSketch_Core::Reconstruct_3D_Edges() {
         Gamma1s_world.row(i) = point_world.transpose();
     }
 
-    // std::cout<< "pipeline finished" <<std::endl;
-    // std::cout << "It took "<< totaltime <<" second(s) to finish the whole pipeline."<<std::endl;
+#if WRITE_3D_EDGES
     std::ofstream myfile2;
     std::string Output_File_Path2 = "../../outputs/Gamma1s_org_" + DATASET_NAME + "_" + SCENE_NAME + "_" + std::to_string(hyp01_view_indx)+"n"+std::to_string(hyp02_view_indx)+"_t32to"+std::to_string(thresh_EDG) + "_delta" + deltastr +"_theta" + std::to_string(OREN_THRESH) + "_N" + std::to_string(MAX_NUM_OF_SUPPORT_VIEWS) + ".txt";
     std::cout << Output_File_Path2 << std::endl;
     myfile2.open (Output_File_Path2);
     myfile2 << Gamma1s_world;
     myfile2.close();
-    Gamma1s = Gamma1s_world;
+#endif
+
+    //> Concatenate reconstructed 3D edges
+    if (all_3D_Edges.rows() == 0) {
+        all_3D_Edges = Gamma1s_world;
+    } 
+    else {
+        all_3D_Edges.conservativeResize(all_3D_Edges.rows() + Gamma1s_world.rows(), 3);
+        all_3D_Edges.bottomRows(Gamma1s_world.rows()) = Gamma1s_world;
+    }
+}
+
+void EdgeSketch_Core::Project_3D_Edges_and_Find_Next_Hypothesis_Views() {
+
+    //> First read all edges with the final-run threshold (TODO: is this step necessary?)
+    Load_Data->read_All_Edgels( All_Edgels, Edge_Detection_Final_Thresh );
+
+    //> Loop over all views
+    for (int i = 0; i < DATASET_NUM_OF_FRAMES; i++) {
+
+        //> Project the 3D edges to each view indexed by i
+        Eigen::MatrixXd projectedEdges = project3DEdgesToView(all_3D_Edges, All_R[i], All_T[i], K, All_R[hyp01_view_indx], All_T[hyp01_view_indx]);
+
+        //> Claim the projected edges by the observed edges
+        std::vector<int> claimedEdges = findClosestObservedEdges(projectedEdges, All_Edgels[i], Reproj_Dist_Thresh);
+        claimedEdgesList.push_back(claimedEdges);
+    }
+
+    //> Use the selectBestViews function to determine the two frames with the least claimed edges
+    std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
+    
+    //> Assign the best views to the hypothesis indices
+    hyp01_view_indx = bestViews.first;
+    hyp02_view_indx = bestViews.second;
 }
 
 void EdgeSketch_Core::Clear_Data() {
     all_supported_indices.clear();
+    All_Edgels.clear();
+    claimedEdgesList.clear();
 }
 
 EdgeSketch_Core::~EdgeSketch_Core() { }

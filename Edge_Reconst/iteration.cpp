@@ -66,7 +66,9 @@ std::pair<int, int> selectBestViews(const std::vector<std::vector<int>>& claimed
     int bestView1 = frameSupportCounts[0].first;
     int bestView2 = frameSupportCounts[1].first;
 
-    std::cout << "Selected frames with the least supported edges: " << bestView1 << " and " << bestView2 << std::endl;
+    //> log: show the selected hypothesis views
+    std::string out_str = "Selected frames with the least supported edges: " + std::to_string(bestView1) + " and " + std::to_string(bestView2);
+    LOG_INFOR_MESG(out_str);
 
     return {bestView1, bestView2};
 }
