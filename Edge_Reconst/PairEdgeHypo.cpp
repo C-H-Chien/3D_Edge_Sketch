@@ -203,7 +203,7 @@ namespace PairEdgeHypothesis {
             double x_currH1 = (b2_line*c_edgeH1-b_edgeH1*c2_line)/(a2_line*b_edgeH1-a_edgeH1*b2_line);
             double y_currH1 = (c2_line*a_edgeH1-c_edgeH1*a2_line)/(a2_line*b_edgeH1-a_edgeH1*b2_line);
             double dist1    = sqrt((x_currH1 - edgel_HYPO1(0,0))*(x_currH1 - edgel_HYPO1(0,0))+(y_currH1 - edgel_HYPO1(0,1))*(y_currH1 - edgel_HYPO1(0,1)));
-            if(dist1 < circleR && dist2 < circleR){
+            if(dist1 < CIRCLER && dist2 < CIRCLER){
                 edgels_HYPO2_corrected.conservativeResize(idx_correct+1,10);
                 edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), \
                                                            x_currH2, y_currH2, edgels_HYPO2(idx_hypo2,2), edgels_HYPO2(idx_hypo2,3), \

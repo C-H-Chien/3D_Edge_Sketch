@@ -22,6 +22,9 @@ set ( control_sources
   iteration.hpp
   iteration.cpp
 
+  EdgeSketch_Core.cpp
+  EdgeSketch_Core.hpp
+
   #subpixel_point_set.hpp
   #lemsvpe_CH/vgl_polygon_CH.hpp
   #lemsvpe_CH/vgl_point_2d_CH.hpp

@@ -33,7 +33,7 @@ void file_reader::read_All_Edgels( std::vector<Eigen::MatrixXd> &All_Edgels, int
 #endif
 }
 
-Eigen::MatrixXd file_reader::read_Edgels_Of_a_File( int file_idx, double thresh_EDG ) 
+Eigen::MatrixXd file_reader::read_Edgels_Of_a_File( int file_idx, int thresh_EDG ) 
 {  
   Eigen::MatrixXd Edgels;
   Eigen::Vector4d row_edge;
@@ -103,7 +103,7 @@ void file_reader::readTmatrix( std::vector<Eigen::Vector3d> &All_T )
   double rd_data;
   int d = 0;
   std::fstream Tmatrix_File;
-  Tmatrix_File.open(, std::ios_base::in);
+  Tmatrix_File.open(Tmatrix_File_Path, std::ios_base::in);
   if (!Tmatrix_File) { 
     LOG_FILE_ERROR(Tmatrix_File_Path); exit(1); 
   }

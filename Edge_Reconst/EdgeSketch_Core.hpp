@@ -23,19 +23,30 @@
 #include <yaml-cpp/yaml.h>
 
 //> shared class pointers
-#include <file_reader.hpp>
-
+#include "file_reader.hpp"
+#include "util.hpp"
+#include "PairEdgeHypo.hpp"
+#include "getReprojectedEdgel.hpp"
+#include "getQuadrilateral.hpp"
+#include "getSupportedEdgels.hpp"
+#include "getOrientationList.hpp"
+#include "edge_mapping.hpp"
     
 class EdgeSketch_Core {
 
 public:
+    //> Constructor
     EdgeSketch_Core( YAML::Node );
-
-    double edge_sketch_time;
-
-    void Read_Sketch_Data();
+    void Read_Camera_Data();
+    void Read_Edgels_Data();
+    void Set_Hypothesis_Views_Camera();
+    void Set_Hypothesis_Views_Edgels();
     void Run_3D_Edge_Sketch();
     void Finalize_Edge_Pairs();
+    void Clear_Data();
+
+    //> Destructor
+    ~EdgeSketch_Core();
     
     bool Skip_this_Edge( const int edge_idx ) {
       //> Edge Boundary Check: not too close to boundary
@@ -47,17 +58,30 @@ public:
         return true;
       return false;
     }
-    
+
+    Eigen::MatrixXd paired_edge_final;
+    double edge_sketch_time;
+    int thresh_EDG;
+    int hyp01_view_indx;
+    int hyp02_view_indx;
+
+    std::vector< Eigen::MatrixXd > all_supported_indices;
     
 private:
+    //> sharing the classes
     std::shared_ptr<file_reader> Load_Data = nullptr;
     std::shared_ptr<MultiviewGeometryUtil::multiview_geometry_util> util = nullptr;
+    std::shared_ptr<PairEdgeHypothesis::pair_edge_hypothesis> PairHypo = nullptr;
+    std::shared_ptr<GetReprojectedEdgel::get_Reprojected_Edgel> getReprojEdgel = nullptr;
+    std::shared_ptr<GetSupportedEdgels::get_SupportedEdgels> getSupport = nullptr;
+    std::shared_ptr<GetOrientationList::get_OrientationList> getOre = nullptr;
+    std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
+
+    //> YAML file data parser
     YAML::Node Edge_Sketch_Setting_YAML_File;
 
     //> Input 3D Edge Sketch Settings
     int Num_Of_OMP_Threads;
-    int hyp01_view_indx;
-    int hyp02_view_indx;
     double Edge_Loc_Pertubation;
     double Orien_Thresh;
     int Max_Num_Of_Support_Views;

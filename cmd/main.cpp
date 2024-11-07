@@ -26,6 +26,7 @@
 #include "../Edge_Reconst/getOrientationList.hpp"
 // #include "../Edge_Reconst/linearTriangulationUtil.hpp"
 #include "../Edge_Reconst/definitions.h"
+#include "../Edge_Reconst/EdgeSketch_Core.hpp"
 
 //> Added by CH: Efficient Bucketing Method
 // #include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
@@ -62,10 +63,8 @@ Eigen::MatrixXd core_pipeline(
   const std::vector<Eigen::Matrix3d>& All_R, 
   const std::vector<Eigen::Vector3d>& All_T,
   const std::vector<Eigen::Matrix3d>& All_K,
-  const Eigen::Matrix3d K,
-  double rd_data,
-  int d,
-  int q)
+  const Eigen::Matrix3d K
+)
 {
   std::cout<< "pipeline start" <<std::endl;
   
@@ -81,15 +80,15 @@ Eigen::MatrixXd core_pipeline(
     std::fstream Edge_File;
 
     std::vector<Eigen::MatrixXd> All_Edgels; 
-    std::vector<Eigen::MatrixXd> All_Edgels_H12;  
+    // std::vector<Eigen::MatrixXd> All_Edgels_H12;  
 
     Eigen::Vector4d row_edge;
     int file_idx = 0;
     int H_idx = 0;
     
     // Read edgel files
-    Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, thresh_EDG);  
-    Data_Reader.readHypothesisEdgelFiles(hyp01_view_indx, hyp02_view_indx, All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
+    Data_Reader.read_All_Edgels(All_Edgels, thresh_EDG);  
+    // Data_Reader.readHypothesisEdgelFiles(hyp01_view_indx, hyp02_view_indx, All_Edgels_H12, Edge_File, rd_data, row_edge, H_idx, file_idx, d, q, thresh_EDG);
   
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< PREPROCESSING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
     clock_t tstart_pre, tend_pre;
@@ -97,39 +96,53 @@ Eigen::MatrixXd core_pipeline(
     MultiviewGeometryUtil::multiview_geometry_util util;
     PairEdgeHypothesis::pair_edge_hypothesis       PairHypo;
     GetReprojectedEdgel::get_Reprojected_Edgel     getReprojEdgel;
-    GetQuadrilateral::get_Quadrilateral            getQuad;
+    // GetQuadrilateral::get_Quadrilateral            getQuad;
     GetSupportedEdgels::get_SupportedEdgels        getSupport;
     GetOrientationList::get_OrientationList        getOre;
     
     // Assign variables required for Hypo1 and Hypo2
-    // Eigen::MatrixXd Edges_HYPO1 = All_Edgels_H12[0];
-    // Eigen::Matrix3d R1          = All_R[hyp01_view_indx];
-    // Eigen::Vector3d T1          = All_T[hyp01_view_indx];
-    // Eigen::MatrixXd Edges_HYPO2 = All_Edgels_H12[1];
-    // Eigen::Matrix3d R2          = All_R[hyp02_view_indx];
-    // Eigen::Vector3d T2          = All_T[hyp02_view_indx];
+    Eigen::MatrixXd Edges_HYPO1 = All_Edgels[hyp01_view_indx];
+    Eigen::Matrix3d R1          = All_R[hyp01_view_indx];
+    Eigen::Vector3d T1          = All_T[hyp01_view_indx];
+    Eigen::MatrixXd Edges_HYPO2 = All_Edgels[hyp02_view_indx];
+    Eigen::Matrix3d R2          = All_R[hyp02_view_indx];
+    Eigen::Vector3d T2          = All_T[hyp02_view_indx];
     // deal with multiple K scenario
-    // Eigen::Matrix3d K1;
-    // Eigen::Matrix3d K2;
-    // if(IF_MULTIPLE_K == 1){
-    //   K1 = All_K[hyp01_view_indx];
-    //   K2 = All_K[hyp02_view_indx];
-    // }else{
-    //   K1 = K;
-    //   K2 = K;
-    // }
+    Eigen::Matrix3d K1;
+    Eigen::Matrix3d K2;
+    if(IF_MULTIPLE_K == 1){
+      K1 = All_K[hyp01_view_indx];
+      K2 = All_K[hyp02_view_indx];
+    }else{
+      K1 = K;
+      K2 = K;
+    }
     // Relative pose calculation
-    // Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
-    // Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
-    // Eigen::Matrix3d F21 = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
-    // Eigen::Matrix3d R12 = util.getRelativePose_R21(R2, R1);
-    // Eigen::Vector3d T12 = util.getRelativePose_T21(R2, R1, T2, T1);  
-    // Eigen::Matrix3d F12 = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R12, T12);  
+    Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
+    Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
+    Eigen::Matrix3d F21 = util.getFundamentalMatrix(K1.inverse(), K2.inverse(), R21, T21);
+    Eigen::Matrix3d R12 = util.getRelativePose_R21(R2, R1);
+    Eigen::Vector3d T12 = util.getRelativePose_T21(R2, R1, T2, T1);  
+    Eigen::Matrix3d F12 = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R12, T12);  
     
-    // Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
+    Eigen::MatrixXd paired_edge = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(),50,-2);
     
-    // Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
-    // Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
+    Eigen::MatrixXd OreListdegree    = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
+    Eigen::MatrixXd OreListBardegree = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
+
+    // std::ofstream debug_file_edge1s_HYPO1;
+    // std::string Output_File_Path_Edgels_HYPO1 = "../../outputs/Edgels_HYPO1.txt";
+    // debug_file_edge1s_HYPO1.open(Output_File_Path_Edgels_HYPO1);
+    // for (int i = 0; i < Edges_HYPO1.rows(); i++) {
+    //   debug_file_edge1s_HYPO1 << Edges_HYPO1(i,0);
+    //   debug_file_edge1s_HYPO1 << "\t";
+    //   debug_file_edge1s_HYPO1 << Edges_HYPO1(i,1);
+    //   debug_file_edge1s_HYPO1 << "\n";
+    // }
+    // // debug_file_edge1s_HYPO1 << paired_edge_final;
+    // debug_file_edge1s_HYPO1.close();
+    
+    
     
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CORE PIPELINE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
   
@@ -169,14 +182,16 @@ Eigen::MatrixXd core_pipeline(
         continue;
       }
 
-      //Retrieve Hypo2 Edgels
+      //> Retrieve Hypo2 Edgels based on epipolar angles arising from the Edges_HYPO1(edge_idx)
       Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
-      //Correct Edgels in Hypo2 Based on Epipolar Constraints
+      //> Correct Edgels in Hypo2 Based on Epipolar Constraints
       Eigen::MatrixXd edgel_HYPO1  = Edges_HYPO1.row(edge_idx);
       Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
       //Organize the Final Edge Data
-      Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
-      Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+      // Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
+      // Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+      // Edges_HYPO1_final << edgel_HYPO1.col(0), edgel_HYPO1.col(1), edgel_HYPO1.col(2), edgel_HYPO1.col(3);
+      Eigen::MatrixXd Edges_HYPO1_final = edgel_HYPO1;
       Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(),4);
       Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
 
@@ -220,28 +235,43 @@ Eigen::MatrixXd core_pipeline(
         Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
         Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
         
-        // Calculate the angle range for epipolar lines (Hypo1 --> Vali)
-        Eigen::MatrixXd pt_edge            = Edges_HYPO1_final;
-        Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
-        Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
-        Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
-
-        // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
-        Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
-        Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+        Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, Edges_HYPO1_final, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
         Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
+        //> Calculate the epipolar angle range (Hypo1 --> Vali)
+        Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(Edges_HYPO1_final, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
+        Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
+
+        //> Calculate the epipolar angle range (Hypo2 --> Vali)
+        Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+        Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
+        double thresh_ore31_1 = OreListBardegree31(0,0);
+        double thresh_ore31_2 = OreListBardegree31(0,1);
         for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
-          double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
-          double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
+          // double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
+          // double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
           double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
           double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
+
+          // if (VALID_INDX == 1) {
+          //   if (fabs(Edges_HYPO1_final(0,0) - 520.554) < 0.1 && fabs(Edges_HYPO1_final(0,1) - 426.424) < 0.1 ) {
+          //     if (fabs(Edges_HYPO2_final(idx_pair,0) - 519.61) < 0.1 && fabs(Edges_HYPO2_final(idx_pair,1) - 407.308) < 0.1) {
+          //       // std::cout << "Debugging an edge pair here..." << std::endl;
+          //       std::cout << "Edges_HYPO1_final = " << Edges_HYPO1_final(0,0) << "," << Edges_HYPO1_final(0,1) << std::endl;
+          //       std::cout << "Edges_HYPO2_final = " << Edges_HYPO2_final(idx_pair,0) << "," << Edges_HYPO2_final(idx_pair,1) << std::endl;
+          //       std::cout << "(thresh_ore31_1, thresh_ore31_2) = (" << thresh_ore31_1 << ", " << thresh_ore31_2 << ")" << std::endl;
+          //       std::cout << "(thresh_ore32_1, thresh_ore32_2) = (" << thresh_ore32_1 << ", " << thresh_ore32_2 << ")" << std::endl;
+          //     }
+          //   }
+          // }
           
+          //> Parse all edgels falling inside epipolar wedge on validation view from the two hypothesis views
+          //> (1) Hypo1 --> Vali
           Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
           Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-
-          // Find all the edges fall inside epipolar wedge on validation view (Hypo2 --> Vali)
+          //> (2) Hypo2 --> Vali
           Eigen::MatrixXd vali_idx32 = PairHypo.getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
           Eigen::MatrixXd edgels_32  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
           
@@ -532,6 +562,8 @@ Eigen::MatrixXd core_pipeline(
         std::cout << Edge_File_PathH12 << std::endl;
 #endif
         file_idx ++;
+        int d = 0, q = 0;
+        double rd_data;
         Eigen::MatrixXd Edgels; //> Declare locally, ensuring the memory addresses are different for different frames
         Edge_File.open(Edge_File_PathH12, std::ios_base::in);
         if (!Edge_File) { 
@@ -551,7 +583,6 @@ Eigen::MatrixXd core_pipeline(
           }
           Edge_File.close();
           All_Edgels_H12_1.push_back(Edgels);
-          //Edgels = {};
           d = 0;
           q = 0;
         }
@@ -625,22 +656,43 @@ int main(int argc, char **argv) {
     return 0;
 	}
 
-  EdgeSketch_Core( Edge_Sketch_Settings_Map );
+  EdgeSketch_Core MWV_Edge_Rec( Edge_Sketch_Settings_Map );
 
-    // int hyp01_view_indx  = 6;
-    // int hyp02_view_indx  = 8;
+  // MWV_Edge_Rec.Read_Sketch_Data();
+  // MWV_Edge_Rec.Run_3D_Edge_Sketch();
+  // MWV_Edge_Rec.Finalize_Edge_Pairs();
+
+  // std::string out_str = "Number of pairs found till this round: " + std::to_string(MWV_Edge_Rec.paired_edge_final.rows());
+  // LOG_INFOR_MESG(out_str);
+
+    int hyp01_view_indx  = 47;
+    int hyp02_view_indx  = 42;
 
     // Read all required matrices (rotation, translation, and camera matrices)
     int file_idx = 0;
 
     ///////////////////// find worst frames according to every 3d edges not only the previous one ////////////////////
-    
+    std::string Dataset_Path = "/gpfs/data/bkimia/Datasets/";
+    std::string Dataset_Name = "ABC-NEF";
+    std::string Scene_Name = "00000006";
+    file_reader Data_Reader( Dataset_Path, Dataset_Name, Scene_Name, DATASET_NUM_OF_FRAMES );
 
-    for (int iteration = 0; iteration < 5; iteration++) {
+    Eigen::MatrixXd all_Edges_3D;
+    std::vector<Eigen::MatrixXd> All_Edgels; 
+    std::vector<Eigen::Matrix3d> All_R;
+    std::vector<Eigen::Vector3d> All_T;
+    std::vector<Eigen::Matrix3d> All_K;
+    Eigen::Matrix3d K;
+    Data_Reader.readRmatrix( All_R );
+    Data_Reader.readTmatrix( All_T );
+    // Data_Reader.readK( All_K );
+    K << 1111.11136542426,	0,	399.500000000000, 0,	1111.11136542426,	399.500000000000, 0,	0,	1;
+
+    for (int iteration = 0; iteration < 1; iteration++) {
 
       std::cout << "Iteration " << iteration << ": Selected views for hypotheses are " << hyp01_view_indx << " and " << hyp02_view_indx << std::endl;
 
-      Eigen::MatrixXd Edges_3D = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K, rd_data, d, q);
+      Eigen::MatrixXd Edges_3D = core_pipeline(Data_Reader, hyp01_view_indx, hyp02_view_indx, All_R, All_T, All_K, K);
 
       if (all_Edges_3D.rows() == 0) {
         all_Edges_3D = Edges_3D;
@@ -658,7 +710,8 @@ int main(int argc, char **argv) {
           projectedEdgesList.push_back(projectedEdges);
       }
 
-      Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
+      Data_Reader.read_All_Edgels( All_Edgels, THRESEDGFORALL );
+      // Data_Reader.readEdgelFiles(All_Edgels, Edge_File, rd_data, row_edge, file_idx, d, q, 1);  
 
       std::vector<std::vector<int>> claimedEdgesList;
       double threshold = 2.0;  
@@ -679,8 +732,8 @@ int main(int argc, char **argv) {
       All_Edgels.clear();
       projectedEdgesList.clear();
       claimedEdgesList.clear();
-      d = 0;
-      q = 0;
+      // d = 0;
+      // q = 0;
       file_idx = 0;
     }
     LOG_INFOR_MESG("3D Edge Sketch is Finished!");

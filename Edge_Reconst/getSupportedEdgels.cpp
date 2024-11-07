@@ -67,33 +67,33 @@ namespace GetSupportedEdgels {
         }
     }
 
-    void get_SupportedEdgels::printEdge3DToHypothesisAndSupports(
-        const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
-        std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
-        EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
-    {
-        for (const auto& [edge_3D, value] : edge_3D_to_hypothesis_and_supports) {
-            // Extract 3D edge
-            std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
+    // void get_SupportedEdgels::printEdge3DToHypothesisAndSupports(
+    //     const std::unordered_map<Eigen::Matrix<double, 3, 1>, 
+    //     std::tuple<Eigen::Vector2d, Eigen::Vector2d, std::vector<std::pair<int, Eigen::Vector2d>>>, 
+    //     EigenMatrixHash>& edge_3D_to_hypothesis_and_supports) 
+    // {
+    //     for (const auto& [edge_3D, value] : edge_3D_to_hypothesis_and_supports) {
+    //         // Extract 3D edge
+    //         std::cout << "3D Edge: [" << edge_3D(0) << ", " << edge_3D(1) << ", " << edge_3D(2) << "]\n";
 
-            // Extract the hypothesis edges from view 6 and view 8
-            const Eigen::Vector2d& hypothesis_edge_view6 = std::get<0>(value);
-            const Eigen::Vector2d& hypothesis_edge_view8 = std::get<1>(value);
+    //         // Extract the hypothesis edges from view 6 and view 8
+    //         const Eigen::Vector2d& hypothesis_edge_view6 = std::get<0>(value);
+    //         const Eigen::Vector2d& hypothesis_edge_view8 = std::get<1>(value);
 
-            std::cout << "    Hypothesis Edge (View 6): [" << hypothesis_edge_view6(0) << ", " << hypothesis_edge_view6(1) << "]\n";
-            std::cout << "    Hypothesis Edge (View 8): [" << hypothesis_edge_view8(0) << ", " << hypothesis_edge_view8(1) << "]\n";
+    //         std::cout << "    Hypothesis Edge (View 6): [" << hypothesis_edge_view6(0) << ", " << hypothesis_edge_view6(1) << "]\n";
+    //         std::cout << "    Hypothesis Edge (View 8): [" << hypothesis_edge_view8(0) << ", " << hypothesis_edge_view8(1) << "]\n";
 
-            // Extract the supporting edges with validation view numbers
-            const std::vector<std::pair<int, Eigen::Vector2d>>& validation_support_edges = std::get<2>(value);
+    //         // Extract the supporting edges with validation view numbers
+    //         const std::vector<std::pair<int, Eigen::Vector2d>>& validation_support_edges = std::get<2>(value);
 
-            // Loop through and print each supporting edge and its corresponding validation view number
-            for (size_t i = 0; i < validation_support_edges.size(); ++i) {
-                const auto& [val_view_num, support_edge] = validation_support_edges[i];
-                std::cout << "    Validation View " << val_view_num << ": Supporting Edge = [" 
-                        << support_edge(0) << ", " << support_edge(1) << "]\n";
-            }
-        }
-    }
+    //         // Loop through and print each supporting edge and its corresponding validation view number
+    //         for (size_t i = 0; i < validation_support_edges.size(); ++i) {
+    //             const auto& [val_view_num, support_edge] = validation_support_edges[i];
+    //             std::cout << "    Validation View " << val_view_num << ": Supporting Edge = [" 
+    //                     << support_edge(0) << ", " << support_edge(1) << "]\n";
+    //         }
+    //     }
+    // }
 
 }
 

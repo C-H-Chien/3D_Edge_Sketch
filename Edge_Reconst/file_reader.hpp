@@ -13,7 +13,7 @@ class file_reader{
 public:
     file_reader( std::string, std::string, std::string, int );
     void read_All_Edgels( std::vector<Eigen::MatrixXd> &All_Edgels, int thresh_EDG );
-    Eigen::MatrixXd read_Edgels_Of_a_File( int file_idx, double thresh_EDG );
+    Eigen::MatrixXd read_Edgels_Of_a_File( int file_idx, int thresh_EDG );
     void readRmatrix( std::vector<Eigen::Matrix3d> &All_R );
     void readTmatrix( std::vector<Eigen::Vector3d> &All_T );
     void readK( std::vector<Eigen::Matrix3d> &All_K );

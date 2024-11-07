@@ -26,7 +26,8 @@
 //> YAML file data reader
 #include <yaml-cpp/yaml.h>
 
-#include "definitions.hpp"
+#include "EdgeSketch_Core.hpp"
+#include "definitions.h"
 
 //> Constructor
 EdgeSketch_Core::EdgeSketch_Core(YAML::Node Edge_Sketch_Setting_File)
@@ -62,9 +63,16 @@ EdgeSketch_Core::EdgeSketch_Core(YAML::Node Edge_Sketch_Setting_File)
 
     //> Initialization
     edge_sketch_time = 0.0;
+    thresh_EDG = Edge_Detection_Init_Thresh;
 
     //> Class objects
-    util = std::shared_ptr<MultiviewGeometryUtil::multiview_geometry_util>(new multiview_geometry_util());
+    Load_Data       = std::shared_ptr<file_reader>(new file_reader(Dataset_Path, Dataset_Name, Scene_Name, Num_Of_Total_Imgs));
+    util            = std::shared_ptr<MultiviewGeometryUtil::multiview_geometry_util>(new MultiviewGeometryUtil::multiview_geometry_util());
+    PairHypo        = std::shared_ptr<PairEdgeHypothesis::pair_edge_hypothesis>(new PairEdgeHypothesis::pair_edge_hypothesis());
+    getReprojEdgel  = std::shared_ptr<GetReprojectedEdgel::get_Reprojected_Edgel>(new GetReprojectedEdgel::get_Reprojected_Edgel());
+    getSupport      = std::shared_ptr<GetSupportedEdgels::get_SupportedEdgels>(new GetSupportedEdgels::get_SupportedEdgels());
+    getOre          = std::shared_ptr<GetOrientationList::get_OrientationList>(new GetOrientationList::get_OrientationList());
+    edgeMapping     = std::shared_ptr<EdgeMapping>(new EdgeMapping());
 
     //> Set up OpenMP threads
     omp_set_num_threads(Num_Of_OMP_Threads);
@@ -74,28 +82,23 @@ EdgeSketch_Core::EdgeSketch_Core(YAML::Node Edge_Sketch_Setting_File)
 #endif
 }
 
-void EdgeSketch_Core::Read_Sketch_Data() {
-    Load_Data = std::shared_ptr<file_reader>(new file_reader(Dataset_Path, Dataset_Name, Scene_Name));
+void EdgeSketch_Core::Read_Camera_Data() {
     
     //> Read absolute camera rotation matrices (all under world coordinate)
-    Load_Data->Data_Reader.readRmatrix( All_R );
+    Load_Data->readRmatrix( All_R );
 
     //> Read absolute camera translation vectors (all under world coordinate)
-    Load_Data->Data_Reader.readTmatrix( All_T );
+    Load_Data->readTmatrix( All_T );
 
     //> Read camera intrinsic matrix
     if (Use_Multiple_K)
-        Load_Data->Data_Reader.readK( All_K );
+        Load_Data->readK( All_K );
     else
-        K << fx, 0,	cx, 0, fy, cy, 0, 0, 1;
-
-    //> Read edgels detected at a specific threshold 
-    Load_Data->read_All_Edgels( All_Edgels, Edge_Detection_Init_Thresh );
+        K << fx, 0,	cx, 0, fy, cy, 0, 0, 1;   
 }
 
-void EdgeSketch_Core::Set_Hypothesis_Views() {
-    Edges_HYPO1     = All_Edgels[hyp01_view_indx];
-    Edges_HYPO2     = All_Edgels[hyp02_view_indx];
+void EdgeSketch_Core::Set_Hypothesis_Views_Camera() {
+    
     Rot_HYPO1       = All_R[hyp01_view_indx];
     Rot_HYPO2       = All_R[hyp02_view_indx];
     Transl_HYPO1    = All_T[hyp01_view_indx];
@@ -112,17 +115,26 @@ void EdgeSketch_Core::Set_Hypothesis_Views() {
     util->getRelativePoses( Rot_HYPO1, Transl_HYPO1, Rot_HYPO2, Transl_HYPO2, R21, T21, R12, T12 );
     F21 = util->getFundamentalMatrix(K_HYPO1.inverse(), K_HYPO2.inverse(), R21, T21); 
     F12 = util->getFundamentalMatrix(K_HYPO2.inverse(), K_HYPO1.inverse(), R12, T12);
+}
+
+void EdgeSketch_Core::Read_Edgels_Data() {
+    //> Read edgels detected at a specific threshold 
+    Load_Data->read_All_Edgels( All_Edgels, thresh_EDG );
+}
+
+void EdgeSketch_Core::Set_Hypothesis_Views_Edgels() {
+    Edges_HYPO1     = All_Edgels[hyp01_view_indx];
+    Edges_HYPO2     = All_Edgels[hyp02_view_indx];
 
     //> Initialize a list of paired edges between HYPO1 and HYPO2
     paired_edge         = Eigen::MatrixXd::Constant(Edges_HYPO1.rows(), Num_Of_Total_Imgs, -2);
 
     //> Compute epipolar wedge angles between HYPO1 and HYPO2 and valid angle range in HYPO1 for fast indexing from edges of HYPO2
-    OreListdegree       = getOre.getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K1, K2);
-    OreListBardegree    = getOre.getOreListBar(Edges_HYPO1, All_R, All_T, K1, K2, hyp02_view_indx, hyp01_view_indx);
+    OreListdegree       = getOre->getOreList(hyp01_view_indx, hyp02_view_indx, Edges_HYPO2, All_R, All_T, K_HYPO1, K_HYPO2);
+    OreListBardegree    = getOre->getOreListBar(Edges_HYPO1, All_R, All_T, K_HYPO1, K_HYPO2, hyp02_view_indx, hyp01_view_indx);
 }
 
-
-EdgeSketch_Core::Run_3D_Edge_Sketch() {
+void EdgeSketch_Core::Run_3D_Edge_Sketch() {
 
     #pragma omp parallel
     {
@@ -148,12 +160,12 @@ EdgeSketch_Core::Run_3D_Edge_Sketch() {
             double thresh_ore21_2 = OreListBardegree(edge_idx, 1);
 
             //> Find the corresponding edgel in HYPO2 based on the epipolar angle
-            Eigen::MatrixXd HYPO2_idx_raw = PairHypo.getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+            Eigen::MatrixXd HYPO2_idx_raw = PairHypo->getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
             if (HYPO2_idx_raw.rows() == 0) continue;
             //> Retrieve Hypo2 Edgels
-            Eigen::MatrixXd edgels_HYPO2 = PairHypo.getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
+            Eigen::MatrixXd edgels_HYPO2 = PairHypo->getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
             //> Correct Edgels in Hypo2 Based on Epipolar Constraints
-            Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, Edges_HYPO1.row(edge_idx), F21, F12, HYPO2_idx_raw);
+            Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo->edgelsHYPO2correct(edgels_HYPO2, Edges_HYPO1.row(edge_idx), F21, F12, HYPO2_idx_raw);
             //> Organize the Final Edge Data
             Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(), 4);
             Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
@@ -192,18 +204,18 @@ EdgeSketch_Core::Run_3D_Edge_Sketch() {
                 Eigen::Matrix3d K3 = (IF_MULTIPLE_K == 1) ? All_K[VALID_INDX] : K;
 
                 // Calculate relative pose
-                Eigen::Matrix3d R31 = util.getRelativePose_R21(R1, R3);
-                Eigen::Vector3d T31 = util.getRelativePose_T21(R1, R3, T1, T3);
+                Eigen::Matrix3d R31 = util->getRelativePose_R21(Rot_HYPO1, R3);
+                Eigen::Vector3d T31 = util->getRelativePose_T21(Rot_HYPO1, R3, Transl_HYPO1, T3);
                 
                 // Calculate the angle range for epipolar lines (Hypo1 --> Vali)
                 Eigen::MatrixXd pt_edge            = Edges_HYPO1_final;
-                Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel.getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K1, K2);
-                Eigen::MatrixXd OreListBardegree31 = getOre.getOreListBar(pt_edge, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
-                Eigen::MatrixXd OreListdegree31    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K1, K3, VALID_INDX, hyp01_view_indx);
+                Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel->getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, pt_edge, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K_HYPO1, K_HYPO2);
+                Eigen::MatrixXd OreListBardegree31 = getOre->getOreListBar(pt_edge, All_R, All_T, K_HYPO1, K3, VALID_INDX, hyp01_view_indx);
+                Eigen::MatrixXd OreListdegree31    = getOre->getOreListVali(TO_Edges_VALID, All_R, All_T, K_HYPO1, K3, VALID_INDX, hyp01_view_indx);
 
                 // Find all the edges fall inside epipolar wedge on validation view (Hypo1 --> Vali)
-                Eigen::MatrixXd OreListBardegree32 = getOre.getOreListBar(Edges_HYPO2_final, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
-                Eigen::MatrixXd OreListdegree32    = getOre.getOreListVali(TO_Edges_VALID, All_R, All_T, K2, K3, VALID_INDX, hyp02_view_indx);
+                Eigen::MatrixXd OreListBardegree32 = getOre->getOreListBar(Edges_HYPO2_final, All_R, All_T, K_HYPO2, K3, VALID_INDX, hyp02_view_indx);
+                Eigen::MatrixXd OreListdegree32    = getOre->getOreListVali(TO_Edges_VALID, All_R, All_T, K_HYPO2, K3, VALID_INDX, hyp02_view_indx);
                 Eigen::VectorXd isparallel         = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
 
                 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
@@ -213,12 +225,12 @@ EdgeSketch_Core::Run_3D_Edge_Sketch() {
                 double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
                 double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
                 
-                Eigen::MatrixXd vali_idx31 = PairHypo.getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-                Eigen::MatrixXd edgels_31  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+                Eigen::MatrixXd vali_idx31 = PairHypo->getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+                Eigen::MatrixXd edgels_31  = PairHypo->getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
 
                 // Find all the edges fall inside epipolar wedge on validation view (Hypo2 --> Vali)
-                Eigen::MatrixXd vali_idx32 = PairHypo.getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
-                Eigen::MatrixXd edgels_32  = PairHypo.getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
+                Eigen::MatrixXd vali_idx32 = PairHypo->getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
+                Eigen::MatrixXd edgels_32  = PairHypo->getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
                 
                 // Check if the two wedges could be considered as parallel to each other
                 Eigen::MatrixXd anglediff(4,1);
@@ -244,7 +256,7 @@ EdgeSketch_Core::Run_3D_Edge_Sketch() {
                 // Calculate orientation of gamma 3
                 Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
                 // Get support from validation view for this gamma 3
-                double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
+                double supported_link_indx = getSupport->getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
 
                 if (supported_link_indx >= TO_Edges_VALID.rows()) {
                     LOG_ERROR("Something fishy here!\n");
@@ -360,7 +372,8 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
         pair_num++;
       }
     }
-    Eigen::MatrixXd paired_edge_final = Eigen::MatrixXd::Constant(pair_num,50,-2);
+    // Eigen::MatrixXd paired_edge_final = Eigen::MatrixXd::Constant(pair_num,50,-2);
+    paired_edge_final = Eigen::MatrixXd::Constant(pair_num,50,-2);
     for(int i = 0; i < pair_num; i++){
       paired_edge_final.row(i) << paired_edge.row(valid_pair_index[i]);
     }
@@ -376,17 +389,17 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
 #endif
 
     Eigen::MatrixXd Gamma1s;
-    // gamma3 calculation, next view index pre
-    if(thresh_EDG == 1) {
+    if (thresh_EDG == 1) {
       std::vector<Eigen::Matrix3d> Rs;
       Rs.push_back(R21);
       std::vector<Eigen::Vector3d> Ts;
       Ts.push_back(T21);
       std::vector<double> K1_v;
-      K1_v.push_back(K1(0,2));
-      K1_v.push_back(K1(1,2));
-      K1_v.push_back(K1(0,0));
-      K1_v.push_back(K1(1,1));
+      //> TODO: This can be further simplified
+      K1_v.push_back(K_HYPO1(0,2));
+      K1_v.push_back(K_HYPO1(1,2));
+      K1_v.push_back(K_HYPO1(0,0));
+      K1_v.push_back(K_HYPO1(1,1));
       LOG_INFOR_MESG("Finalizing edge pairs");
       std::cout << paired_edge_final.rows() << std::endl;
       Gamma1s.conservativeResize(paired_edge_final.rows(),3);
@@ -398,10 +411,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
         // Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));      //> WTF is this? Edges_HYPO1 = Edges_HYPO1
         Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));
 
-        // std::cout << "P0, ";
-        Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgel_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
-
-        // std::cout << "P1, ";
+        Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo->edgelsHYPO2correct(edgel_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
 
         if (HYPO2_idx_raw.rows() == 0 || edgels_HYPO2_corrected.rows() == 0) {
           std::cout << "No valid matches found for edge " << pair_idx << " at threshold " << thresh_EDG << std::endl;
@@ -422,7 +432,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
         pts.push_back(pt_H2);
 
         //> The resultant edge_pt_3D is 3D edges under the first hypothesis view coordinate
-        Eigen::Vector3d edge_pt_3D = util.linearTriangulation(2, pts, Rs, Ts, K1_v);
+        Eigen::Vector3d edge_pt_3D = util->linearTriangulation(2, pts, Rs, Ts, K1_v);
 
         // std::cout << "P3, ";
 
@@ -434,8 +444,8 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
         }
 
         Gamma1s.row(pair_idx) << edge_pt_3D(0), edge_pt_3D(1), edge_pt_3D(2);
-        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, hyp01_view_indx);
-        edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, hyp02_view_indx);
+        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, hyp01_view_indx);
+        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, hyp02_view_indx);
 
         // std::cout << "P4, ";
 
@@ -467,18 +477,17 @@ void EdgeSketch_Core::Finalize_Edge_Pairs() {
                 validation_support_edges.emplace_back(val_idx, supporting_edge);
 
                 // Add the supporting edge to the edgeMapping for the 3D edge
-                edgeMapping.add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
+                edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
             }
             val_indx_in_paired_edge_array++;
         }
-
-        // std::cout << "P5, " << paired_edge_final.rows() << std::endl;
-        
         ///////////////////////////////// Add support from validation views /////////////////////////////////
       }
-      std::cout << "Finish for-loop" << std::endl;
     }
+}
 
+void EdgeSketch_Core::Clear_Data() {
+    all_supported_indices.clear();
 }
 
 EdgeSketch_Core::~EdgeSketch_Core() { }
