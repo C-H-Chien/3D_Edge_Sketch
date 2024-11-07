@@ -113,8 +113,8 @@ CorePipelineOutput core_pipeline(
   int d,
   int q)
 {
-    Eigen::Vector2d target_point_hypo1(520.5543, 426.4240);
-    Eigen::Vector2d target_point_hypo2(519.6100, 407.3082);
+    // Eigen::Vector2d target_point_hypo1(520.5543, 426.4240);
+    // Eigen::Vector2d target_point_hypo2(519.6100, 407.3082);
 
   std::cout<< "pipeline start" <<std::endl;
   
@@ -228,8 +228,9 @@ CorePipelineOutput core_pipeline(
       Eigen::MatrixXd edgel_HYPO1  = Edges_HYPO1.row(edge_idx);
       Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo.edgelsHYPO2correct(edgels_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
       //Organize the Final Edge Data
-      Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
-      Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+      // Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
+      // Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+      Eigen::MatrixXd Edges_HYPO1_final = edgel_HYPO1;
       Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(),4);
       Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
 
@@ -240,13 +241,13 @@ CorePipelineOutput core_pipeline(
         continue;
       }
 
-      if (HYPO2_idx.rows() > 0) {
-        {
-            // Append matrices to file
-            writeMatrixToFile("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/48_edge.txt", Edges_HYPO1_final);
-            writeMatrixToFile("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/43_edge.txt", Edges_HYPO2_final);
-        }
-      }
+      // if (HYPO2_idx.rows() > 0) {
+      //   {
+      //       // Append matrices to file
+      //       writeMatrixToFile("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/48_edge.txt", Edges_HYPO1_final);
+      //       writeMatrixToFile("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/43_edge.txt", Edges_HYPO2_final);
+      //   }
+      // }
 
     
 
@@ -302,15 +303,17 @@ CorePipelineOutput core_pipeline(
         bool debug_print = false;
         std::set<int> written_frames;
 
+        double thresh_ore31_1 = OreListBardegree31(0,0);
+        double thresh_ore31_2 = OreListBardegree31(0,1);
         for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
-          double epsilon = 1e-4; 
-          if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
-              std::abs(Edges_HYPO1_final(idx_pair, 1) - target_point_hypo1(1)) < epsilon) {
-                debug_print = true;
-          }
+          // double epsilon = 1e-4; 
+          // if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
+          //     std::abs(Edges_HYPO1_final(idx_pair, 1) - target_point_hypo1(1)) < epsilon) {
+          //       debug_print = true;
+          // }
                 
-          double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
-          double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
+          // double thresh_ore31_1 = OreListBardegree31(idx_pair,0);
+          // double thresh_ore31_2 = OreListBardegree31(idx_pair,1);
           double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
           double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
           
@@ -392,14 +395,14 @@ CorePipelineOutput core_pipeline(
           Eigen::MatrixXd inliner(idxVector);
 
           // Print inliner before calling getSupportIdx
-          if (debug_print){
-            std::cout << "Inliner indices before getSupportIdx:\n" << inliner << std::endl;
-          }
+          // if (debug_print){
+          //   std::cout << "Inliner indices before getSupportIdx:\n" << inliner << std::endl;
+          // }
           
           // Calculate orientation of gamma 3
           Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
           // Get support from validation view for this gamma 3
-          double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner, debug_print);
+          double supported_link_indx = getSupport.getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
 
           if (supported_link_indx >= TO_Edges_VALID.rows()) {
             LOG_ERROR("Something fishy here!\n");
@@ -417,26 +420,26 @@ CorePipelineOutput core_pipeline(
           }
 
           ///////////////////////debug /////////////////////////////////////////////
-          if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
-              std::abs(Edges_HYPO1_final(idx_pair, 1) - target_point_hypo1(1)) < epsilon) {
-              std::cout << "!!!!Appending!!!!!" << std::endl;
-              // File to save the supporting edge points
-              std::ofstream support_edge_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/supporting_edge_points.txt", std::ios::app);
-              if (!support_edge_file.is_open()) {
-                  std::cout << "Failed to open the supporting edge file for writing.\n"<<std::endl;
-              }
-              int support_idx = supported_indice_current(idx_pair);
-              std::cout<<"validation view "<<VALID_INDX<< ",   support idx is: "<<support_idx<<std::endl;
-              if (support_idx != -2 && support_idx < TO_Edges_VALID.rows()) {
-                  Eigen::Vector2d supporting_edge = TO_Edges_VALID.row(support_idx).head<2>();
-                  support_edge_file << "Validation View " << VALID_INDX << ": "
-                                    << supporting_edge(0) << " " << supporting_edge(1) << "\n";
-              }
+          // if (std::abs(Edges_HYPO1_final(idx_pair, 0) - target_point_hypo1(0)) < epsilon &&
+          //     std::abs(Edges_HYPO1_final(idx_pair, 1) - target_point_hypo1(1)) < epsilon) {
+          //     std::cout << "!!!!Appending!!!!!" << std::endl;
+          //     // File to save the supporting edge points
+          //     std::ofstream support_edge_file("/gpfs/data/bkimia/zqiwu/3D/3D_Edge_Sketch/outputs/supporting_edge_points.txt", std::ios::app);
+          //     if (!support_edge_file.is_open()) {
+          //         std::cout << "Failed to open the supporting edge file for writing.\n"<<std::endl;
+          //     }
+          //     int support_idx = supported_indice_current(idx_pair);
+          //     std::cout<<"validation view "<<VALID_INDX<< ",   support idx is: "<<support_idx<<std::endl;
+          //     if (support_idx != -2 && support_idx < TO_Edges_VALID.rows()) {
+          //         Eigen::Vector2d supporting_edge = TO_Edges_VALID.row(support_idx).head<2>();
+          //         support_edge_file << "Validation View " << VALID_INDX << ": "
+          //                           << supporting_edge(0) << " " << supporting_edge(1) << "\n";
+          //     }
 
-              // Close the file after processing all validation views for this idx_pair
-              support_edge_file.close();
-          }
-          debug_print = false;
+          //     // Close the file after processing all validation views for this idx_pair
+          //     support_edge_file.close();
+          // }
+          // debug_print = false;
         ///////////////////////debug /////////////////////////////////////////////
         }
         supported_indices.col(VALID_idx) << supported_indice_current.col(0);
