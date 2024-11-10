@@ -66,4 +66,13 @@ std::pair<int, int> selectBestViews(
     const std::vector<std::vector<int>>& claimedEdges
 );
 
+
+// CorePipelineOutput struct for storing the output of the core_pipeline function
+struct CorePipelineOutput {
+    Eigen::MatrixXd Gamma1s; // 3D edge points
+
+    // Mapping structure: frame index -> 2D edge point -> list of corresponding 3D points
+    std::map<int, std::unordered_map<Eigen::Vector2d, std::vector<Eigen::Vector3d>, HashEigenVector2d>> frame_to_edge_to_3D_map;
+};
+
 #endif  // ITERATION_HPP
