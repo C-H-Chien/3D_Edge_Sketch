@@ -29,7 +29,7 @@ namespace GetOrientationList {
         Eigen::MatrixXd getOreListBar(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX);
         Eigen::MatrixXd getOreListBarVali(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX);
         Eigen::MatrixXd getOreList(int hyp01_view_indx, int hyp02_view_indx, Eigen::MatrixXd Edges_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2);
-        std::pair<Eigen::MatrixXd, Eigen::Vector2d> getOreListVali(Eigen::MatrixXd Edges_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX);
+        Eigen::MatrixXd getOreListVali(Eigen::MatrixXd Edges_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX);
         
 
     private:
