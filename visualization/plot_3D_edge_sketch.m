@@ -2,44 +2,56 @@
 %
 %> (c) LEMS, Brown University
 %> chiang-heng chien
+clear;
+clc;
+close all;
 
-% Define the folder path containing the 3D edge output files
-data_folder_path = "/gpfs/data/bkimia/zqiwu/3D_Edge_Sketch/outputs/";
+%> Define the folder path containing the 3D edge output files
+data_folder_name = 'outputs';
+data_folder_path = fullfile(fileparts(mfilename('fullpath')), '..', data_folder_name);
 
-% Specify the common pattern in the file names
-file_pattern = "Gamma1s_*.txt";
+%> Specify the common pattern in the file names
+file_pattern = "3D_edges_*.txt";
 
-% Get all files matching the pattern
+%> Get all files matching the pattern
 edge_files = dir(fullfile(data_folder_path, file_pattern));
 
-% Define a set of colors to be used for different files
-colors = lines(length(edge_files));  % Generate a set of distinct colors using the 'lines' colormap
+%> Define a set of colors to be used for different files through 'lines' colormap
+colors = lines(length(edge_files)); 
 
 % Create a figure for plotting
 figure;
 hold on;
 
-% Loop through each file and plot its edges in 3D
+%> Loop through each file and plot its edges in 3D
 for i = 1:length(edge_files)
-%for i = 3:4
-    % Read the current file
+    %> Read the current file
     current_file_path = fullfile(data_folder_path, edge_files(i).name);
     edges_file_read = fopen(current_file_path, 'r');
     disp(current_file_path);
+
+    %> parse 3D edge data
     ldata = textscan(edges_file_read, '%f\t%f\t%f', 'CollectOutput', true);
     edges_3d = double(ldata{1,1});
     fclose(edges_file_read);
 
-    % Plot the edges using a different color for each file
-    plot3(edges_3d(:,1), edges_3d(:,2), -edges_3d(:,3), 'Color', colors(i, :), 'Marker', '.', 'LineStyle', 'none');
+    %> Get the legend
+    hypothesis_view1_index = extractBetween(edge_files(i).name, 'hypo1_', '_hypo2');
+    hypothesis_view2_index = extractBetween(edge_files(i).name, 'hypo2_', '_t');
+    show_legend = strcat("3D edges from hypothesis views ", hypothesis_view1_index, " and ", hypothesis_view2_index);
+
+    %> Plot the edges using a different color for each file
+    plot3(edges_3d(:,1), edges_3d(:,2), edges_3d(:,3), ...
+          'Color', colors(i, :), 'Marker', '.', 'LineStyle', 'none', ...
+          'DisplayName', show_legend);
 end
 
-% Set the plot settings
-[az, el] = view(gca);
+%> Set the plot settings
 axis equal;
 axis off;
 set(gcf, 'color', 'w');
 
-% Add a legend for each file
-legend({edge_files.name}, 'Interpreter', 'none');
+%> Add a legend for each file
+legend;
+%legend({edge_files.name}, 'Interpreter', 'none');
 hold off;
