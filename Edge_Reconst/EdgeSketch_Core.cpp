@@ -67,7 +67,9 @@ EdgeSketch_Core::EdgeSketch_Core(YAML::Node Edge_Sketch_Setting_File)
     edge_sketch_time = 0.0;
     enable_aborting_3D_edge_sketch = false;
     num_of_nonveridical_edge_pairs = 0;
-    // thresh_EDG = Edge_Detection_Init_Thresh;
+    pair_edges_time = 0.0;
+    finalize_edge_pair_time = 0.0;
+    find_next_hypothesis_view_time = 0.0;
 
     //> Class objects
     Load_Data       = std::shared_ptr<file_reader>(new file_reader(Dataset_Path, Dataset_Name, Scene_Name, Num_Of_Total_Imgs));
@@ -140,6 +142,7 @@ void EdgeSketch_Core::Set_Hypothesis_Views_Edgels() {
 
 void EdgeSketch_Core::Run_3D_Edge_Sketch() {
 
+    itime = omp_get_wtime();
     #pragma omp parallel
     {
         //> Local array stacking all supported indices
@@ -351,10 +354,12 @@ void EdgeSketch_Core::Run_3D_Edge_Sketch() {
         #pragma omp critical
         all_supported_indices.insert(all_supported_indices.end(), local_thread_supported_indices.begin(), local_thread_supported_indices.end());
     }
+    pair_edges_time += omp_get_wtime() - itime;
 }
 
 void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
 
+    itime = omp_get_wtime();
     int pair_num = 0;
     std::vector<int> valid_pair_index;
     for (int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++) {
@@ -461,6 +466,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
             val_indx_in_paired_edge_array++;
         }
     }
+    finalize_edge_pair_time += omp_get_wtime() - itime;
 }
 
 void EdgeSketch_Core::Stack_3D_Edges() {
@@ -500,6 +506,7 @@ void EdgeSketch_Core::Stack_3D_Edges() {
 void EdgeSketch_Core::Project_3D_Edges_and_Find_Next_Hypothesis_Views() {
 
     //> First read all edges with the final-run threshold (TODO: is this step necessary?)
+    itime = omp_get_wtime();
     Load_Data->read_All_Edgels( All_Edgels, Edge_Detection_Final_Thresh );
 
     //> Loop over all views
@@ -526,6 +533,7 @@ void EdgeSketch_Core::Project_3D_Edges_and_Find_Next_Hypothesis_Views() {
 
     //> Check if the claimed edges is over a ratio of total observed edges
     enable_aborting_3D_edge_sketch = (least_ratio > Stop_3D_Edge_Sketch_by_Ratio_Of_Claimed_Edges) ? (true) : (false);
+    find_next_hypothesis_view_time += omp_get_wtime() - itime;
 }
 
 int EdgeSketch_Core::claim_Projected_Edges(const Eigen::MatrixXd& projectedEdges, const Eigen::MatrixXd& observedEdges, double threshold) {
@@ -596,12 +604,6 @@ void EdgeSketch_Core::select_Next_Best_Hypothesis_Views(
     int bestView2 = frameSupportCounts[1].first;
     next_hypothesis_views = std::make_pair(bestView1, bestView2);
     least_ratio = frameSupportCounts[0].second;
-
-    //> log: show the selected hypothesis views
-    std::string out_str = "Selected frames with the least supported edges: " + std::to_string(bestView1) + " and " + std::to_string(bestView2);
-    LOG_INFOR_MESG(out_str);
-
-    // return {bestView1, bestView2};
 }
 
 void EdgeSketch_Core::Clear_Data() {

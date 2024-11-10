@@ -14,6 +14,7 @@
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctime>
 
 //> Eigen library
 #include <Eigen/Core>
@@ -90,6 +91,11 @@ public:
     double least_ratio;
     bool enable_aborting_3D_edge_sketch;
     int num_of_nonveridical_edge_pairs;
+
+    //> timer
+    double itime, pair_edges_time;
+    double finalize_edge_pair_time;
+    double find_next_hypothesis_view_time;
     
 private:
     //> sharing the classes

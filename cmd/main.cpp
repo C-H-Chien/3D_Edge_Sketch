@@ -72,7 +72,11 @@ int main(int argc, char **argv) {
   //> Iteratively picking hypothesis view pairs to reconstruct 3D edges
   int edge_sketch_pass_count = 0;
   while ( edge_sketch_pass_count < MWV_Edge_Rec.Max_3D_Edge_Sketch_Passes ) {
-    std::cout << "Selected views for hypotheses are " << MWV_Edge_Rec.hyp01_view_indx << " and " << MWV_Edge_Rec.hyp02_view_indx << std::endl;
+
+    //> log: show the selected hypothesis views
+    std::string out_str = "Selected views for hypotheses are " + std::to_string(MWV_Edge_Rec.hyp01_view_indx) \
+                          + " and " + std::to_string(MWV_Edge_Rec.hyp02_view_indx);
+    LOG_INFOR_MESG(out_str);
 
     //> Setup some constant data used throughout the 3D edge sketch
     MWV_Edge_Rec.Set_Hypothesis_Views_Camera();
@@ -107,6 +111,13 @@ int main(int argc, char **argv) {
     if (MWV_Edge_Rec.enable_aborting_3D_edge_sketch)
       break;
   }
+
+  double total_time = MWV_Edge_Rec.pair_edges_time + MWV_Edge_Rec.finalize_edge_pair_time + MWV_Edge_Rec.find_next_hypothesis_view_time;
+  std::string out_time_str = "Total computation time: " + std::to_string(total_time) + " (s)";
+  LOG_TIMEIMGS(out_time_str);
+  std::cout << "     - Time for Pairing up Edges:              " << MWV_Edge_Rec.pair_edges_time << " (s)" << std::endl;
+  std::cout << "     - Time for Finalizing Edge Pairs:         " << MWV_Edge_Rec.finalize_edge_pair_time << " (s)" << std::endl;
+  std::cout << "     - Time for Finding Next Hypothesis Views: " << MWV_Edge_Rec.find_next_hypothesis_view_time << " (s)" << std::endl;
 
   LOG_INFOR_MESG("3D Edge Sketch is Finished!");
   return 0;
