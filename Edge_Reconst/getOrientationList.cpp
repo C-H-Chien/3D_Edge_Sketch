@@ -60,10 +60,10 @@ namespace GetOrientationList {
         //
         Eigen::MatrixXd slope_hypo1                     = DyDx.col(0).array() / DyDx.col(1).array();
         Eigen::MatrixXd dist_hypo1pt_epipoleall         = DyDx.col(0).array() * DyDx.col(0).array()+ DyDx.col(1).array() * DyDx.col(1).array();
-        Eigen::MatrixXd dist_hypo1pt12_epipoleallsquare = dist_hypo1pt_epipoleall.col(0) - Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*DELTA*DELTA;
+        Eigen::MatrixXd dist_hypo1pt12_epipoleallsquare = dist_hypo1pt_epipoleall.col(0) - Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*delta*delta;
         Eigen::MatrixXd dist_hypo1pt12_epipoleall       = dist_hypo1pt12_epipoleallsquare.array().sqrt();
         //
-        Eigen::MatrixXd thetahypo1all        = ((Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*DELTA).array() / (dist_hypo1pt12_epipoleall.col(0).array())).array().asin();
+        Eigen::MatrixXd thetahypo1all        = ((Eigen::VectorXd::Ones(dist_hypo1pt_epipoleall.rows())*delta).array() / (dist_hypo1pt12_epipoleall.col(0).array())).array().asin();
         Eigen::MatrixXd anglehypo1all        = slope_hypo1.col(0).array().atan();
         Eigen::MatrixXd angle_theta_hypo1all;
         angle_theta_hypo1all.conservativeResize(Edges_HYPO1.rows(),2);
@@ -244,22 +244,22 @@ namespace GetOrientationList {
                 p1_xy.row(idx_pt12) << p1_all(idx_pt12, 2), p1_all(idx_pt12, 3);
             }
             
-            double DELTA_x1 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*M_PI)*DELTA); 
+            double delta_x1 = abs(cos(ore_list1bar_all(idx_pt12,0)/180*M_PI)*delta); 
             double slope1_p = 0;
             double slope1_n = 0;
             if(p1_xy(idx_pt12, 0) == 0 || p1_xy(idx_pt12, 0) == dataset_img_cols){
                 p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
-                p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) - DELTA_x1;
+                p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x1;
                 p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0);
-                p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) + DELTA_x1;
+                p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1) + delta_x1;
                 slope1_p                    = p1_final_dxdyp(idx_pt12, 1)/p1_final_dxdyp(idx_pt12, 0);
                 slope1_n                    = p1_final_dxdyn(idx_pt12, 1)/p1_final_dxdyn(idx_pt12, 0);
                 slope12all(0,0)             = atan(slope1_p)/M_PI*180;
                 slope12all(1,0)             = atan(slope1_n)/M_PI*180;
             }else{
-                p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) - DELTA_x1;
+                p1_final_dxdyp(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) - delta_x1;
                 p1_final_dxdyp(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1);
-                p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) + DELTA_x1;
+                p1_final_dxdyn(idx_pt12, 0) = p1_xy(idx_pt12,0) - epipole_pix_view2(0) + delta_x1;
                 p1_final_dxdyn(idx_pt12, 1) = p1_xy(idx_pt12,1) - epipole_pix_view2(1);
                 slope1_p                    = p1_final_dxdyp(idx_pt12, 1)/p1_final_dxdyp(idx_pt12, 0);
                 slope1_n                    = p1_final_dxdyn(idx_pt12, 1)/p1_final_dxdyn(idx_pt12, 0);
@@ -310,22 +310,22 @@ namespace GetOrientationList {
                 p2_xy.row(idx_pt12) << p2_all(idx_pt12, 2), p2_all(idx_pt12, 3);
             }
             
-            double DELTA_x2 = abs(cos(ore_list1bar_all(idx_pt12,1)/180*M_PI)*DELTA); 
+            double delta_x2 = abs(cos(ore_list1bar_all(idx_pt12,1)/180*M_PI)*delta); 
             double slope2_p = 0;
             double slope2_n = 0;
             if(p2_xy(idx_pt12, 0) == 0 || p2_xy(idx_pt12, 0) == dataset_img_cols){
                 p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
-                p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) - DELTA_x2;
+                p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) - delta_x2;
                 p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0);
-                p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) + DELTA_x2;
+                p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1) + delta_x2;
                 slope2_p                    = p2_final_dxdyp(idx_pt12, 1)/p2_final_dxdyp(idx_pt12, 0);
                 slope2_n                    = p2_final_dxdyn(idx_pt12, 1)/p2_final_dxdyn(idx_pt12, 0);
                 slope12all(2,0)             = atan(slope2_p)/M_PI*180;
                 slope12all(3,0)             = atan(slope2_n)/M_PI*180;
             }else{
-                p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) - DELTA_x2;
+                p2_final_dxdyp(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) - delta_x2;
                 p2_final_dxdyp(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1);
-                p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) + DELTA_x2;
+                p2_final_dxdyn(idx_pt12, 0) = p2_xy(idx_pt12,0) - epipole_pix_view2(0) + delta_x2;
                 p2_final_dxdyn(idx_pt12, 1) = p2_xy(idx_pt12,1) - epipole_pix_view2(1);
                 slope2_p                    = p2_final_dxdyp(idx_pt12, 1)/p2_final_dxdyp(idx_pt12, 0);
                 slope2_n                    = p2_final_dxdyn(idx_pt12, 1)/p2_final_dxdyn(idx_pt12, 0);
@@ -362,8 +362,8 @@ namespace GetOrientationList {
                 std::cout << "p2_dxdy: \n" << p2_dxdy.row(idx_pt12) <<std::endl;
                 std::cout << "p2_final_dxdyp: \n" << p2_final_dxdyp.row(idx_pt12) <<std::endl;
                 std::cout << "p2_final_dxdyn: \n" << p2_final_dxdyn.row(idx_pt12) <<std::endl;
-                std::cout << "DELTA_x1: \n" << DELTA_x1 <<std::endl;
-                std::cout << "DELTA_x2: \n" << DELTA_x2 <<std::endl;
+                std::cout << "delta_x1: \n" << delta_x1 <<std::endl;
+                std::cout << "delta_x2: \n" << delta_x2 <<std::endl;
                 std::cout << "slope12all: \n" << slope12all <<std::endl;
                 if (DEBUG == 1) { std::cerr << "\n—=>DEBUG MODE<=—\n"; exit(1); }
             }
@@ -481,60 +481,43 @@ namespace GetOrientationList {
         return OreListBardegree;
     }
 
-    std::pair<Eigen::MatrixXd, Eigen::Vector2d> get_OrientationList::getOreListVali(
-        Eigen::MatrixXd Edges_HYPO2, 
-        std::vector<Eigen::Matrix3d> All_R, 
-        std::vector<Eigen::Vector3d> All_T, 
-        Eigen::Matrix3d K1, 
-        Eigen::Matrix3d K2, 
-        int VALID_INDX, 
-        int REFIDX) 
-    {
+    Eigen::MatrixXd get_OrientationList::getOreListVali(Eigen::MatrixXd Edges_HYPO2, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX) {
         MultiviewGeometryUtil::multiview_geometry_util util;
         Eigen::MatrixXd OreListBar_raw;
-        OreListBar_raw.conservativeResize(Edges_HYPO2.rows(), 2);
-
-        // Define coordinate basis vectors
-        Eigen::Vector3d e1 = {1, 0, 0};
-        Eigen::Vector3d e2 = {0, 1, 0};
-        Eigen::Vector3d e3 = {0, 0, 1};
-
-        // Define rotation and translation matrices for reference and validation views
-        Eigen::Matrix3d R1 = All_R[REFIDX];
-        Eigen::Vector3d T1 = All_T[REFIDX];
-        Eigen::Matrix3d R2 = All_R[VALID_INDX];
-        Eigen::Vector3d T2 = All_T[VALID_INDX];
-
-        // Compute relative rotation and translation
+        OreListBar_raw.conservativeResize(Edges_HYPO2.rows(),2);
+        Eigen::Vector3d e1  = {1,0,0};
+        Eigen::Vector3d e2  = {0,1,0};
+        Eigen::Vector3d e3  = {0,0,1};
+        Eigen::Matrix3d R1  = All_R[REFIDX];
+        Eigen::Vector3d T1  = All_T[REFIDX];
+        Eigen::Matrix3d R2  = All_R[VALID_INDX];
+        Eigen::Vector3d T2  = All_T[VALID_INDX];
         Eigen::Matrix3d R21 = util.getRelativePose_R21(R1, R2);
         Eigen::Vector3d T21 = util.getRelativePose_T21(R1, R2, T1, T2);
+        Eigen::Matrix3d F   = util.getFundamentalMatrix(K2.inverse(), K1.inverse(), R21, T21);
 
-        // Compute epipole in validation view (metric and pixel coordinates)
-        Eigen::Vector3d epipole_met_view2 = {
-            double(e1.transpose() * T21) / double(e3.transpose() * T21),
-            double(e2.transpose() * T21) / double(e3.transpose() * T21),
-            1
-        };
+        //Eigen::Vector3d epipole_met_view1 = {double(e1.transpose() * R21.transpose() *T21) / double(e3.transpose()*R21.transpose()*T21), double(e2.transpose()*R21.transpose()*T21) / double(e3.transpose()*R21.transpose()*T21), 1};
+        Eigen::Vector3d epipole_met_view2 = {double(e1.transpose()*T21) / double(e3.transpose()*T21), double(e2.transpose()*T21) / double(e3.transpose()*T21), 1};
+        //Eigen::Vector3d epipole_pix_view1 = K1 * epipole_met_view1;
         Eigen::Vector3d epipole_pix_view2 = K2 * epipole_met_view2;
 
-        // Calculate relative positions of edges with respect to epipole
-        Eigen::MatrixXd DyDx(Edges_HYPO2.rows(), 2);
-        DyDx.col(0) = Edges_HYPO2.col(1) - Eigen::VectorXd::Ones(Edges_HYPO2.rows()) * epipole_pix_view2(1);
-        DyDx.col(1) = Edges_HYPO2.col(0) - Eigen::VectorXd::Ones(Edges_HYPO2.rows()) * epipole_pix_view2(0);
-
-        // Calculate slopes relative to epipole
-        Eigen::MatrixXd OreListBar = DyDx.col(0).array() / DyDx.col(1).array();
-
-        // Convert slopes to angles in radians and then to degrees
+        Eigen::MatrixXd DyDx;
+        DyDx.conservativeResize(Edges_HYPO2.rows(),2);
+        DyDx.col(0) = Edges_HYPO2.col(1) - Eigen::VectorXd::Ones(Edges_HYPO2.rows())*epipole_pix_view2(1);
+        DyDx.col(1) = Edges_HYPO2.col(0) - Eigen::VectorXd::Ones(Edges_HYPO2.rows())*epipole_pix_view2(0);
+        Eigen::MatrixXd OreListBar = DyDx.col(0).array()/DyDx.col(1).array();
+        
+        //OreListBar_raw.col(0) = -1*(Eigen::VectorXd::Ones(Edges_HYPO2.rows())*F(0,0)+F(0,1)*slope_hypo2.col(0));
+        //OreListBar_raw.col(1) = (Eigen::VectorXd::Ones(Edges_HYPO2.rows())*F(1,0)+F(1,1)*slope_hypo2.col(0));
+        //Eigen::MatrixXd OreListBar = OreListBar_raw.col(0).array()/OreListBar_raw.col(1).array();
+        
         Eigen::MatrixXd OreListBarAtan = OreListBar.col(0).array().atan();
-        Eigen::MatrixXd OreListBardegree = (OreListBarAtan.col(0) * 180) / M_PI;
-
-        // Adjust negative angles to be within [0, 360) degrees
-        Eigen::MatrixXd OreListBardegree1 = OreListBardegree.col(0) + Eigen::VectorXd::Ones(OreListBardegree.rows()) * 180;
+        
+        Eigen::MatrixXd OreListBardegree = (OreListBarAtan.col(0)*180)/M_PI;
+        Eigen::MatrixXd OreListBardegree1 = OreListBardegree.col(0) + Eigen::VectorXd::Ones(OreListBardegree.rows())*180;
         OreListBardegree = (OreListBardegree.array() < 0).select(OreListBardegree1, OreListBardegree);
 
-        // Return a pair containing the angle list and the epipole center in pixel coordinates
-        return {OreListBardegree, epipole_pix_view2.head<2>()};
+        return OreListBardegree;
     }
 
 

@@ -27,7 +27,6 @@
 #include "../Edge_Reconst/EdgeSketch_Core.hpp"
 #include "../Edge_Reconst/file_reader.hpp"
 #include "../Edge_Reconst/edge_mapping.hpp"
-// #include "../Edge_Reconst/iteration.hpp"
 
 using namespace MultiviewGeometryUtil;
 

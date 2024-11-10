@@ -30,7 +30,6 @@
 #include "getSupportedEdgels.hpp"
 #include "getOrientationList.hpp"
 #include "edge_mapping.hpp"
-// #include "iteration.hpp"
     
 class EdgeSketch_Core {
 
