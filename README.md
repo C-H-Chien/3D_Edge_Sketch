@@ -33,7 +33,9 @@ An example using the [ABC-NEF dataset](https://github.com/yunfan1202/NEF_code?ta
 - (1) Run the executable file under ``/buid/bin`` once all settings are done.
 - (2) The 3D edges are written in files under ``outputs/`` where the file names include information of the dataset, object, hypothesis view indices, and other settings. Each file is the 3D edges reconstructed by a pair of hypothesis views. <br />
 - (3) Visualize the 3D edge sketch using ``visualization/plot_3D_edge_sketch.m``. Below is an example result:
-![example-00000006](https://github.com/C-H-Chien/3D_Edge_Sketch/doc/00000006.png)
+<p align="center">
+<img src="./doc/00000006.png" alt="drawing" width="200"/>
+</p>
 
 ## Generating Third-Order Edges and Absolute Poses as Inputs for 3D Edge Sketch
 - Third-order edges: use ``preprocesser/third_order_edge_detector/get_RO_Edges_List_in_dataset.m`` which helps generate ``Edge_*_t*.txt``.
