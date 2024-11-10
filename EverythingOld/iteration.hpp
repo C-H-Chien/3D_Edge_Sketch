@@ -24,14 +24,9 @@
 #include "../Edge_Reconst/util.hpp"
 #include "../Edge_Reconst/PairEdgeHypo.hpp"
 #include "../Edge_Reconst/getReprojectedEdgel.hpp"
-#include "../Edge_Reconst/getQuadrilateral.hpp"
 #include "../Edge_Reconst/getSupportedEdgels.hpp"
 #include "../Edge_Reconst/getOrientationList.hpp"
-#include "../Edge_Reconst/linearTriangulationUtil.hpp"
 #include "../Edge_Reconst/definitions.h"
-#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_CH.hpp"
-#include "../Edge_Reconst/lemsvpe_CH/vgl_polygon_scan_iterator_CH.hpp"
-#include "../Edge_Reconst/subpixel_point_set.hpp"
 #include "../Edge_Reconst/file_reader.hpp"
 #include "../Edge_Reconst/edge_mapping.hpp"
 #include "../Edge_Reconst/iteration.hpp"
@@ -52,6 +47,19 @@ std::vector<int> findClosestObservedEdges(
     const Eigen::MatrixXd& projectedEdges, 
     const Eigen::MatrixXd& observedEdges, 
     double threshold
+);
+
+int claim_Projected_Edges(
+    const Eigen::MatrixXd& projectedEdges, 
+    const Eigen::MatrixXd& observedEdges, 
+    double threshold
+);
+
+void select_Next_Best_Hypothesis_Views( 
+    const std::vector< int >& claimedEdges, 
+    std::vector<Eigen::MatrixXd> All_Edgels,
+    std::pair<int, int> &next_hypothesis_views, 
+    double &least_ratio 
 );
 
 std::pair<int, int> selectBestViews(
