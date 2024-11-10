@@ -27,13 +27,12 @@
 
 namespace GetSupportedEdgels {
     
-    get_SupportedEdgels::get_SupportedEdgels( ) { }
+    get_SupportedEdgels::get_SupportedEdgels( double Orien_Thresh ): Orientation_Thresh(Orien_Thresh) { }
     
     double get_SupportedEdgels::getSupportIdx(Eigen::Vector2d edgels_tgt_reproj, Eigen::MatrixXd Tangents_VALID, Eigen::MatrixXd inliner) {
         double prev_prod = 0;
         double supported_link_indx = -2;
-        double ore_threshold       = cos(double(OREN_THRESH)/180*PI);
-        // std::cout << "ore_threshold: " << cos(double(OREN_THRESH)/180*PI) <<std::endl;
+        double ore_threshold       = cos(double(Orientation_Thresh)/180*PI);
         for (int idx_inline = 0; idx_inline < inliner.rows(); idx_inline++){
             Eigen::Vector2d target_edges = {Tangents_VALID(inliner(idx_inline),0), Tangents_VALID(inliner(idx_inline),1)};
             double abs_dot_prod = fabs(edgels_tgt_reproj(0)*target_edges(0) + edgels_tgt_reproj(1)*target_edges(1));

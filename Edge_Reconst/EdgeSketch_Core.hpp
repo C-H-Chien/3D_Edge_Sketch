@@ -27,11 +27,10 @@
 #include "util.hpp"
 #include "PairEdgeHypo.hpp"
 #include "getReprojectedEdgel.hpp"
-#include "getQuadrilateral.hpp"
 #include "getSupportedEdgels.hpp"
 #include "getOrientationList.hpp"
 #include "edge_mapping.hpp"
-#include "iteration.hpp"
+// #include "iteration.hpp"
     
 class EdgeSketch_Core {
 
@@ -81,11 +80,17 @@ public:
     int thresh_EDG;
     int hyp01_view_indx;
     int hyp02_view_indx;
+    int Edge_Detection_Init_Thresh;
+    int Edge_Detection_Final_Thresh;
+    int Max_3D_Edge_Sketch_Passes;
 
     std::vector< Eigen::MatrixXd > all_supported_indices;
     Eigen::MatrixXd Gamma1s;
     Eigen::MatrixXd all_3D_Edges;
-    std::vector< std::vector<int> > claimedEdgesList;
+    std::vector< int > claimedEdgesList;
+    double least_ratio;
+    bool enable_aborting_3D_edge_sketch;
+    int num_of_nonveridical_edge_pairs;
     
 private:
     //> sharing the classes
@@ -97,6 +102,12 @@ private:
     std::shared_ptr<GetOrientationList::get_OrientationList> getOre = nullptr;
     std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
 
+    Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen::Matrix3d& R, const Eigen::Vector3d& T, const Eigen::Matrix3d& K, const Eigen::Matrix3d& R_hyp01, const Eigen::Vector3d& T_hpy01);
+    int claim_Projected_Edges(const Eigen::MatrixXd& projectedEdges, const Eigen::MatrixXd& observedEdges, double threshold);
+    void select_Next_Best_Hypothesis_Views( 
+      const std::vector< int >& claimedEdges, std::vector<Eigen::MatrixXd> All_Edgels,
+      std::pair<int, int> &next_hypothesis_views, double &least_ratio );
+
     //> YAML file data parser
     YAML::Node Edge_Sketch_Setting_YAML_File;
 
@@ -105,8 +116,6 @@ private:
     double Edge_Loc_Pertubation;
     double Orien_Thresh;
     int Max_Num_Of_Support_Views;
-    int Edge_Detection_Init_Thresh;
-    int Edge_Detection_Final_Thresh;
     double Parallel_Epipolar_Line_Angle_Deg;
     double Reproj_Dist_Thresh;
     double Stop_3D_Edge_Sketch_by_Ratio_Of_Claimed_Edges;

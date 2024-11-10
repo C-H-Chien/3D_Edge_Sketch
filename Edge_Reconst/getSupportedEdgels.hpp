@@ -23,7 +23,7 @@ namespace GetSupportedEdgels {
     class get_SupportedEdgels {
 
     public:
-        get_SupportedEdgels();
+        get_SupportedEdgels( double );
         
         double getSupportIdx(Eigen::Vector2d edgels_tgt_reproj, Eigen::MatrixXd Tangents_VALID, Eigen::MatrixXd inliner);
         void printAllSupportedIndices(const std::vector<Eigen::MatrixXd> &all_supported_indices);
@@ -34,7 +34,7 @@ namespace GetSupportedEdgels {
         // );
 
     private:
-        
+        double Orientation_Thresh;
     };
 
 }

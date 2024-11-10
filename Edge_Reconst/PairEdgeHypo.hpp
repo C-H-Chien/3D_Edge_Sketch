@@ -26,7 +26,7 @@ namespace PairEdgeHypothesis {
     class pair_edge_hypothesis {
 
     public:
-        pair_edge_hypothesis();
+        pair_edge_hypothesis( double, int );
         
         Eigen::MatrixXd getAp_Bp(Eigen::MatrixXd Edges_HYPO2, Eigen::Vector3d pt_edgel_HYPO1, Eigen::Matrix3d F );
         Eigen::MatrixXd getAp_Bp_Dist(Eigen::MatrixXd Edges_HYPO2, Eigen::Vector3d pt_edgel_HYPO1, Eigen::Matrix3d F );
@@ -40,7 +40,9 @@ namespace PairEdgeHypothesis {
         Eigen::MatrixXd edgelsHYPO2correct(Eigen::MatrixXd edgels_HYPO2,  Eigen::MatrixXd edgel_HYPO1, Eigen::Matrix3d F21, Eigen::Matrix3d F12, Eigen::MatrixXd HYPO2_idx_raw);
 
     private:
-        
+        double reproj_dist_thresh;
+        int circle_R;
+
     };
 
 }

@@ -28,7 +28,8 @@
 
 namespace PairEdgeHypothesis {
     
-    pair_edge_hypothesis::pair_edge_hypothesis( ) { }
+    pair_edge_hypothesis::pair_edge_hypothesis( double Reproj_Err_Thresh, int circle_R )
+    : reproj_dist_thresh(Reproj_Err_Thresh), circle_R(circle_R) { }
 
     Eigen::MatrixXd pair_edge_hypothesis::getAp_Bp(Eigen::MatrixXd Edges_HYPO2, Eigen::Vector3d pt_edgel_HYPO1, Eigen::Matrix3d F ) {
         Eigen::Vector3d coeffs;
@@ -58,7 +59,7 @@ namespace PairEdgeHypothesis {
         Eigen::MatrixXd HYPO2_idx;
         for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
             double dist = numerOfDist(idx_HYPO2,0);
-            if(dist < DIST_THRESH){
+            if(dist < reproj_dist_thresh){
                 HYPO2_idx.conservativeResize(idx_hypopair+1,1);
                 HYPO2_idx.row(idx_hypopair) << double(idx_HYPO2);
                 idx_hypopair++;
@@ -72,7 +73,7 @@ namespace PairEdgeHypothesis {
         Eigen::MatrixXd edgels_HYPO2;
         for(int idx_HYPO2 = 0; idx_HYPO2 < numerOfDist.rows(); idx_HYPO2++){
             double dist = numerOfDist(idx_HYPO2,0);
-            if(dist < DIST_THRESH){
+            if(dist < reproj_dist_thresh){
                 edgels_HYPO2.conservativeResize(idx_hypopair+1,4);
                 edgels_HYPO2.row(idx_hypopair) = Edges_HYPO2.row(idx_HYPO2);
                 idx_hypopair++;
@@ -202,15 +203,20 @@ namespace PairEdgeHypothesis {
             double x_currH1 = (b2_line*c_edgeH1-b_edgeH1*c2_line)/(a2_line*b_edgeH1-a_edgeH1*b2_line);
             double y_currH1 = (c2_line*a_edgeH1-c_edgeH1*a2_line)/(a2_line*b_edgeH1-a_edgeH1*b2_line);
             double dist1    = sqrt((x_currH1 - edgel_HYPO1(0,0))*(x_currH1 - edgel_HYPO1(0,0))+(y_currH1 - edgel_HYPO1(0,1))*(y_currH1 - edgel_HYPO1(0,1)));
-            if(dist1 < CIRCLER && dist2 < CIRCLER){
+            // if(dist1 < circle_R && dist2 < circle_R){
+            //     edgels_HYPO2_corrected.conservativeResize(idx_correct+1,10);
+            //     edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), \
+            //                                                x_currH2, y_currH2, edgels_HYPO2(idx_hypo2,2), edgels_HYPO2(idx_hypo2,3), \
+            //                                                HYPO2_idx_raw(idx_hypo2), idx_hypo2;
+            //     idx_correct++;
+            // }
+            // if(dist1 < circle_R && dist2 < circle_R){
                 edgels_HYPO2_corrected.conservativeResize(idx_correct+1,10);
-                edgels_HYPO2_corrected.row(idx_correct) << x_currH1, y_currH1, edgel_HYPO1(0,2), edgel_HYPO1(0,3), \
-                                                           x_currH2, y_currH2, edgels_HYPO2(idx_hypo2,2), edgels_HYPO2(idx_hypo2,3), \
+                edgels_HYPO2_corrected.row(idx_correct) << edgel_HYPO1(0,0), edgel_HYPO1(0,1), edgel_HYPO1(0,2), edgel_HYPO1(0,3), \
+                                                           edgels_HYPO2(idx_hypo2,0), edgels_HYPO2(idx_hypo2,1), edgels_HYPO2(idx_hypo2,2), edgels_HYPO2(idx_hypo2,3), \
                                                            HYPO2_idx_raw(idx_hypo2), idx_hypo2;
                 idx_correct++;
-            }
-            //std::cout << "dist1: " << dist1 << ", dist2: " << dist2 << ", circleR: " << circleR << std::endl;
-
+            // }
         }
         return edgels_HYPO2_corrected;
     }

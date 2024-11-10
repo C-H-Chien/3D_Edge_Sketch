@@ -33,6 +33,7 @@ void file_reader::read_All_Edgels( std::vector<Eigen::MatrixXd> &All_Edgels, int
 #endif
 }
 
+//> Read edgels of a file specified by the file_idx
 Eigen::MatrixXd file_reader::read_Edgels_Of_a_File( int file_idx, int thresh_EDG ) 
 {  
   Eigen::MatrixXd Edgels;
@@ -63,6 +64,7 @@ Eigen::MatrixXd file_reader::read_Edgels_Of_a_File( int file_idx, int thresh_EDG
   return Edgels;
 }
 
+//> Read rotation matrices of all cameras
 void file_reader::readRmatrix( std::vector<Eigen::Matrix3d> &All_R )
 {
   Eigen::Matrix3d R_matrix;
@@ -97,6 +99,7 @@ void file_reader::readRmatrix( std::vector<Eigen::Matrix3d> &All_R )
 #endif
 }
 
+//> Read translation vectors of all cameras
 void file_reader::readTmatrix( std::vector<Eigen::Vector3d> &All_T )
 {
   Eigen::Vector3d T_matrix;
@@ -125,6 +128,7 @@ void file_reader::readTmatrix( std::vector<Eigen::Vector3d> &All_T )
 #endif
 }
 
+//> Read calibration matrices only if each image has individual calibration matrix K
 void file_reader::readK( std::vector<Eigen::Matrix3d> &All_K )
 {
   std::fstream Kmatrix_File;
@@ -157,12 +161,6 @@ void file_reader::readK( std::vector<Eigen::Matrix3d> &All_K )
     
   }
   Kmatrix_File.close();
-  // else {
-  //   if (DATASET_NAME == "ABC-NEF") 
-  //     K << 1111.11136542426,	0,	399.500000000000, 0,	1111.11136542426,	399.500000000000, 0,	0,	1;
-  //   else if (DATASET_NAME == "Replica")
-  //     // K << 600,	0,	599.500000000000, 0,	600,	339.500000000000, 0,	0,	1;
-  // }
 #if SHOW_DATA_LOADING_INFO
   std::cout << "Multiple intrinsic matrices are loaded" <<std::endl;
 #endif

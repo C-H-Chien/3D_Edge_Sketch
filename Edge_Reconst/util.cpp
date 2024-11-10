@@ -70,7 +70,7 @@ namespace MultiviewGeometryUtil {
         const std::vector<Eigen::Vector2d> pts, 
         const std::vector<Eigen::Matrix3d> & Rs,
         const std::vector<Eigen::Vector3d> & Ts,
-        const std::vector<double> & K )
+        const Eigen::Matrix3d K )
     {
         Eigen::MatrixXd A(2*N, 4);
         Eigen::MatrixXd ATA(4, 4);
@@ -79,13 +79,10 @@ namespace MultiviewGeometryUtil {
 
         //> Convert points in pixels to points in meters
         std::vector<Eigen::Vector2d> pts_meters;
-        Eigen::Matrix3d K_;
-        K_<<K[2], 0.,   K[0], 0.,  K[3], K[1], 0.,  0.,   1.;
-        // std::cout << "K_: " << K_ <<std::endl;
         for (int p = 0; p < N; p++) {
             Eigen::Vector2d gamma;
             Eigen::Vector3d homo_p{pts[p](0), pts[p](1), 1.0};
-            Eigen::Vector3d p_bar = K_.inverse() * homo_p;
+            Eigen::Vector3d p_bar = K.inverse() * homo_p;
             gamma(0) = p_bar(0);
             gamma(1) = p_bar(1);
             pts_meters.push_back(gamma);
@@ -154,6 +151,26 @@ namespace MultiviewGeometryUtil {
             x.normalize();
         }
         */
+    }
+
+    std::vector<double> multiview_geometry_util::check_reproj_error(
+        std::vector<Eigen::Vector2d> points_2D, Eigen::Vector3d point_3D, 
+        std::vector<Eigen::Matrix3d> Rs, std::vector<Eigen::Vector3d> Ts, Eigen::Matrix3d K) 
+    {
+        std::vector<double> reproj_errs;
+        for (int p = 0; p < Rs.size(); p++) {
+            Eigen::Matrix3d Rot     = Rs[p];
+            Eigen::Vector3d Transl  = Ts[p];
+            Eigen::Vector2d obs_pt  = points_2D[p];
+
+            Eigen::Vector3d project_pt = K * (Rot * point_3D + Transl);
+            project_pt[0] /= project_pt[2];
+            project_pt[1] /= project_pt[2];
+
+            double reproj_err = std::sqrt( (project_pt[0] - obs_pt[0])*(project_pt[0] - obs_pt[0]) + (project_pt[1] - obs_pt[1])*(project_pt[1] - obs_pt[1]) );
+            reproj_errs.push_back(reproj_err);
+        }
+        return reproj_errs;
     }
 }
 

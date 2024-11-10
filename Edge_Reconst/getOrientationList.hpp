@@ -24,7 +24,7 @@ namespace GetOrientationList {
     class get_OrientationList {
 
     public:
-        get_OrientationList();
+        get_OrientationList( double, int, int );
         
         Eigen::MatrixXd getOreListBar(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX);
         Eigen::MatrixXd getOreListBarVali(Eigen::MatrixXd Edges_HYPO1, std::vector<Eigen::Matrix3d> All_R, std::vector<Eigen::Vector3d> All_T, Eigen::Matrix3d K1, Eigen::Matrix3d K2, int VALID_INDX, int REFIDX);
@@ -33,7 +33,10 @@ namespace GetOrientationList {
         
 
     private:
-        
+        //> private variables will recieve values from the EdgeSketch_Core class
+        int dataset_img_rows;
+        int dataset_img_cols;
+        double delta;
     };
 
 }

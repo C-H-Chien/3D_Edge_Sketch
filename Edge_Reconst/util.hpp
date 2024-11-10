@@ -41,7 +41,7 @@ namespace MultiviewGeometryUtil {
         Eigen::Vector3d linearTriangulation(int N, const std::vector<Eigen::Vector2d> pts,  \
                                                    const std::vector<Eigen::Matrix3d> & Rs, \
                                                    const std::vector<Eigen::Vector3d> & Ts, \
-                                                   const std::vector<double> & K);
+                                                   const Eigen::Matrix3d K);
 
         void getRelativePoses( Eigen::Matrix3d R1, Eigen::Vector3d T1, Eigen::Matrix3d R2, Eigen::Vector3d T2, 
                                Eigen::Matrix3d &R21, Eigen::Vector3d &T21, Eigen::Matrix3d &R12, Eigen::Vector3d &T12 )
@@ -57,6 +57,9 @@ namespace MultiviewGeometryUtil {
             // Apply the inverse transformation to convert the point to world coordinates
             return R.transpose() * (point - T);
         }
+
+        std::vector<double> check_reproj_error(std::vector<Eigen::Vector2d> points_2D, Eigen::Vector3d point_3D, 
+                                               std::vector<Eigen::Matrix3d> Rs, std::vector<Eigen::Vector3d> Ts, Eigen::Matrix3d K);
     private:
         
     };
