@@ -35,6 +35,9 @@
 class EdgeSketch_Core {
 
 public:
+    std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
+    std::vector<Eigen::MatrixXd> paired_edge_final_all;
+
     //> Constructor
     EdgeSketch_Core( YAML::Node );
     void Read_Camera_Data();
@@ -105,7 +108,7 @@ private:
     std::shared_ptr<GetReprojectedEdgel::get_Reprojected_Edgel> getReprojEdgel = nullptr;
     std::shared_ptr<GetSupportedEdgels::get_SupportedEdgels> getSupport = nullptr;
     std::shared_ptr<GetOrientationList::get_OrientationList> getOre = nullptr;
-    std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
+    //std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
 
     Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen::Matrix3d& R, const Eigen::Vector3d& T, const Eigen::Matrix3d& K, const Eigen::Matrix3d& R_hyp01, const Eigen::Vector3d& T_hpy01);
     int claim_Projected_Edges(const Eigen::MatrixXd& projectedEdges, const Eigen::MatrixXd& observedEdges, double threshold);
