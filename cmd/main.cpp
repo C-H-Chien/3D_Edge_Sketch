@@ -82,8 +82,8 @@ int main(int argc, char **argv) {
     MWV_Edge_Rec.Set_Hypothesis_Views_Camera();
 
     //> Multiple edge thresholding
-    for (int edge_thresh = MWV_Edge_Rec.Edge_Detection_Init_Thresh; edge_thresh >= 1; edge_thresh/=2) {
-      std::cout << "- Edge Threshold = " << edge_thresh << std::endl;
+    for (int edge_thresh = MWV_Edge_Rec.Edge_Detection_Init_Thresh; edge_thresh >= MWV_Edge_Rec.Edge_Detection_Final_Thresh; edge_thresh/=2) {
+      std::cout << "       - Edge Threshold = " << edge_thresh << std::endl;
       MWV_Edge_Rec.thresh_EDG = edge_thresh;
 
       //> Load edges with specific third-order edge threshold
@@ -96,8 +96,6 @@ int main(int argc, char **argv) {
     
     //> Finalize hypothesis edge pairs for a two-view triangulation
     MWV_Edge_Rec.Finalize_Edge_Pairs_and_Reconstruct_3D_Edges();
-
-    // std::cout << "Number of nonveridical edge pairs = " << MWV_Edge_Rec.num_of_nonveridical_edge_pairs << std::endl;
     
     //> Stack all 3D edges located in the world coordinate
     MWV_Edge_Rec.Stack_3D_Edges();

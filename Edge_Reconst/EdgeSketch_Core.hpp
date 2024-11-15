@@ -99,6 +99,11 @@ public:
     double itime, pair_edges_time;
     double finalize_edge_pair_time;
     double find_next_hypothesis_view_time;
+<<<<<<< HEAD
+=======
+
+    std::vector<int> history_hypothesis_views_index;
+>>>>>>> e685f4e (Avoid repetitive hypothesis views selected for iterative rounds. Also step 2 commits back.)
     
 private:
     //> sharing the classes
@@ -114,7 +119,7 @@ private:
     int claim_Projected_Edges(const Eigen::MatrixXd& projectedEdges, const Eigen::MatrixXd& observedEdges, double threshold);
     void select_Next_Best_Hypothesis_Views( 
       const std::vector< int >& claimedEdges, std::vector<Eigen::MatrixXd> All_Edgels,
-      std::pair<int, int> &next_hypothesis_views, double &least_ratio );
+      std::pair<int, int> &next_hypothesis_views, double &least_ratio, std::vector<int> history_hypothesis_views_index );
 
     //> YAML file data parser
     YAML::Node Edge_Sketch_Setting_YAML_File;

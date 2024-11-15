@@ -9,7 +9,7 @@
 //> Debugging purpose
 #define DEBUG                      (0)
 #define DEBUG_READ_FILES           (false)
-#define DEBUG_PAIRED_EDGES         (false)
+#define DEBUG_PAIRED_EDGES         (true)
 #define SHOW_DATA_LOADING_INFO     (false)
 #define SHOW_OMP_NUM_OF_THREADS    (true)
 

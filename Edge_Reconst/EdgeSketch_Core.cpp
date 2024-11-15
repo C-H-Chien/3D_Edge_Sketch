@@ -121,6 +121,9 @@ void EdgeSketch_Core::Set_Hypothesis_Views_Camera() {
     util->getRelativePoses( Rot_HYPO1, Transl_HYPO1, Rot_HYPO2, Transl_HYPO2, R21, T21, R12, T12 );
     F21 = util->getFundamentalMatrix(K_HYPO1.inverse(), K_HYPO2.inverse(), R21, T21); 
     F12 = util->getFundamentalMatrix(K_HYPO2.inverse(), K_HYPO1.inverse(), R12, T12);
+
+    history_hypothesis_views_index.push_back(hyp01_view_indx);
+    history_hypothesis_views_index.push_back(hyp02_view_indx);
 }
 
 void EdgeSketch_Core::Read_Edgels_Data() {
@@ -606,7 +609,7 @@ void EdgeSketch_Core::Stack_3D_Edges() {
     std::ofstream myfile2;
     std::string Output_File_Path2 = "../../outputs/3D_edges_" + Dataset_Name + "_" + Scene_Name + "_hypo1_" + std::to_string(hyp01_view_indx) \
                                     + "_hypo2_" + std::to_string(hyp02_view_indx) + "_t" + std::to_string(Edge_Detection_Init_Thresh) + "to" \
-                                    + std::to_string(Edge_Detection_Final_Thresh) + "_delta" + Delta_FileName_Str + "_theta" + std::to_string(Orien_Thresh) \
+                                    + std::to_string(Edge_Detection_Final_Thresh) + "_delta" + Delta_FileName_Str + "_theta" + std::to_string(int(Orien_Thresh)) \
                                     + "_N" + std::to_string(Max_Num_Of_Support_Views) + ".txt";
     std::cout << Output_File_Path2 << std::endl;
     myfile2.open (Output_File_Path2);
@@ -648,7 +651,7 @@ void EdgeSketch_Core::Project_3D_Edges_and_Find_Next_Hypothesis_Views() {
     //> Use the selectBestViews function to determine the two frames with the least claimed edges
     // std::pair<int, int> bestViews = selectBestViews(claimedEdgesList);
     std::pair<int, int> next_hypothesis_views;
-    select_Next_Best_Hypothesis_Views( claimedEdgesList, All_Edgels, next_hypothesis_views, least_ratio );
+    select_Next_Best_Hypothesis_Views( claimedEdgesList, All_Edgels, next_hypothesis_views, least_ratio, history_hypothesis_views_index );
     
     //> Assign the best views to the hypothesis indices
     hyp01_view_indx = next_hypothesis_views.first;
@@ -708,7 +711,7 @@ Eigen::MatrixXd EdgeSketch_Core::project3DEdgesToView(const Eigen::MatrixXd& edg
 
 void EdgeSketch_Core::select_Next_Best_Hypothesis_Views( 
     const std::vector< int >& claimedEdges, std::vector<Eigen::MatrixXd> All_Edgels, \
-    std::pair<int, int> &next_hypothesis_views, double &least_ratio ) 
+    std::pair<int, int> &next_hypothesis_views, double &least_ratio, std::vector<int> history_hypothesis_views_index ) 
 {
     std::vector<std::pair<int, double>> frameSupportCounts;
 
@@ -719,14 +722,49 @@ void EdgeSketch_Core::select_Next_Best_Hypothesis_Views(
     }
 
     std::sort(frameSupportCounts.begin(), frameSupportCounts.end(), 
-              [](const std::pair<int, double>& a, const std::pair<int, double>& b) {
-                  return a.second < b.second;
-              });
+            [](const std::pair<int, double>& a, const std::pair<int, double>& b) {
+                return a.second < b.second;
+            });
 
     int bestView1 = frameSupportCounts[0].first;
     int bestView2 = frameSupportCounts[1].first;
+
+    int keep_finding_counter = 0;
+    while (true) {
+        int find_existence_HYPO1 = std::count(history_hypothesis_views_index.begin(), history_hypothesis_views_index.end(), bestView1);
+        int find_existence_HYPO2 = std::count(history_hypothesis_views_index.begin(), history_hypothesis_views_index.end(), bestView2);
+        // std::cout << find_existence_HYPO1 << ", " << find_existence_HYPO2 << std::endl;
+        // for (int i = 0; i < history_hypothesis_views_index.size(); i++) {
+        //     std::cout << history_hypothesis_views_index[i] << "\t";
+        // }
+        // std::cout << std::endl;
+        // std::cout << bestView1 << ", " << bestView2 << std::endl;
+        // std::cout << keep_finding_counter << std::endl;
+        // // break;
+
+        if (find_existence_HYPO1 == 0 && find_existence_HYPO2 == 0)
+            break;
+
+        if (find_existence_HYPO1 > 0 && find_existence_HYPO2 > 0) {
+            bestView1 = frameSupportCounts[2 + keep_finding_counter].first;
+            bestView2 = frameSupportCounts[3 + keep_finding_counter].first;
+        }
+        if (find_existence_HYPO1 > 0) {
+            bestView1 = frameSupportCounts[1 + keep_finding_counter].first;
+            bestView2 = frameSupportCounts[2 + keep_finding_counter].first;
+        }
+        if (find_existence_HYPO2 > 0) {
+            bestView2 = frameSupportCounts[2 + keep_finding_counter].first;
+        }
+        keep_finding_counter++;
+    }
+    
     next_hypothesis_views = std::make_pair(bestView1, bestView2);
+<<<<<<< HEAD
     least_ratio = frameSupportCounts[0].second;
+=======
+    // least_ratio = frameSupportCounts[0].second;
+>>>>>>> e685f4e (Avoid repetitive hypothesis views selected for iterative rounds. Also step 2 commits back.)
 }
 
 void EdgeSketch_Core::Clear_Data() {
