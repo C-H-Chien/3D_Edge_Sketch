@@ -48,6 +48,12 @@ using namespace MultiviewGeometryUtil;
 
 int main(int argc, char **argv) {
 
+#if DELETE_ALL_FILES_UNDER_OUTPUTS
+  std::filesystem::path = "../../" + OUTPUT_FOLDER_NAME + "/";
+  for (const auto& entry : std::filesystem::directory_iterator()) 
+        std::filesystem::remove_all(entry.path());
+#endif
+
   //> YAML file path
   std::string Edge_Sketch_Settings_Path = "../../3D_Edge_Sketch_Settings.yaml";
 
@@ -102,6 +108,8 @@ int main(int argc, char **argv) {
 
     //> Find the next hypothesis view pairs, if any
     MWV_Edge_Rec.Project_3D_Edges_and_Find_Next_Hypothesis_Views();
+    std::cout << "       - Average ratio of claimed 2D edges: " << MWV_Edge_Rec.avg_ratio << std::endl;
+
     MWV_Edge_Rec.Clear_Data();
 
     edge_sketch_pass_count++;
@@ -109,6 +117,8 @@ int main(int argc, char **argv) {
     if (MWV_Edge_Rec.enable_aborting_3D_edge_sketch)
       break;
   }
+
+
 
   double total_time = MWV_Edge_Rec.pair_edges_time + MWV_Edge_Rec.finalize_edge_pair_time + MWV_Edge_Rec.find_next_hypothesis_view_time;
   std::string out_time_str = "Total computation time: " + std::to_string(total_time) + " (s)";

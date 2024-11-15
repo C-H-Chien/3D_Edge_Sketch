@@ -35,9 +35,6 @@
 class EdgeSketch_Core {
 
 public:
-    std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
-    std::vector<Eigen::MatrixXd> paired_edge_final_all;
-
     //> Constructor
     EdgeSketch_Core( YAML::Node );
     void Read_Camera_Data();
@@ -91,7 +88,7 @@ public:
     Eigen::MatrixXd Gamma1s;
     Eigen::MatrixXd all_3D_Edges;
     std::vector< int > claimedEdgesList;
-    double least_ratio;
+    double avg_ratio;
     bool enable_aborting_3D_edge_sketch;
     int num_of_nonveridical_edge_pairs;
 
@@ -99,7 +96,7 @@ public:
     double itime, pair_edges_time;
     double finalize_edge_pair_time;
     double find_next_hypothesis_view_time;
-
+    
     std::vector<int> history_hypothesis_views_index;
     
 private:
@@ -110,13 +107,13 @@ private:
     std::shared_ptr<GetReprojectedEdgel::get_Reprojected_Edgel> getReprojEdgel = nullptr;
     std::shared_ptr<GetSupportedEdgels::get_SupportedEdgels> getSupport = nullptr;
     std::shared_ptr<GetOrientationList::get_OrientationList> getOre = nullptr;
-    //std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
+    std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
 
     Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen::Matrix3d& R, const Eigen::Vector3d& T, const Eigen::Matrix3d& K, const Eigen::Matrix3d& R_hyp01, const Eigen::Vector3d& T_hpy01);
     int claim_Projected_Edges(const Eigen::MatrixXd& projectedEdges, const Eigen::MatrixXd& observedEdges, double threshold);
     void select_Next_Best_Hypothesis_Views( 
       const std::vector< int >& claimedEdges, std::vector<Eigen::MatrixXd> All_Edgels,
-      std::pair<int, int> &next_hypothesis_views, double &least_ratio, std::vector<int> history_hypothesis_views_index );
+      std::pair<int, int> &next_hypothesis_views, std::vector<int> history_hypothesis_views_index );
 
     //> YAML file data parser
     YAML::Node Edge_Sketch_Setting_YAML_File;

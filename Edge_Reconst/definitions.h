@@ -1,20 +1,24 @@
 //> Macros
 
+//> Whether to delete output files automatically
+#define OUTPUT_FOLDER_NAME              std::string("outputs")
+#define DELETE_ALL_FILES_UNDER_OUTPUTS  (true)
+
 //> Write to the files
-#define WRITE_3D_EDGES                (true)
+#define WRITE_3D_EDGES                  (true)
 
 //> Print out in terminal
-#define SHOW_EDGE_SKETCH_SETTINGS     (false)
+#define SHOW_EDGE_SKETCH_SETTINGS       (false)
 
 //> Debugging purpose
-#define DEBUG                      (0)
-#define DEBUG_READ_FILES           (false)
-#define DEBUG_PAIRED_EDGES         (true)
-#define SHOW_DATA_LOADING_INFO     (false)
-#define SHOW_OMP_NUM_OF_THREADS    (true)
+#define DEBUG                           (0)
+#define DEBUG_READ_FILES                (false)
+#define DEBUG_PAIRED_EDGES              (true)
+#define SHOW_DATA_LOADING_INFO          (false)
+#define SHOW_OMP_NUM_OF_THREADS         (true)
 
 //> Constant values (no change)
-#define PI                            (3.1415926)
+#define PI                              (3.1415926)
 
 //> Some useful macros
 #define LOG_INFOR_MESG(info_msg)        printf("\033[1;32m[INFO] %s\033[0m\n", std::string(info_msg).c_str() );
