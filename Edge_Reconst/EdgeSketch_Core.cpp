@@ -760,11 +760,7 @@ void EdgeSketch_Core::select_Next_Best_Hypothesis_Views(
     }
     
     next_hypothesis_views = std::make_pair(bestView1, bestView2);
-<<<<<<< HEAD
-    least_ratio = frameSupportCounts[0].second;
-=======
     // least_ratio = frameSupportCounts[0].second;
->>>>>>> e685f4e (Avoid repetitive hypothesis views selected for iterative rounds. Also step 2 commits back.)
 }
 
 void EdgeSketch_Core::Clear_Data() {

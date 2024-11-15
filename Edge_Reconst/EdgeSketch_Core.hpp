@@ -99,11 +99,8 @@ public:
     double itime, pair_edges_time;
     double finalize_edge_pair_time;
     double find_next_hypothesis_view_time;
-<<<<<<< HEAD
-=======
 
     std::vector<int> history_hypothesis_views_index;
->>>>>>> e685f4e (Avoid repetitive hypothesis views selected for iterative rounds. Also step 2 commits back.)
     
 private:
     //> sharing the classes
