@@ -19,11 +19,13 @@ edge_files = dir(fullfile(data_folder_path, file_pattern));
 %> Define a set of colors to be used for different files through 'lines' colormap
 colors = lines(length(edge_files)); 
 
-% Create a figure for plotting
+%> Create a figure for plotting
 figure;
+ax = axes();
 hold on;
 
 %> Loop through each file and plot its edges in 3D
+hLegs = [];
 for i = 1:length(edge_files)
     %> Read the current file
     current_file_path = fullfile(data_folder_path, edge_files(i).name);
@@ -41,9 +43,14 @@ for i = 1:length(edge_files)
     show_legend = strcat("3D edges from hypothesis views ", hypothesis_view1_index, " and ", hypothesis_view2_index);
 
     %> Plot the edges using a different color for each file
-    plot3(edges_3d(:,1), edges_3d(:,2), edges_3d(:,3), ...
-          'Color', colors(i, :), 'Marker', '.', 'LineStyle', 'none', ...
-          'DisplayName', show_legend);
+    h = plot3(edges_3d(:,1), edges_3d(:,2), edges_3d(:,3), ...
+             'Color', colors(i, :), 'Marker', '.', 'MarkerSize', 3.5, 'LineStyle', 'none', ...
+             'DisplayName', show_legend);
+
+    %> Make marker size larger in the legend
+    hLeg = copyobj(h, ax);
+    set(hLeg, 'XData', NaN, 'YData', NaN, 'ZData', NaN, 'MarkerSize', 20);
+    hLegs = [hLegs, hLeg];
 end
 
 %> Set the plot settings
@@ -52,6 +59,5 @@ axis off;
 set(gcf, 'color', 'w');
 
 %> Add a legend for each file
-legend;
-%legend({edge_files.name}, 'Interpreter', 'none');
+legend(hLegs);
 hold off;
