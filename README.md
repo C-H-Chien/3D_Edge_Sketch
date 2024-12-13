@@ -1,7 +1,7 @@
-# 3D Edge Sketch (WACV 2025)
+# 3D Edge Sketch from Multiview Images (WACV 2025)
 
 ## Introduction:
-This is an official repository for 3D Edge Sketch from multiple calibrated cameras with known poses for the paper published in WACV 2025. Basically, 3D Edge Sketch follows a few steps: _(i)_ detect [third-order edges](https://github.com/C-H-Chien/Third-Order-Edge-Detector) from each image, _(ii)_ pick two hypothesis views (with sufficient overlap in the image while maintaining some levels of baseline) and keep the rest of the views as validation views, _(iii)_ loop over all edges in the first hypothesis view, pair up with the edges falling in the corresponding epipolar wedge, and seek support from the validation views, _(iv)_ triangulate all pairs of edges from the two hypothesis views to reconstruct 3D edges, _(v)_ reproject the 3D edges in order to pick the next two hypothesis views for the second round, _(vi)_ repeat steps _(iii)_ to _(vi)_ until almost all 2D edges claim support for 3D edges. <br />
+This is an official repository for the paper _3D Edge Sketch from Multiview Images_ published in WACV 2025. It is a 3D edge reconstruction from multiple calibrated cameras with known poses. Basically, it follows a few steps: _(i)_ detect [third-order edges](https://github.com/C-H-Chien/Third-Order-Edge-Detector) from each image, _(ii)_ pick two hypothesis views (with sufficient overlap in the image while maintaining some levels of baseline) and keep the rest of the views as validation views, _(iii)_ loop over all edges in the first hypothesis view, pair up with the edges falling in the corresponding epipolar wedge, and seek support from the validation views, _(iv)_ triangulate all pairs of edges from the two hypothesis views to reconstruct 3D edges, _(v)_ reproject the 3D edges in order to pick the next two hypothesis views for the second round, _(vi)_ repeat steps _(iii)_ to _(vi)_ until almost all 2D edges claim supports for 3D edges. <br />
 
 ## Paper:
 ```BibTeX
@@ -17,7 +17,7 @@ This is an official repository for 3D Edge Sketch from multiple calibrated camer
 ## Dependencies:
 (1) CMake 3.14 or higher <br />
 (2) Eigen 3.3.2 (higher version is not compatible) <br />
-(3) YAML-CPP, can be built from its [official repo](https://github.com/jbeder/yaml-cpp). (This is used only for parsing data from .yaml file) <br />
+(3) YAML-CPP, can be built from its [official repo](https://github.com/jbeder/yaml-cpp). (This is used only for parsing data from a .yaml file) <br />
 
 ## How to build and compile the code
 Follow the standard build and compile steps after cloning the repo
@@ -40,6 +40,9 @@ An example using the [ABC-NEF dataset](https://github.com/yunfan1202/NEF_code?ta
 ## Generating Third-Order Edges and Absolute Poses as Inputs for 3D Edge Sketch
 - Third-order edges: use ``preprocesser/third_order_edge_detector/get_RO_Edges_List_in_dataset.m`` which helps generate ``Edge_*_t*.txt``.
 - Absolute Poses: use ``preprocesser/get_poses_from_ABC_NEF_dataset.m`` which reads dataset ground-truth file and transform all ground-truth poses to ``R_matrix.txt`` and ``T_matrix.txt``. The example code reads ``transforms_train.json`` file provided by the ABC-NEF dataset.
+
+## Notes
+GPU version of the 3D edge sketch has not been publicly released, although it resides in another branch. It needs proper organization and refinement. Will release as soon as it is done.
 
 ## Contributors:
 Yilin Zheng (yilin_zheng@alumni.brown.edu) <br />
