@@ -42,12 +42,23 @@ for i = 1:length(edge_files)
     hypothesis_view2_index = extractBetween(edge_files(i).name, 'hypo2_', '_t');
     show_legend = strcat("3D edges from hypothesis views ", hypothesis_view1_index, " and ", hypothesis_view2_index);
 
+    %> (Optional) remove 3D edges that are too "isolated" in the 3D space
+    % invalid_edge_index = [];
+    % for ei = 1:size(edges_3d, 1)
+    %     dist_norms = vecnorm(edges_3d(ei,:) - edges_3d, 2, 2);
+    %     yy = find(dist_norms < 0.04);
+    %     if length(yy) < 4
+    %         invalid_edge_index = [invalid_edge_index; ei];
+    %     end
+    % end
+    % edges_3d(invalid_edge_index, :) = [];
+
     %> Plot the edges using a different color for each file
     h = plot3(edges_3d(:,1), edges_3d(:,2), edges_3d(:,3), ...
              'Color', colors(i, :), 'Marker', '.', 'MarkerSize', 3.5, 'LineStyle', 'none', ...
              'DisplayName', show_legend);
 
-    %> Make marker size larger in the legend
+    %> Make marker size larger in the legend. This would make visualization clearer especially when multiple passes of hypothesis views are used for 3D edge sketch.
     hLeg = copyobj(h, ax);
     set(hLeg, 'XData', NaN, 'YData', NaN, 'ZData', NaN, 'MarkerSize', 20);
     hLegs = [hLegs, hLeg];
@@ -57,6 +68,10 @@ end
 axis equal;
 axis off;
 set(gcf, 'color', 'w');
+
+%> Avoid 3D edge points vanish when zomming in
+ax = gca;
+ax.Clipping = "off";
 
 %> Add a legend for each file
 legend(hLegs);
