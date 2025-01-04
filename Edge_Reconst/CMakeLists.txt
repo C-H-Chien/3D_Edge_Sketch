@@ -16,7 +16,6 @@ set ( control_sources
   file_reader.hpp
   file_reader.cpp
   edge_mapping.hpp
-  edge_mapping.cpp
 
   EdgeSketch_Core.cpp
   EdgeSketch_Core.hpp

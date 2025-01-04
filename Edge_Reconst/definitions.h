@@ -6,6 +6,7 @@
 
 //> Write to the files
 #define WRITE_3D_EDGES                  (true)
+#define WRITE_3D_2D_EDGE_LINKINGS       (false)
 
 //> Print out in terminal
 #define SHOW_EDGE_SKETCH_SETTINGS       (false)

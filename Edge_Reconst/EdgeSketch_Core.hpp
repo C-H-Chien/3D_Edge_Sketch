@@ -169,6 +169,9 @@ private:
     Eigen::MatrixXd paired_edge;
     Eigen::MatrixXd OreListdegree;
     Eigen::MatrixXd OreListBardegree;
+
+    int edge_sketch_pass_count;
+    bool bool_write_3D_2D_edge_links;
 };
 
 

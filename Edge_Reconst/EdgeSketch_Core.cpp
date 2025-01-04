@@ -70,6 +70,8 @@ EdgeSketch_Core::EdgeSketch_Core(YAML::Node Edge_Sketch_Setting_File)
     pair_edges_time = 0.0;
     finalize_edge_pair_time = 0.0;
     find_next_hypothesis_view_time = 0.0;
+    bool_write_3D_2D_edge_links = true;
+    edge_sketch_pass_count = 0;
 
     //> Class objects
     Load_Data       = std::shared_ptr<file_reader>(new file_reader(Dataset_Path, Dataset_Name, Scene_Name, Num_Of_Total_Imgs));
@@ -375,8 +377,9 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
     for (int i = 0; i < pair_num; i++){
       paired_edge_final.row(i) << paired_edge.row(valid_pair_index[i]);
     }
-    std::string info_str = "Number of pairs is: " + std::to_string(pair_num);
-    LOG_INFOR_MESG(info_str);
+    std::cout << "       - Number of pairs is: " << pair_num << std::endl;
+    // std::string info_str = "Number of pairs is: " + std::to_string(pair_num);
+    // LOG_INFOR_MESG(info_str);
 
 #if DEBUG_PAIRED_EDGES
     std::ofstream debug_file_paired_edges;
@@ -433,11 +436,13 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
         }
 
         Gamma1s.row(pair_idx) << edge_pt_3D(0), edge_pt_3D(1), edge_pt_3D(2);
-        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, pt_H1, hyp01_view_indx);
-        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, pt_H2, hyp02_view_indx);
+        Eigen::Vector3d edge_2d_H1 = Edges_HYPO1_final.row(0).head<3>();
+        Eigen::Vector3d edge_2d_H2 = Edges_HYPO2_final.row(0).head<3>();
+        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H1, hyp01_view_indx);
+        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H2, hyp02_view_indx);
 
         ///////////////////////////////// Add support from validation views /////////////////////////////////
-        std::vector<std::pair<int, Eigen::Vector2d>> validation_support_edges;
+        std::vector< std::pair<int, Eigen::Vector3d> > validation_support_edges;
 
         // Loop through validation views to find the supporting edges
         int val_indx_in_paired_edge_array = 2; // +2 accounts for the first two columns for HYPO1 and HYPO2
@@ -455,10 +460,10 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
                 if (edges_for_val_frame.rows() <= support_idx) {
                     LOG_ERROR("Something buggy here!\n");
                     std::cout << "(pair_idx, val_idx, edges_for_val_frame.rows(), support_idx) = (" << pair_idx << ", " << val_idx << ", " << edges_for_val_frame.rows() << ", " << support_idx << ")" << std::endl;
-                    Eigen::Vector2d supporting_edge = edges_for_val_frame.row(support_idx).head<2>();
+                    Eigen::Vector3d supporting_edge = edges_for_val_frame.row(support_idx).head<3>();
                 }
 
-                Eigen::Vector2d supporting_edge = edges_for_val_frame.row(support_idx).head<2>();
+                Eigen::Vector3d supporting_edge = edges_for_val_frame.row(support_idx).head<3>();
 
                 //> Qiwu: Store validation view and the supporting edge
                 validation_support_edges.emplace_back(val_idx, supporting_edge);
@@ -470,6 +475,17 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
         }
     }
     finalize_edge_pair_time += omp_get_wtime() - itime;
+    edge_sketch_pass_count++;
+
+#if WRITE_3D_2D_EDGE_LINKINGS
+    //> (Optional) Write 3D-2D edge linkings
+    if (bool_write_3D_2D_edge_links) {
+        Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
+        Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
+        edgeMapping->write_3D_edge_and_2D_edge_linkings( R_ref, T_ref, edge_sketch_pass_count );
+        bool_write_3D_2D_edge_links = false;
+    }
+#endif
 }
 
 void EdgeSketch_Core::Stack_3D_Edges() {
@@ -490,7 +506,7 @@ void EdgeSketch_Core::Stack_3D_Edges() {
                                     + "_hypo2_" + std::to_string(hyp02_view_indx) + "_t" + std::to_string(Edge_Detection_Init_Thresh) + "to" \
                                     + std::to_string(Edge_Detection_Final_Thresh) + "_delta" + Delta_FileName_Str + "_theta" + std::to_string(Orien_Thresh) \
                                     + "_N" + std::to_string(Max_Num_Of_Support_Views) + ".txt";
-    std::cout << Output_File_Path2 << std::endl;
+    std::cout << "       - 3D edges are written to file: " << Output_File_Path2 << std::endl;
     myfile2.open (Output_File_Path2);
     myfile2 << Gamma1s_world;
     myfile2.close();
@@ -642,6 +658,7 @@ void EdgeSketch_Core::Clear_Data() {
     All_Edgels.clear();
     claimedEdgesList.clear();
     num_of_nonveridical_edge_pairs = 0;
+    edgeMapping->clear_edge_linking_data();
 }
 
 EdgeSketch_Core::~EdgeSketch_Core() { }
