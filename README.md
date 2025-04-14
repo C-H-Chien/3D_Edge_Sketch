@@ -6,12 +6,13 @@ This is an official repository for the paper _3D Edge Sketch from Multiview Imag
 
 ## Paper:
 ```BibTeX
-@InProceedings{zheng:etal:WACV:2025,
-  title={{3D} Edge Sketch},
+@inproceedings{zheng20253d,
+  title={3D Edge Sketch from Multiview Images},
   author={Zheng, Yilin and Chien, Chiang-Heng and Fabbri, Ricardo and Kimia, Benjamin},
-  booktitle={Proceedings of the IEEE/CVF winter conference on applications of computer vision (WACV)},
-  pages={},
-  year={2025}
+  booktitle={2025 IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+  pages={3196--3205},
+  year={2025},
+  organization={IEEE}
 }
 ```
 
@@ -51,6 +52,9 @@ Chiang-Heng Chien* (chiang-heng_chien@brown.edu) <br />
 Qiwu Zhang (qiwu_zhang@brown.edu) <br />
 *corresponding author <br />
 Please file an issue if there is any questions.
+
+## Acknowledgement
+Many thanks to [Prof. Ricardo Fabbri](https://rfabbri.github.io/) for contributing to the proposed methodology and assistance on the implementation. 
 
 ## References
 Third-Order Edge Detector: [paper](https://ieeexplore.ieee.org/abstract/document/8382271) and [code](https://github.com/C-H-Chien/Third-Order-Edge-Detector). The code has been embedded to this repository.
