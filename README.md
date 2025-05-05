@@ -39,12 +39,25 @@ An example using the [ABC-NEF dataset](https://github.com/yunfan1202/NEF_code?ta
 <img src="./doc/00004605.png" alt="drawing" width="200"/>
 </p>
 
+## Evaluations
+A evaluation script is customized and created under ``evaluation`` folder. For ABC-NEF dataset, you can download the ground-truth sampled curve points from [Google Drive](https://drive.google.com/drive/folders/1FH8_jykq44YA4FGJ6Par4gBMZg7Ayp1q?usp=sharing) and put them under ``evaluation/gt_curve_points`` folder. If you'd like to create a conda environment before running the evaluation script, follow the commands below to install:
+```bash
+conda create -n edge_sketch python=3.8
+conda activate edge_sketch
+pip install -r requirements.txt
+```
+Then, let's say ``outputs/curves_points`` is the 3D edge locations obtained from the 3D edge sketch, run the evaluation script to get the accuracy and completeness as well as precision, recall, and F-score with various ranges (5 mm, 10 mm, and 20 mm following the experiments of [EMAP](https://github.com/cvg/EMAP)):
+```bash
+python eval_main.py
+```
+Refer to ``eval_main.py`` for more information on where the ground-truth curve points directory is specified.
+
 ## Generating Third-Order Edges and Absolute Poses as Inputs for 3D Edge Sketch
 - Third-order edges: use ``preprocesser/third_order_edge_detector/get_RO_Edges_List_in_dataset.m`` which helps generate ``Edge_*_t*.txt``.
 - Absolute Poses: use ``preprocesser/get_poses_from_ABC_NEF_dataset.m`` which reads dataset ground-truth file and transform all ground-truth poses to ``R_matrix.txt`` and ``T_matrix.txt``. The example code reads ``transforms_train.json`` file provided by the ABC-NEF dataset.
 
 ## Notes
-GPU version of the 3D edge sketch has not been publicly released, although it resides in another branch. It needs proper organization and refinement. Will release as soon as it is done.
+GPU version of the 3D edge sketch has not been publicly released, although it resides in another branch. It needs proper organization and refinement. Will release it as soon as it is done.
 
 ## Contributors:
 Yilin Zheng (yilin_zheng@alumni.brown.edu) <br />
@@ -54,7 +67,7 @@ Qiwu Zhang (qiwu_zhang@brown.edu) <br />
 Please file an issue if there is any questions.
 
 ## Acknowledgement
-Many thanks to [Prof. Ricardo Fabbri](https://rfabbri.github.io/) for contributing to the proposed methodology and assistance on the implementation. 
+I would like to give credits to [NEF_code](https://github.com/yunfan1202/NEF_code) and [EMAP](https://github.com/cvg/EMAP) authors as the evaluation sciprts in this repo is edited from theirs. Also many thanks to [Prof. Ricardo Fabbri](https://rfabbri.github.io/) for contributing to the proposed methodology and assistance on the implementation.
 
 ## References
 Third-Order Edge Detector: [paper](https://ieeexplore.ieee.org/abstract/document/8382271) and [code](https://github.com/C-H-Chien/Third-Order-Edge-Detector). The code has been embedded to this repository.

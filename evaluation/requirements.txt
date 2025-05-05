@@ -1,0 +1,4 @@
+opencv-python==4.9.0.80
+scipy==1.10.1
+open3d==0.18.0
+point_cloud_utils==0.30.4
