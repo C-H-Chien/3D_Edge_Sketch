@@ -92,6 +92,11 @@ public:
     bool enable_aborting_3D_edge_sketch;
     int num_of_nonveridical_edge_pairs;
 
+    //> Input Dataset Settings
+    std::string Dataset_Path;
+    std::string Dataset_Name;
+    std::string Scene_Name;
+
     //> timer
     double itime, pair_edges_time;
     double finalize_edge_pair_time;
@@ -129,9 +134,6 @@ private:
     int circleR; //> Unknown setting
 
     //> Input Dataset Settings
-    std::string Dataset_Path;
-    std::string Dataset_Name;
-    std::string Scene_Name;
     int Num_Of_Total_Imgs;
     int Img_Rows;
     int Img_Cols;

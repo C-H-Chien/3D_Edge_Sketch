@@ -121,7 +121,13 @@ int main(int argc, char **argv) {
       break;
   }
 
-
+#if WRITE_ALL_3D_EDGES
+  std::ofstream Out_All_3D_Edges_File;
+  std::string Output_File_Name = "../../" + OUTPUT_FOLDER_NAME + "/All_3D_edges_" + MWV_Edge_Rec.Dataset_Name + "_" + MWV_Edge_Rec.Scene_Name + ".txt";
+  Out_All_3D_Edges_File.open(Output_File_Name);
+  Out_All_3D_Edges_File << MWV_Edge_Rec.all_3D_Edges;
+  Out_All_3D_Edges_File.close();
+#endif
 
   double total_time = MWV_Edge_Rec.pair_edges_time + MWV_Edge_Rec.finalize_edge_pair_time + MWV_Edge_Rec.find_next_hypothesis_view_time;
   std::string out_time_str = "Total computation time: " + std::to_string(total_time) + " (s)";

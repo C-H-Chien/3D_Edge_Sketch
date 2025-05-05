@@ -49,7 +49,7 @@ def print_metrics(metrics, totals, edge_type):
 def eval_3D_edges(obj_name, base_dir, output_name, GT_dir, metrics, totals):
     #> get the 3D edge sketch curve points
     print(f"Processing: {obj_name}")
-    out_cruve_points_path = os.path.join( base_dir, output_name, "curves_points_0006_10deg.txt" )
+    out_cruve_points_path = os.path.join( base_dir, output_name, "All_3D_edges_ABC-NEF_00004605.txt" )
     print( out_cruve_points_path )
     if not os.path.exists( out_cruve_points_path ):
         print(f"Invalid 3D edge sketch result at {obj_name}")
@@ -103,7 +103,7 @@ def eval_3D_edges(obj_name, base_dir, output_name, GT_dir, metrics, totals):
 
 
 def main(base_dir, GT_dir, exp_name):
-    eval_obj_name = "00000006"
+    eval_obj_name = "00004605"
     set_random_seeds()
     metrics = {
         "chamfer": [],
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--base_dir",
         type=str,
-        default="/gpfs/data/bkimia/cchien3/Qiwu_Edge_Grouping/3D_Edge_Sketch_and_Grouping/",
+        default="/gpfs/data/bkimia/cchien3/3D_Edge_Sketch/",
         help="Base directory for 3D Edge Sketch",
     )
     parser.add_argument(
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         default="/gpfs/data/bkimia/Datasets/ABC-NEF/gt_curve_points/",
         help="Directory for the GT 3D curve points",
     )
-    parser.add_argument("--output_name", type=str, default="outputs_curves_points", help="output folder name")
+    parser.add_argument("--output_name", type=str, default="outputs", help="output folder name")
 
     args = parser.parse_args()
     main(args.base_dir, args.GT_dir, args.output_name)

@@ -5,7 +5,8 @@
 #define DELETE_ALL_FILES_UNDER_OUTPUTS  (true)
 
 //> Write to the files
-#define WRITE_3D_EDGES                  (true)
+#define WRITE_3D_EDGES_PER_HYPO_PAIR    (true)
+#define WRITE_ALL_3D_EDGES              (true)
 #define WRITE_3D_2D_EDGE_LINKINGS       (false)
 
 //> Print out in terminal

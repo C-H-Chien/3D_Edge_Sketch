@@ -278,6 +278,7 @@ void EdgeSketch_Core::Run_3D_Edge_Sketch() {
                         stack_idx++;
                     }
                 }
+                //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of third loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
                 supported_indices.col(supported_edge_idx) << supported_indice_current.col(0);
                 supported_edge_idx++;
             } 
@@ -500,7 +501,7 @@ void EdgeSketch_Core::Stack_3D_Edges() {
         Gamma1s_world.row(i) = point_world.transpose();
     }
 
-#if WRITE_3D_EDGES
+#if WRITE_3D_EDGES_PER_HYPO_PAIR
     std::ofstream myfile2;
     std::string Output_File_Path2 = "../../" + OUTPUT_FOLDER_NAME + "/3D_edges_" + Dataset_Name + "_" + Scene_Name + "_hypo1_" + std::to_string(hyp01_view_indx) \
                                     + "_hypo2_" + std::to_string(hyp02_view_indx) + "_t" + std::to_string(Edge_Detection_Init_Thresh) + "to" \
