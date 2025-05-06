@@ -53,8 +53,8 @@ python eval_main.py
 Refer to ``eval_main.py`` for more information on where the ground-truth curve points directory is specified.
 
 ## Generating Third-Order Edges and Absolute Poses as Inputs for 3D Edge Sketch
-- Third-order edges: use ``preprocesser/third_order_edge_detector/get_RO_Edges_List_in_dataset.m`` which helps generate ``Edge_*_t*.txt``.
-- Absolute Poses: use ``preprocesser/get_poses_from_ABC_NEF_dataset.m`` which reads dataset ground-truth file and transform all ground-truth poses to ``R_matrix.txt`` and ``T_matrix.txt``. The example code reads ``transforms_train.json`` file provided by the ABC-NEF dataset.
+- Third-order edges: use ``preprocesser/third_order_edge_detector/get_TO_Edges_List_in_dataset.m`` which helps generate ``Edge_*_t*.txt`` for every image of the dataset under the ``Edges`` folder of the dataset (this folder will be automatically generated). Change the settings of the third-order edge detector threshold ``thresh`` to get different levels of edges if necessary.
+- Absolute Poses: use ``preprocesser/get_poses_from_dataset.m`` which reads dataset ground-truth file and transform all ground-truth poses to ``R_matrix.txt`` and ``T_matrix.txt`` under ``RnT`` folder of the dataset (this folder will be automatically generated). The example code reads ``transforms_train.json`` file provided by the ABC-NEF dataset. For DTU dataset, the code reads ``meta_data.json`` file.
 
 ## Notes
 GPU version of the 3D edge sketch has not been publicly released, although it resides in another branch. It needs proper organization and refinement. Will release it as soon as it is done.

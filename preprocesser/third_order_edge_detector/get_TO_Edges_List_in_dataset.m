@@ -10,11 +10,11 @@
 
 % mfiledir = fileparts(mfilename('fullpath'));
 %> Path to where the dataset is
-Dataset_Path        = '/oscar/data/bkimia/Datasets/';
-Dataset_Name        = 'ABC-NEF/';      %> ABC-NEF or Replica
-Scene_Name          = '00000568/';          %> 00009779
-Image_Folder_Name   = 'train_img/';   %> train_img for ABC-NEF, color for Replica
-postfix             = '.png';               %> .png for ABC-NEF, .jpg for Replica
+Dataset_Path        = '/gpfs/data/bkimia/Datasets/';
+Dataset_Name        = 'ABC-NEF/';      %> ABC-NEF or DTU
+Scene_Name          = '00008605/';     %> 00008605 or scan37
+Image_Folder_Name   = 'train_img/';    %> train_img for ABC-NEF, color for DTU
+postfix             = '.png';          %> .png for ABC-NEF and DTU
 Edges_Folder_Name   = 'Edges/';
 All_Images = dir(strcat(Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name, '*', postfix));
 Full_Accessible_Path = [Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name];
@@ -23,10 +23,13 @@ Full_Accessible_Path = [Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Nam
 save_edg_files = 0;
 
 %> Settings for the Third-Order Edge Detector
-thresh = 1;
+thresh = 8;
 sigma = 1;
 n = 1;
 format long;
+
+[status, msg, ~] = mkdir(strcat(Dataset_Path, Dataset_Name, Scene_Name, Edges_Folder_Name));
+disp(msg);
 
 for i = 1:size(All_Images, 1)
     src_Data_Path = strcat(Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Name, All_Images(i).name);
