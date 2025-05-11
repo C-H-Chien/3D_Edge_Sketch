@@ -106,8 +106,8 @@ int main(int argc, char **argv) {
     //> Finalize hypothesis edge pairs for a two-view triangulation
     MWV_Edge_Rec.Finalize_Edge_Pairs_and_Reconstruct_3D_Edges();
     
-    //> Stack all 3D edges located in the world coordinate
-    MWV_Edge_Rec.Stack_3D_Edges();
+    //> Stack all 3D edges locations and orientations (represented by 3D unit tangent vectors) in the world coordinate
+    MWV_Edge_Rec.Stack_3D_Edges_Locations_And_Orientations();
 
     //> Find the next hypothesis view pairs, if any
     MWV_Edge_Rec.Project_3D_Edges_and_Find_Next_Hypothesis_Views();

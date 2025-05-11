@@ -44,7 +44,7 @@ public:
     void Run_3D_Edge_Sketch();
     void Finalize_Edge_Pairs_and_Reconstruct_3D_Edges();
     void Clear_Data();
-    void Stack_3D_Edges();
+    void Stack_3D_Edges_Locations_And_Orientations();
     void Project_3D_Edges_and_Find_Next_Hypothesis_Views();
 
     //> Destructor
@@ -86,6 +86,7 @@ public:
 
     std::vector< Eigen::MatrixXd > all_supported_indices;
     Eigen::MatrixXd Gamma1s;
+    Eigen::MatrixXd Tangent1s;
     Eigen::MatrixXd all_3D_Edges;
     std::vector< int > claimedEdgesList;
     double avg_ratio;

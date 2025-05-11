@@ -52,6 +52,12 @@ namespace MultiviewGeometryUtil {
             T12 = getRelativePose_T21(R2, R1, T2, T1);  
         }
 
+        Eigen::Vector3d get3DTangentFromTwo2Dtangents( 
+            const Eigen::MatrixXd pt_edge_view1, const Eigen::MatrixXd pt_edge_view2,
+            const Eigen::Matrix3d K1,  const Eigen::Matrix3d K2,
+            const Eigen::Matrix3d R1,  const Eigen::Vector3d T1,
+            const Eigen::Matrix3d R2,  const Eigen::Vector3d T2 );
+
         Eigen::Vector3d transformToWorldCoordinates( const Eigen::Vector3d& point, const Eigen::Matrix3d& R, const Eigen::Vector3d& T) 
         {
             // Apply the inverse transformation to convert the point to world coordinates

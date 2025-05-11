@@ -403,6 +403,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
     abs_Ts.push_back(All_T[hyp02_view_indx]);
 
     Gamma1s.conservativeResize(paired_edge_final.rows(),3);
+    Tangent1s.conservativeResize(paired_edge_final.rows(),3);
     for (int pair_idx = 0; pair_idx < paired_edge_final.rows(); pair_idx++) {
         Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));  //> edge index in hypo 1
         Eigen::MatrixXd edgel_HYPO2   = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));  //> edge index in hypo 2
@@ -428,7 +429,6 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
 
         //> The resultant edge_pt_3D is 3D edges "under the first hypothesis view coordinate"
         Eigen::Vector3d edge_pt_3D = util->linearTriangulation(2, pts, Rs, Ts, K_HYPO1);
-
         if (edge_pt_3D.hasNaN()) {
             LOG_ERROR("NaN values detected in edge_pt_3D for pair_idx: ");
             Gamma1s.row(pair_idx)<< 0, 0, 0;  //> TBD
@@ -441,6 +441,10 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
         Eigen::Vector3d edge_2d_H2 = Edges_HYPO2_final.row(0).head<3>();
         edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H1, hyp01_view_indx);
         edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H2, hyp02_view_indx);
+
+        //> Find the 3D tangent vector associated with each 3D edges
+        Eigen::Vector3d edge_tangent_3D = util->get3DTangentFromTwo2Dtangents(Edges_HYPO1_final.row(0), Edges_HYPO2_final.row(0), K_HYPO1, K_HYPO2, All_R[hyp01_view_indx], All_T[hyp01_view_indx], All_R[hyp02_view_indx], All_T[hyp02_view_indx]);
+        Tangent1s.row(pair_idx) << edge_tangent_3D(0), edge_tangent_3D(1), edge_tangent_3D(2);
 
         ///////////////////////////////// Add support from validation views /////////////////////////////////
         std::vector< std::pair<int, Eigen::Vector3d> > validation_support_edges;
@@ -489,7 +493,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
 #endif
 }
 
-void EdgeSketch_Core::Stack_3D_Edges() {
+void EdgeSketch_Core::Stack_3D_Edges_Locations_And_Orientations() {
     Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
     Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
 
@@ -511,6 +515,16 @@ void EdgeSketch_Core::Stack_3D_Edges() {
     myfile2.open (Output_File_Path2);
     myfile2 << Gamma1s_world;
     myfile2.close();
+
+    std::ofstream myfile_tangents;
+    std::string Output_File_Path_for_Tangents = "../../" + OUTPUT_FOLDER_NAME + "/3D_tangents_" + Dataset_Name + "_" + Scene_Name + "_hypo1_" + std::to_string(hyp01_view_indx) \
+                                    + "_hypo2_" + std::to_string(hyp02_view_indx) + "_t" + std::to_string(Edge_Detection_Init_Thresh) + "to" \
+                                    + std::to_string(Edge_Detection_Final_Thresh) + "_delta" + Delta_FileName_Str + "_theta" + std::to_string(Orien_Thresh) \
+                                    + "_N" + std::to_string(Max_Num_Of_Support_Views) + ".txt";
+    std::cout << "       - 3D tangents are written to file: " << Output_File_Path_for_Tangents << std::endl;
+    myfile_tangents.open (Output_File_Path_for_Tangents);
+    myfile_tangents << Tangent1s;
+    myfile_tangents.close();
 #endif
 
     //> Concatenate reconstructed 3D edges

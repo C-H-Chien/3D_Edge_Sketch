@@ -65,6 +65,41 @@ namespace MultiviewGeometryUtil {
         return R_2 * (C1 - C2); 
     }
 
+    Eigen::Vector3d multiview_geometry_util::get3DTangentFromTwo2Dtangents( 
+        const Eigen::MatrixXd pt_edge_view1, const Eigen::MatrixXd pt_edge_view2,
+        const Eigen::Matrix3d K1,  const Eigen::Matrix3d K2,
+        const Eigen::Matrix3d R1,  const Eigen::Vector3d T1,
+        const Eigen::Matrix3d R2,  const Eigen::Vector3d T2 )
+    {
+        Eigen::Matrix3d R21, R12;
+        Eigen::Vector3d T21, T12;
+
+        getRelativePoses(R1, T1, R2, T2, R21, T21, R12, T12);
+
+        Eigen::Vector3d e1  = {1,0,0};
+        Eigen::Vector3d e3  = {0,0,1};
+        Eigen::Vector3d Gamma1 = K1.inverse() * Eigen::Vector3d(pt_edge_view1(0), pt_edge_view1(1), 1.0);
+        Eigen::Vector3d Gamma2 = K2.inverse() * Eigen::Vector3d(pt_edge_view2(0), pt_edge_view2(1), 1.0);
+
+        Eigen::Vector3d tgt1(cos(pt_edge_view1(2)), sin(pt_edge_view1(2)), 0.0);
+        Eigen::Vector3d tgt2(cos(pt_edge_view2(2)), sin(pt_edge_view2(2)), 0.0);
+        Eigen::Vector3d tgt1_meters = K1.inverse() * tgt1;
+        Eigen::Vector3d tgt2_meters = K2.inverse() * tgt2;
+
+        // double rho1 = (double(e1.transpose() * T21) - double(e3.transpose() * T21) * double(e1.transpose() *Gamma2))/(double(e3.transpose() * R21 * Gamma1)* double(e1.transpose() * Gamma2) - double(e1.transpose() * R21 * Gamma1));
+
+        Eigen::Vector3d n1 = tgt1_meters.cross(Gamma1);
+        Eigen::Vector3d n2 = R21.transpose() * tgt2_meters.cross(Gamma2);
+
+        //> This 3D tangent is in the first camera coordinate
+        Eigen::Vector3d T3D = n1.cross(n2) / (n1.cross(n2) ).norm();
+
+        //> Convert the 3D tangent from the first camera coordinate to the world coordinate
+        Eigen::Vector3d tangents_3D_world = R1.transpose() * T3D;
+
+        return tangents_3D_world;
+    }
+
     Eigen::Vector3d multiview_geometry_util::linearTriangulation(
         const int N,
         const std::vector<Eigen::Vector2d> pts, 
