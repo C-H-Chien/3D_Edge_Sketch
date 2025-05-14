@@ -138,8 +138,8 @@ subpix_dir_y2 = (Fx_e);
 
 amp = 2^n;
 % construct the edge map
-gen_edge_map = [(subpix_x'-1)/amp (subpix_y'-1)/amp atan2(subpix_dir_y',  subpix_dir_x')  mag_e'];
-TO_edge_map  = [(subpix_x')/amp (subpix_y')/amp atan2(subpix_dir_y2', subpix_dir_x2') mag_e'];
+gen_edge_map = [(subpix_x'-1)/amp (subpix_y'-1)/amp atan(subpix_dir_y' ./ subpix_dir_x')  mag_e'];
+TO_edge_map  = [(subpix_x')/amp (subpix_y')/amp atan(subpix_dir_y2' ./ subpix_dir_x2') mag_e'];
 % TO_edge_map  = [(subpix_x'-1)/amp (subpix_y'-1)/amp atan2(subpix_dir_y2', subpix_dir_x2') mag_e'];
 ind = (TO_edge_map(:,1)>margin-0.5) & (TO_edge_map(:,1)<margin-0.5+w) & ...
     (TO_edge_map(:,2)>margin-0.5) & (TO_edge_map(:,2)<margin-0.5+h);

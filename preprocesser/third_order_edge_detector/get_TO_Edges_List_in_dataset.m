@@ -23,7 +23,7 @@ Full_Accessible_Path = [Dataset_Path, Dataset_Name, Scene_Name, Image_Folder_Nam
 save_edg_files = 0;
 
 %> Settings for the Third-Order Edge Detector
-thresh = 8;
+thresh = 1;
 sigma = 1;
 n = 1;
 format long;
