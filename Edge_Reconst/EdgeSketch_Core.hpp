@@ -115,11 +115,38 @@ private:
     std::shared_ptr<GetOrientationList::get_OrientationList> getOre = nullptr;
     std::shared_ptr<EdgeMapping> edgeMapping = nullptr;
 
+    //> Helper functions for 3D edge reconstruction
     Eigen::MatrixXd project3DEdgesToView(const Eigen::MatrixXd& edges3D, const Eigen::Matrix3d& R, const Eigen::Vector3d& T, const Eigen::Matrix3d& K, const Eigen::Matrix3d& R_hyp01, const Eigen::Vector3d& T_hpy01);
     int claim_Projected_Edges(const Eigen::MatrixXd& projectedEdges, const Eigen::MatrixXd& observedEdges, double threshold);
     void select_Next_Best_Hypothesis_Views( 
       const std::vector< int >& claimedEdges, std::vector<Eigen::MatrixXd> All_Edgels,
       std::pair<int, int> &next_hypothesis_views, std::vector<int> history_hypothesis_views_index );
+    
+    //> Helper functions for edge sketch processing (refactored for simplicity)
+    struct EdgeHypothesisPair {
+        Eigen::MatrixXd Edges_HYPO1_final;
+        Eigen::MatrixXd Edges_HYPO2_final;
+        Eigen::MatrixXd HYPO2_idx;
+    };
+    
+    bool get_Edge_Hypothesis_Pair(int edge_idx, EdgeHypothesisPair& result);
+    void process_Validation_View_for_Edge_Pair(
+        int VALID_INDX, 
+        const EdgeHypothesisPair& edge_pair,
+        Eigen::MatrixXd& supported_indice_current,
+        Eigen::MatrixXd& supported_indices_stack,
+        int& stack_idx,
+        bool& isempty_link);
+    int select_Final_Paired_Edge(
+        int edge_idx,
+        const EdgeHypothesisPair& edge_pair, 
+        const Eigen::MatrixXd& supported_indices_stack,
+        const Eigen::MatrixXd& supported_indices,
+        int finalpair_row);
+    void triangulate_and_Store_3D_Edge(
+        int pair_idx,
+        Eigen::Vector3d& edge_pt_3D,
+        Eigen::Vector3d& edge_tangent_3D);
 
     //> YAML file data parser
     YAML::Node Edge_Sketch_Setting_YAML_File;
