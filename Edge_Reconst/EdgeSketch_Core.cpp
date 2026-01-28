@@ -145,6 +145,203 @@ void EdgeSketch_Core::Set_Hypothesis_Views_Edgels() {
     OreListBardegree    = getOre->getOreListBar(Edges_HYPO1, All_R, All_T, K_HYPO1, K_HYPO2, hyp02_view_indx, hyp01_view_indx);
 }
 
+//> Helper function: Get edge hypothesis pair for a given edge index
+bool EdgeSketch_Core::get_Edge_Hypothesis_Pair(int edge_idx, EdgeHypothesisPair& result) {
+    //> Get the current edge from HYPO1
+    Eigen::Vector3d pt_edgel_HYPO1;
+    pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
+
+    //> Get angle thresholds from OreListBar (in Degree)
+    double thresh_ore21_1 = OreListBardegree(edge_idx, 0);
+    double thresh_ore21_2 = OreListBardegree(edge_idx, 1);
+
+    //> Find the corresponding edgel in HYPO2 based on the epipolar angle
+    Eigen::MatrixXd HYPO2_idx_raw = PairHypo->getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
+    if (HYPO2_idx_raw.rows() == 0) return false;
+
+    //> Retrieve Hypo2 Edgels
+    Eigen::MatrixXd edgels_HYPO2 = PairHypo->getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
+
+    //> Correct Edgels in Hypo2 Based on Epipolar Constraints
+    Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo->edgelsHYPO2correct(edgels_HYPO2, Edges_HYPO1.row(edge_idx), F21, F12, HYPO2_idx_raw);
+
+    //> Organize the final edge data (hypothesis edge pairs)
+    result.Edges_HYPO1_final.resize(edgels_HYPO2_corrected.rows(), 4);
+    result.Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), 
+                                 edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+    
+    result.Edges_HYPO2_final.resize(edgels_HYPO2_corrected.rows(), 4);
+    result.Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), 
+                                 edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
+
+    //> Store the Hypo2 Indices
+    result.HYPO2_idx.resize(edgels_HYPO2_corrected.rows(), 1);
+    result.HYPO2_idx << edgels_HYPO2_corrected.col(8);
+    
+    return (result.HYPO2_idx.rows() > 0);
+}
+
+//> Helper function: Process a single validation view for an edge pair
+void EdgeSketch_Core::process_Validation_View_for_Edge_Pair(
+    int VALID_INDX, 
+    const EdgeHypothesisPair& edge_pair,
+    Eigen::MatrixXd& supported_indice_current,
+    Eigen::MatrixXd& supported_indices_stack,
+    int& stack_idx,
+    bool& isempty_link)
+{
+    //> Get camera pose and edges for current validation view
+    Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
+    Eigen::Matrix3d R3             = All_R[VALID_INDX];
+    Eigen::Vector3d T3             = All_T[VALID_INDX];
+    Eigen::MatrixXd VALI_Orient    = TO_Edges_VALID.col(2);
+    
+    Eigen::MatrixXd Tangents_VALID;
+    Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
+    Tangents_VALID.col(0) = (VALI_Orient.array()).cos();
+    Tangents_VALID.col(1) = (VALI_Orient.array()).sin();
+    
+    Eigen::Matrix3d K3 = (Use_Multiple_K) ? All_K[VALID_INDX] : K;
+
+    //> Relative pose between hypothesis view 1 and validation view
+    Eigen::Matrix3d R31 = util->getRelativePose_R21(Rot_HYPO1, R3);
+    Eigen::Vector3d T31 = util->getRelativePose_T21(Rot_HYPO1, R3, Transl_HYPO1, T3);
+    
+    //> Find the reprojected edgels
+    Eigen::MatrixXd edge_tgt_gamma3 = getReprojEdgel->getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, 
+        edge_pair.Edges_HYPO1_final, edge_pair.Edges_HYPO2_final, All_R, All_T, VALID_INDX, K_HYPO1, K_HYPO2);
+    
+    //> Calculate the epipolar angle ranges
+    Eigen::MatrixXd OreListBardegree31 = getOre->getOreListBar(edge_pair.Edges_HYPO1_final, All_R, All_T, K_HYPO1, K3, VALID_INDX, hyp01_view_indx);
+    Eigen::MatrixXd OreListdegree31    = getOre->getOreListVali(TO_Edges_VALID, All_R, All_T, K_HYPO1, K3, VALID_INDX, hyp01_view_indx);
+    Eigen::MatrixXd OreListBardegree32 = getOre->getOreListBar(edge_pair.Edges_HYPO2_final, All_R, All_T, K_HYPO2, K3, VALID_INDX, hyp02_view_indx);
+    Eigen::MatrixXd OreListdegree32    = getOre->getOreListVali(TO_Edges_VALID, All_R, All_T, K_HYPO2, K3, VALID_INDX, hyp02_view_indx);
+    
+    //> Find the epipolar angle range of the epipolar wedge on the validation view arising from Edges_HYPO1_final
+    double thresh_ore31_1 = OreListBardegree31(0,0);
+    double thresh_ore31_2 = OreListBardegree31(0,1);
+    Eigen::MatrixXd vali_idx31 = PairHypo->getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+    Eigen::MatrixXd edgels_31  = PairHypo->getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
+
+    //> An array indicating if the two epipolar edges are "almost" parallel
+    Eigen::VectorXd isparallel = Eigen::VectorXd::Ones(edge_pair.Edges_HYPO2_final.rows());
+
+    //> Loop over each edge from Hypo2
+    for (int idx_pair = 0; idx_pair < edge_pair.Edges_HYPO2_final.rows(); idx_pair++) {
+        //> Epipolar angle range of the epipolar wedge on the validation view arising from Edges_HYPO2_final
+        double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
+        double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
+        
+        //> Find the epipolar angle range and parse the corresponding edgels
+        Eigen::MatrixXd vali_idx32 = PairHypo->getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
+        Eigen::MatrixXd edgels_32  = PairHypo->getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
+        
+        //> Check if the two epipolar wedges are almost parallel
+        if (is_Epipolar_Wedges_in_Parallel(thresh_ore31_1, thresh_ore31_2, thresh_ore32_1, thresh_ore32_2, idx_pair, isparallel, supported_indice_current))
+            continue;
+
+        //> Find all the edges fall inside the two epipolar wedges intersection
+        std::vector<double> v_intersection;
+        std::vector<double> v1(vali_idx31.data(), vali_idx31.data() + vali_idx31.rows());
+        std::vector<double> v2(vali_idx32.data(), vali_idx32.data() + vali_idx32.rows());
+        set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), back_inserter(v_intersection));
+        Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(v_intersection.data(), v_intersection.size());
+        Eigen::MatrixXd inliner(idxVector);
+        
+        //> Calculate orientation of gamma 3 (the reprojected edge) and get support
+        Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
+        double supported_link_indx = getSupport->getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
+
+        //> Store the supporting edge index
+        supported_indice_current.row(idx_pair) << supported_link_indx;
+        if (supported_link_indx != -2) {
+            supported_indices_stack.conservativeResize(stack_idx+1,2);
+            supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
+            isempty_link = false;
+            stack_idx++;
+        }
+    }
+}
+
+//> Helper function: Select the final paired edge from multiple candidates
+int EdgeSketch_Core::select_Final_Paired_Edge(
+    int edge_idx,
+    const EdgeHypothesisPair& edge_pair, 
+    const Eigen::MatrixXd& supported_indices_stack,
+    const Eigen::MatrixXd& supported_indices,
+    int finalpair_row)
+{
+    //> Create a stack of supported indices
+    std::vector<double> indices_stack(supported_indices_stack.data(), supported_indices_stack.data() + supported_indices_stack.rows());
+    std::vector<double> indices_stack_unique = indices_stack;
+    std::sort(indices_stack_unique.begin(), indices_stack_unique.end());
+    std::vector<double>::iterator it1;
+    it1 = std::unique(indices_stack_unique.begin(), indices_stack_unique.end());
+    indices_stack_unique.resize(std::distance(indices_stack_unique.begin(),it1));
+
+    //> Count the occurrence of each unique index
+    Eigen::VectorXd rep_count;
+    rep_count.conservativeResize(indices_stack_unique.size(),1);
+    for (int unique_idx = 0; unique_idx<indices_stack_unique.size(); unique_idx++) {
+        rep_count.row(unique_idx) << double(count(indices_stack.begin(), indices_stack.end(), indices_stack_unique[unique_idx]));
+    }
+
+    //> Find the maximal number of supports from validation views
+    Eigen::VectorXd::Index maxIndex;
+    double max_support = rep_count.maxCoeff(&maxIndex);
+    if(max_support < Max_Num_Of_Support_Views)
+        return -2;
+    
+    int finalpair = -2;
+    int numofmax = std::count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
+    
+    if (numofmax > 1) {
+        //> Multiple edges have the same max support count, select based on epipolar distance
+        std::vector<double> rep_count_vec(rep_count.data(), rep_count.data() + rep_count.rows());
+        std::vector<int> max_index;
+        auto start_it = begin(rep_count_vec);
+        while (start_it != end(rep_count_vec)) {
+            start_it = std::find(start_it, end(rep_count_vec), max_support);
+            if (start_it != end(rep_count_vec)) {
+                auto const pos = std::distance(begin(rep_count_vec), start_it);
+                max_index.push_back(int(pos));
+                ++start_it;
+            }
+        }
+
+        //> Select the final paired edge based on minimum epipolar distance
+        Eigen::Vector3d pt_edgel_HYPO1;
+        pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
+        Eigen::Vector3d coeffs = F21 * pt_edgel_HYPO1;
+        
+        Eigen::MatrixXd Edge_Pts;
+        Edge_Pts.conservativeResize(max_index.size(),2);
+        for(int maxidx = 0; maxidx<max_index.size(); maxidx++){
+            Edge_Pts.row(maxidx) << edge_pair.Edges_HYPO2_final(indices_stack_unique[max_index[maxidx]], 0),
+                                     edge_pair.Edges_HYPO2_final(indices_stack_unique[max_index[maxidx]], 1);
+        }
+        
+        Eigen::VectorXd Ap = coeffs(0)*Edge_Pts.col(0);
+        Eigen::VectorXd Bp = coeffs(1)*Edge_Pts.col(1);
+        Eigen::VectorXd numDist = Ap + Bp + Eigen::VectorXd::Ones(Ap.rows())*coeffs(2);
+        double denomDist = sqrt(coeffs(0)*coeffs(0) + coeffs(1)*coeffs(1));
+        Eigen::VectorXd dist = numDist.cwiseAbs()/denomDist;
+        
+        Eigen::VectorXd::Index minIndex;
+        double min_dist = dist.minCoeff(&minIndex);
+        
+        //> Ignore if the distance from the reprojected edge to the epipolar line is too large
+        if (min_dist > Reproj_Dist_Thresh) return -2;
+        
+        finalpair = int(indices_stack_unique[max_index[minIndex]]);
+    }
+    else {
+        finalpair = int(indices_stack_unique[int(maxIndex)]);
+    }
+    
+    return finalpair;
+}
+
 void EdgeSketch_Core::Run_3D_Edge_Sketch() {
 
     itime = omp_get_wtime();
@@ -154,233 +351,167 @@ void EdgeSketch_Core::Run_3D_Edge_Sketch() {
         std::vector<Eigen::MatrixXd> local_thread_supported_indices;
         int edge_idx;
 
-        //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< First loop: loop over all edgels from hypothesis view 1 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
-        //<<<<<<<<<<< Identify pairs of edge, correct the positions of the edges from Hypo2, and store the paired edges >>>>>>>>>>>>>>>>//
+        //> Loop over all edgels from hypothesis view 1
         #pragma omp for schedule(static, Num_Of_OMP_Threads)
-        for (edge_idx = 0; edge_idx < Edges_HYPO1.rows() ; edge_idx++) {
+        for (edge_idx = 0; edge_idx < Edges_HYPO1.rows(); edge_idx++) {
 
-            if ( Skip_this_Edge( edge_idx ) ) continue;
+            if (Skip_this_Edge(edge_idx)) continue;
             
-            //> TODO: Summarize the following piece of code into get HYPO1 edgel and the corresponding HYPO2 edgels
-            
-            //> Get the current edge from HYPO1
-            Eigen::Vector3d pt_edgel_HYPO1;
-            pt_edgel_HYPO1 << Edges_HYPO1(edge_idx,0), Edges_HYPO1(edge_idx,1), 1;
+            //> Step 1: Get edge hypothesis pair for current edge
+            EdgeHypothesisPair edge_pair;
+            if (!get_Edge_Hypothesis_Pair(edge_idx, edge_pair)) continue;
 
-            //Get angle Thresholds from OreListBar (in Degree) 
-            double thresh_ore21_1 = OreListBardegree(edge_idx, 0);
-            double thresh_ore21_2 = OreListBardegree(edge_idx, 1);
-
-            //> Find the corresponding edgel in HYPO2 based on the epipolar angle
-            Eigen::MatrixXd HYPO2_idx_raw = PairHypo->getHYPO2_idx_Ore(OreListdegree, thresh_ore21_1, thresh_ore21_2);
-            if (HYPO2_idx_raw.rows() == 0) continue;
-            //> Retrieve Hypo2 Edgels
-            Eigen::MatrixXd edgels_HYPO2 = PairHypo->getedgels_HYPO2_Ore(Edges_HYPO2, OreListdegree, thresh_ore21_1, thresh_ore21_2);
-            //> Correct Edgels in Hypo2 Based on Epipolar Constraints
-            Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo->edgelsHYPO2correct(edgels_HYPO2, Edges_HYPO1.row(edge_idx), F21, F12, HYPO2_idx_raw);
-            //> Organize the final edge data (hypothesis edge pairs)
-            // Eigen::MatrixXd Edges_HYPO1_final = Edges_HYPO1.row(edge_idx);
-            Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(), 4);
-            Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
-            Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(), 4);
-            Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
-
-            //> Store the Hypo2 Indices
-            Eigen::MatrixXd HYPO2_idx(edgels_HYPO2_corrected.rows(), 1); 
-            HYPO2_idx << edgels_HYPO2_corrected.col(8);
-            if (HYPO2_idx.rows() == 0) continue;
-
+            //> Initialize support tracking structures
             int supported_edge_idx = 0;
             int stack_idx = 0;
             Eigen::MatrixXd supported_indices;
-            supported_indices.conservativeResize(edgels_HYPO2.rows(), Num_Of_Total_Imgs-2);
+            supported_indices.conservativeResize(edge_pair.Edges_HYPO2_final.rows(), Num_Of_Total_Imgs-2);
             Eigen::MatrixXd supported_indice_current;
-            supported_indice_current.conservativeResize(edgels_HYPO2.rows(),1);
+            supported_indice_current.conservativeResize(edge_pair.Edges_HYPO2_final.rows(), 1);
             Eigen::MatrixXd supported_indices_stack;
-
             bool isempty_link = true;
 
-            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Second loop:loop over all validation views >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
+            //> Step 2: Loop over all validation views
             for (int VALID_INDX = 0; VALID_INDX < Num_Of_Total_Imgs; VALID_INDX++) {
                 //> Skip the two hypothesis views
                 if (VALID_INDX == hyp01_view_indx || VALID_INDX == hyp02_view_indx) continue;
 
-                //> Get camera pose and other info for current validation view
-                Eigen::MatrixXd TO_Edges_VALID = All_Edgels[VALID_INDX];
-                Eigen::Matrix3d R3             = All_R[VALID_INDX];
-                Eigen::Vector3d T3             = All_T[VALID_INDX];
-                Eigen::MatrixXd VALI_Orient    = TO_Edges_VALID.col(2);
-                Eigen::MatrixXd Tangents_VALID;
-                Tangents_VALID.conservativeResize(TO_Edges_VALID.rows(),2);
-                Tangents_VALID.col(0)          = (VALI_Orient.array()).cos();
-                Tangents_VALID.col(1)          = (VALI_Orient.array()).sin();
-                Eigen::Matrix3d K3 = (Use_Multiple_K) ? All_K[VALID_INDX] : K;
-
-                //> Relative pose between hypothesis view 1 and validation view
-                Eigen::Matrix3d R31 = util->getRelativePose_R21(Rot_HYPO1, R3);
-                Eigen::Vector3d T31 = util->getRelativePose_T21(Rot_HYPO1, R3, Transl_HYPO1, T3);
+                //> Process this validation view for the current edge pair
+                process_Validation_View_for_Edge_Pair(VALID_INDX, edge_pair, supported_indice_current, 
+                                                      supported_indices_stack, stack_idx, isempty_link);
                 
-                //> Find the reprojected edgels
-                Eigen::MatrixXd edge_tgt_gamma3    = getReprojEdgel->getGamma3Tgt(hyp01_view_indx, hyp02_view_indx, Edges_HYPO1_final, Edges_HYPO2_final, All_R, All_T, VALID_INDX, K_HYPO1, K_HYPO2);
-                
-                //> Calculate the epipolar angle range (Hypo1 --> Vali)
-                Eigen::MatrixXd OreListBardegree31 = getOre->getOreListBar(Edges_HYPO1_final, All_R, All_T, K_HYPO1, K3, VALID_INDX, hyp01_view_indx);
-                Eigen::MatrixXd OreListdegree31    = getOre->getOreListVali(TO_Edges_VALID, All_R, All_T, K_HYPO1, K3, VALID_INDX, hyp01_view_indx);
-
-                //> Calculate the epipolar angle range (Hypo2 --> Vali)
-                Eigen::MatrixXd OreListBardegree32 = getOre->getOreListBar(Edges_HYPO2_final, All_R, All_T, K_HYPO2, K3, VALID_INDX, hyp02_view_indx);
-                Eigen::MatrixXd OreListdegree32    = getOre->getOreListVali(TO_Edges_VALID, All_R, All_T, K_HYPO2, K3, VALID_INDX, hyp02_view_indx);
-                
-                //> Find the epipolar angle range of the epipolar wedge on the validation view arising from Edges_HYPO1_final, and parse the corresponding edgels on the validation view
-                double thresh_ore31_1 = OreListBardegree31(0,0);
-                double thresh_ore31_2 = OreListBardegree31(0,1);
-                Eigen::MatrixXd vali_idx31 = PairHypo->getHYPO2_idx_Ore(OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-                Eigen::MatrixXd edgels_31  = PairHypo->getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree31, thresh_ore31_1, thresh_ore31_2);
-
-                //> An array indicating if the two epipolar edges are "almost" parallel (if so, discard the edge pair as too much uncertainty is given)
-                Eigen::VectorXd isparallel = Eigen::VectorXd::Ones(Edges_HYPO2_final.rows());
-
-                //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Third loop: loop over each edge from Hypo2 <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>//
-                for (int idx_pair = 0; idx_pair < Edges_HYPO2_final.rows(); idx_pair++) {
-
-                    //> Epipolar angle range of the epipolar wedge on the validation view arising from Edges_HYPO2_final
-                    double thresh_ore32_1 = OreListBardegree32(idx_pair,0);
-                    double thresh_ore32_2 = OreListBardegree32(idx_pair,1);
-                    
-                    //> Find the epipolar angle range of the epipolar wedge on the validation view arising from Edges_HYPO2_final, and parse the corresponding edgels on the validation view
-                    Eigen::MatrixXd vali_idx32 = PairHypo->getHYPO2_idx_Ore(OreListdegree32, thresh_ore32_1, thresh_ore32_2);
-                    Eigen::MatrixXd edgels_32  = PairHypo->getedgels_HYPO2_Ore(TO_Edges_VALID, OreListdegree32, thresh_ore32_1, thresh_ore32_2);
-                    
-                    //> Check if the two epipolar wedges are almost parallel
-                    if ( is_Epipolar_Wedges_in_Parallel( thresh_ore31_1, thresh_ore31_2, thresh_ore32_1, thresh_ore32_2, idx_pair, isparallel, supported_indice_current ) )
-                        continue;
-
-                    //> Find all the edges fall inside the two epipolar wedges intersection on validation view, (Hypo1 --> Vali) && (Hypo2 --> Vali)
-                    std::vector<double> v_intersection;
-                    std::vector<double> v1(vali_idx31.data(), vali_idx31.data() + vali_idx31.rows());
-                    std::vector<double> v2(vali_idx32.data(), vali_idx32.data() + vali_idx32.rows());
-                    set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), back_inserter(v_intersection));
-                    Eigen::VectorXd idxVector = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(v_intersection.data(), v_intersection.size());
-                    Eigen::MatrixXd inliner(idxVector);
-                    
-                    //> Calculate orientation of gamma 3 (the reprojected edge)
-                    Eigen::Vector2d edgels_tgt_reproj = {edge_tgt_gamma3(idx_pair,0), edge_tgt_gamma3(idx_pair,1)};
-                    //> Get support from validation view for this gamma 3
-                    double supported_link_indx = getSupport->getSupportIdx(edgels_tgt_reproj, Tangents_VALID, inliner);
-
-
-                    //> Get the supporting edge idx from this validation view
-                    supported_indice_current.row(idx_pair) << supported_link_indx;
-                    if (supported_link_indx != -2) {
-                        supported_indices_stack.conservativeResize(stack_idx+1,2);
-                        supported_indices_stack.row(stack_idx) << double(idx_pair), double(supported_link_indx);
-                        isempty_link = false;
-                        stack_idx++;
-                    }
-                }
-                //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of third loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
                 supported_indices.col(supported_edge_idx) << supported_indice_current.col(0);
                 supported_edge_idx++;
-            } 
-            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  End of second loop >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>//
+            }
 
-            //> Now, for each local thread, stack the supported indices
+            //> Stack the supported indices for this thread
             local_thread_supported_indices.push_back(supported_indices);
 
-            //> Check for Empty Supported Indices
+            //> Check for empty supported indices
             if (isempty_link) continue;
 
-            //> Create a Stack of Supported Indices
-            std::vector<double> indices_stack(supported_indices_stack.data(), supported_indices_stack.data() + supported_indices_stack.rows());
-            std::vector<double> indices_stack_unique = indices_stack;
-            std::sort(indices_stack_unique.begin(), indices_stack_unique.end());
-            std::vector<double>::iterator it1;
-            it1 = std::unique(indices_stack_unique.begin(), indices_stack_unique.end());
-            indices_stack_unique.resize( std::distance(indices_stack_unique.begin(),it1) );
+            //> Step 3: Select the final paired edge from candidates
+            int finalpair = select_Final_Paired_Edge(edge_idx, edge_pair, supported_indices_stack, 
+                                                      supported_indices, 0);
+            if (finalpair == -2) continue;
 
-            //> Count the Occurrence of Each Unique Index
-            Eigen::VectorXd rep_count;
-            rep_count.conservativeResize(indices_stack_unique.size(),1);
-            for (int unique_idx = 0; unique_idx<indices_stack_unique.size(); unique_idx++) {
-                rep_count.row(unique_idx) << double(count(indices_stack.begin(), indices_stack.end(), indices_stack_unique[unique_idx]));
-            }
-
-            //> Find the maximal number of supports from validation views and check if this number is over the threshold
-            Eigen::VectorXd::Index maxIndex;
-            double max_support = rep_count.maxCoeff(&maxIndex);
-            if( max_support < Max_Num_Of_Support_Views )
-                continue;
-            
-            int finalpair = -2;
-            int numofmax = std::count(rep_count.data(), rep_count.data()+rep_count.size(), max_support);
-            if (numofmax > 1) {
-                std::vector<double> rep_count_vec(rep_count.data(), rep_count.data() + rep_count.rows());
-                //std::cout<< "here"<<std::endl;
-                std::vector<int> max_index;
-                auto start_it = begin(rep_count_vec);
-                while (start_it != end(rep_count_vec)) {
-                    start_it = std::find(start_it, end(rep_count_vec), max_support);
-                    if (start_it != end(rep_count_vec)) {
-                        auto const pos = std::distance(begin(rep_count_vec), start_it);
-                        max_index.push_back(int(pos));
-                        ++start_it;
-                    }
-                }
-
-                //Select the Final Paired Edge
-                Eigen::Vector3d coeffs;
-                coeffs = F21 * pt_edgel_HYPO1;
-                Eigen::MatrixXd Edge_Pts;
-                Edge_Pts.conservativeResize(max_index.size(),2);
-                for(int maxidx = 0; maxidx<max_index.size(); maxidx++){
-                    Edge_Pts.row(maxidx) << Edges_HYPO2_final(indices_stack_unique[max_index[maxidx]], 0), \
-                                            Edges_HYPO2_final(indices_stack_unique[max_index[maxidx]], 1);
-                }
-                Eigen::VectorXd Ap = coeffs(0)*Edge_Pts.col(0);
-                Eigen::VectorXd Bp = coeffs(1)*Edge_Pts.col(1);
-                Eigen::VectorXd numDist = Ap + Bp + Eigen::VectorXd::Ones(Ap.rows())*coeffs(2);
-                double denomDist = coeffs(0)*coeffs(0) + coeffs(1)*coeffs(1);
-                denomDist = sqrt(denomDist);
-                Eigen::VectorXd dist = numDist.cwiseAbs()/denomDist;
-                Eigen::VectorXd::Index   minIndex;
-                double min_dist = dist.minCoeff(&minIndex);
-                //> ignore if the distance from the reprojected edge to the epipolar line is greater than some threshold
-                if (min_dist > Reproj_Dist_Thresh) continue;
-
-                finalpair = int(indices_stack_unique[max_index[minIndex]]);
-            }
-            else {
-                finalpair = int(indices_stack_unique[int(maxIndex)]);
-            }
-
-            //> paired_edge is a row vector continaing (hypo1 edge index), (paired hypo2 edge index), (paired validation edge indices)
-            paired_edge.row(edge_idx) << edge_idx, HYPO2_idx(finalpair), supported_indices.row(finalpair);
+            //> Store the paired edge: (hypo1 edge index, paired hypo2 edge index, paired validation edge indices)
+            paired_edge.row(edge_idx) << edge_idx, edge_pair.HYPO2_idx(finalpair), supported_indices.row(finalpair);
         }
-        //> A critical session to stack all local supported indices
+        
+        //> Critical section: stack all local supported indices
         #pragma omp critical
-        all_supported_indices.insert(all_supported_indices.end(), local_thread_supported_indices.begin(), local_thread_supported_indices.end());
+        all_supported_indices.insert(all_supported_indices.end(), local_thread_supported_indices.begin(), 
+                                     local_thread_supported_indices.end());
     }
     pair_edges_time += omp_get_wtime() - itime;
+}
+
+//> Helper function: Triangulate and store 3D edge with supporting edges
+void EdgeSketch_Core::triangulate_and_Store_3D_Edge(
+    int pair_idx,
+    Eigen::Vector3d& edge_pt_3D,
+    Eigen::Vector3d& edge_tangent_3D)
+{
+    //> Get the edge pair from HYPO1 and HYPO2
+    Eigen::MatrixXd edgel_HYPO1 = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));
+    Eigen::MatrixXd edgel_HYPO2 = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));
+    Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));
+
+    //> Correct edgels based on epipolar constraints
+    Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo->edgelsHYPO2correct(edgel_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
+
+    if (HYPO2_idx_raw.rows() == 0 || edgels_HYPO2_corrected.rows() == 0) {
+        std::cout << "No valid matches found for edge " << pair_idx << " at threshold " << thresh_EDG << std::endl;
+        return;
+    }
+
+    //> Organize the final edge data
+    Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
+    Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), 
+                         edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
+    Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(),4);
+    Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), 
+                         edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
+
+    //> Prepare for triangulation
+    Eigen::Vector2d pt_H1 = Edges_HYPO1_final.row(0).head<2>();
+    Eigen::Vector2d pt_H2 = Edges_HYPO2_final.row(0).head<2>();
+    std::vector<Eigen::Vector2d> pts;
+    pts.push_back(pt_H1);
+    pts.push_back(pt_H2);
+
+    std::vector<Eigen::Matrix3d> Rs;
+    Rs.push_back(R21);
+    std::vector<Eigen::Vector3d> Ts;
+    Ts.push_back(T21);
+
+    //> Triangulate to get 3D edge point (in first hypothesis view coordinate)
+    edge_pt_3D = util->linearTriangulation(2, pts, Rs, Ts, K_HYPO1);
+    if (edge_pt_3D.hasNaN()) {
+        LOG_ERROR("NaN values detected in edge_pt_3D for pair_idx: ");
+        Gamma1s.row(pair_idx) << 0, 0, 0;
+        std::cerr << pair_idx << std::endl;
+        return;
+    }
+
+    //> Store 3D edge location
+    Gamma1s.row(pair_idx) << edge_pt_3D(0), edge_pt_3D(1), edge_pt_3D(2);
+    
+    //> Add hypothesis view edges to mapping
+    Eigen::Vector3d edge_2d_H1 = Edges_HYPO1_final.row(0).head<3>();
+    Eigen::Vector3d edge_2d_H2 = Edges_HYPO2_final.row(0).head<3>();
+    edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H1, hyp01_view_indx);
+    edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H2, hyp02_view_indx);
+
+    //> Calculate 3D tangent vector
+    edge_tangent_3D = util->get3DTangentFromTwo2Dtangents(Edges_HYPO1_final.row(0), Edges_HYPO2_final.row(0), 
+        K_HYPO1, K_HYPO2, All_R[hyp01_view_indx], All_T[hyp01_view_indx], All_R[hyp02_view_indx], All_T[hyp02_view_indx]);
+    Tangent1s.row(pair_idx) << edge_tangent_3D(0), edge_tangent_3D(1), edge_tangent_3D(2);
+
+    //> Add support from validation views
+    int val_indx_in_paired_edge_array = 2; // +2 accounts for the first two columns for HYPO1 and HYPO2
+    for (int val_idx = 0; val_idx < Num_Of_Total_Imgs; ++val_idx) {
+        if (val_idx == hyp01_view_indx || val_idx == hyp02_view_indx) continue;
+
+        //> Retrieve support index from paired_edge for the current validation view
+        int support_idx = paired_edge_final(pair_idx, val_indx_in_paired_edge_array);
+        if (support_idx != -2) {
+            Eigen::MatrixXd edges_for_val_frame = All_Edgels[val_idx];
+
+            if (edges_for_val_frame.rows() <= support_idx) {
+                LOG_ERROR("Something buggy here!\n");
+                std::cout << "(pair_idx, val_idx, edges_for_val_frame.rows(), support_idx) = (" 
+                         << pair_idx << ", " << val_idx << ", " << edges_for_val_frame.rows() << ", " << support_idx << ")" << std::endl;
+            } else {
+                Eigen::Vector3d supporting_edge = edges_for_val_frame.row(support_idx).head<3>();
+                edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
+            }
+        }
+        val_indx_in_paired_edge_array++;
+    }
 }
 
 void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
 
     itime = omp_get_wtime();
+    
+    //> Collect all valid edge pairs
     int pair_num = 0;
     std::vector<int> valid_pair_index;
     for (int pair_idx = 0; pair_idx < paired_edge.rows(); pair_idx++) {
-      if(paired_edge(pair_idx,0) != -2 && paired_edge(pair_idx,0) != -3) {
-        valid_pair_index.push_back(pair_idx);
-        pair_num++;
-      }
+        if (paired_edge(pair_idx,0) != -2 && paired_edge(pair_idx,0) != -3) {
+            valid_pair_index.push_back(pair_idx);
+            pair_num++;
+        }
     }
+    
+    //> Create final paired edge matrix
     paired_edge_final = Eigen::MatrixXd::Constant(pair_num, Num_Of_Total_Imgs, -2);
-    for (int i = 0; i < pair_num; i++){
-      paired_edge_final.row(i) << paired_edge.row(valid_pair_index[i]);
+    for (int i = 0; i < pair_num; i++) {
+        paired_edge_final.row(i) << paired_edge.row(valid_pair_index[i]);
     }
     std::cout << "       - Number of pairs is: " << pair_num << std::endl;
-    // std::string info_str = "Number of pairs is: " + std::to_string(pair_num);
-    // LOG_INFOR_MESG(info_str);
 
 #if DEBUG_PAIRED_EDGES
     std::ofstream debug_file_paired_edges;
@@ -390,95 +521,16 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
     debug_file_paired_edges.close();
 #endif
 
-    std::vector<Eigen::Matrix3d> Rs;
-    Rs.push_back(R21);
-    std::vector<Eigen::Vector3d> Ts;
-    Ts.push_back(T21);
+    //> Initialize storage for 3D edges and tangents
+    Gamma1s.conservativeResize(paired_edge_final.rows(), 3);
+    Tangent1s.conservativeResize(paired_edge_final.rows(), 3);
     
-    std::vector<Eigen::Matrix3d> abs_Rs;
-    std::vector<Eigen::Vector3d> abs_Ts;
-    abs_Rs.push_back(All_R[hyp01_view_indx]);
-    abs_Rs.push_back(All_R[hyp02_view_indx]);
-    abs_Ts.push_back(All_T[hyp01_view_indx]);
-    abs_Ts.push_back(All_T[hyp02_view_indx]);
-
-    Gamma1s.conservativeResize(paired_edge_final.rows(),3);
-    Tangent1s.conservativeResize(paired_edge_final.rows(),3);
+    //> Triangulate each edge pair to reconstruct 3D edges
     for (int pair_idx = 0; pair_idx < paired_edge_final.rows(); pair_idx++) {
-        Eigen::MatrixXd edgel_HYPO1   = Edges_HYPO1.row(int(paired_edge_final(pair_idx,0)));  //> edge index in hypo 1
-        Eigen::MatrixXd edgel_HYPO2   = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));  //> edge index in hypo 2
-        Eigen::MatrixXd HYPO2_idx_raw = Edges_HYPO2.row(int(paired_edge_final(pair_idx,1)));
-
-        Eigen::MatrixXd edgels_HYPO2_corrected = PairHypo->edgelsHYPO2correct(edgel_HYPO2, edgel_HYPO1, F21, F12, HYPO2_idx_raw);
-
-        if (HYPO2_idx_raw.rows() == 0 || edgels_HYPO2_corrected.rows() == 0) {
-            std::cout << "No valid matches found for edge " << pair_idx << " at threshold " << thresh_EDG << std::endl;
-            continue;
-        }
-
-        Eigen::MatrixXd Edges_HYPO1_final(edgels_HYPO2_corrected.rows(),4);
-        Edges_HYPO1_final << edgels_HYPO2_corrected.col(0), edgels_HYPO2_corrected.col(1), edgels_HYPO2_corrected.col(2), edgels_HYPO2_corrected.col(3);
-        Eigen::MatrixXd Edges_HYPO2_final(edgels_HYPO2_corrected.rows(),4);
-        Edges_HYPO2_final << edgels_HYPO2_corrected.col(4), edgels_HYPO2_corrected.col(5), edgels_HYPO2_corrected.col(6), edgels_HYPO2_corrected.col(7);
-
-        Eigen::Vector2d pt_H1 = Edges_HYPO1_final.row(0);
-        Eigen::Vector2d pt_H2 = Edges_HYPO2_final.row(0);
-        std::vector<Eigen::Vector2d> pts;
-        pts.push_back(pt_H1);
-        pts.push_back(pt_H2);
-
-        //> The resultant edge_pt_3D is 3D edges "under the first hypothesis view coordinate"
-        Eigen::Vector3d edge_pt_3D = util->linearTriangulation(2, pts, Rs, Ts, K_HYPO1);
-        if (edge_pt_3D.hasNaN()) {
-            LOG_ERROR("NaN values detected in edge_pt_3D for pair_idx: ");
-            Gamma1s.row(pair_idx)<< 0, 0, 0;  //> TBD
-            std::cerr << pair_idx << std::endl;
-            continue;
-        }
-
-        Gamma1s.row(pair_idx) << edge_pt_3D(0), edge_pt_3D(1), edge_pt_3D(2);
-        Eigen::Vector3d edge_2d_H1 = Edges_HYPO1_final.row(0).head<3>();
-        Eigen::Vector3d edge_2d_H2 = Edges_HYPO2_final.row(0).head<3>();
-        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H1, hyp01_view_indx);
-        edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, edge_2d_H2, hyp02_view_indx);
-
-        //> Find the 3D tangent vector associated with each 3D edges
-        Eigen::Vector3d edge_tangent_3D = util->get3DTangentFromTwo2Dtangents(Edges_HYPO1_final.row(0), Edges_HYPO2_final.row(0), K_HYPO1, K_HYPO2, All_R[hyp01_view_indx], All_T[hyp01_view_indx], All_R[hyp02_view_indx], All_T[hyp02_view_indx]);
-        Tangent1s.row(pair_idx) << edge_tangent_3D(0), edge_tangent_3D(1), edge_tangent_3D(2);
-
-        ///////////////////////////////// Add support from validation views /////////////////////////////////
-        std::vector< std::pair<int, Eigen::Vector3d> > validation_support_edges;
-
-        // Loop through validation views to find the supporting edges
-        int val_indx_in_paired_edge_array = 2; // +2 accounts for the first two columns for HYPO1 and HYPO2
-        for (int val_idx = 0; val_idx < Num_Of_Total_Imgs; ++val_idx) {
-            if (val_idx == hyp01_view_indx || val_idx == hyp02_view_indx) {
-                continue;  // Skip hypothesis views
-            }
-
-            // Retrieve support index from paired_edge for the current validation view
-            int support_idx = paired_edge_final(pair_idx, val_indx_in_paired_edge_array);  
-            if (support_idx != -2) {
-                // Retrieve the supporting edge from the validation view
-                Eigen::MatrixXd edges_for_val_frame = All_Edgels[val_idx];
-
-                if (edges_for_val_frame.rows() <= support_idx) {
-                    LOG_ERROR("Something buggy here!\n");
-                    std::cout << "(pair_idx, val_idx, edges_for_val_frame.rows(), support_idx) = (" << pair_idx << ", " << val_idx << ", " << edges_for_val_frame.rows() << ", " << support_idx << ")" << std::endl;
-                    Eigen::Vector3d supporting_edge = edges_for_val_frame.row(support_idx).head<3>();
-                }
-
-                Eigen::Vector3d supporting_edge = edges_for_val_frame.row(support_idx).head<3>();
-
-                //> Qiwu: Store validation view and the supporting edge
-                validation_support_edges.emplace_back(val_idx, supporting_edge);
-
-                //> Qiwu: Add the supporting edge to the edgeMapping for the 3D edge
-                edgeMapping->add3DToSupportingEdgesMapping(edge_pt_3D, supporting_edge, val_idx);
-            }
-            val_indx_in_paired_edge_array++;
-        }
+        Eigen::Vector3d edge_pt_3D, edge_tangent_3D;
+        triangulate_and_Store_3D_Edge(pair_idx, edge_pt_3D, edge_tangent_3D);
     }
+    
     finalize_edge_pair_time += omp_get_wtime() - itime;
     edge_sketch_pass_count++;
 
@@ -487,7 +539,7 @@ void EdgeSketch_Core::Finalize_Edge_Pairs_and_Reconstruct_3D_Edges() {
     if (bool_write_3D_2D_edge_links) {
         Eigen::Matrix3d R_ref = All_R[hyp01_view_indx];
         Eigen::Vector3d T_ref = All_T[hyp01_view_indx];
-        edgeMapping->write_3D_edge_and_2D_edge_linkings( R_ref, T_ref, edge_sketch_pass_count );
+        edgeMapping->write_3D_edge_and_2D_edge_linkings(R_ref, T_ref, edge_sketch_pass_count);
         bool_write_3D_2D_edge_links = false;
     }
 #endif

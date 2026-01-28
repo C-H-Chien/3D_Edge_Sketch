@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
-set(CMAKE_CXX_STANDARD "11")
+set(CMAKE_CXX_STANDARD 17)
 if(NOT CMAKE_CXX_STANDARD_REQUIRED)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math" CACHE STRING "" FORCE)
 
 project(Edge_Based_Reconstruction)
-
+set(Eigen3_DIR "/gpfs/data/bkimia/zshen42/eigen3_install/share/eigen3/cmake")
 # -- enable the use of cuda --
 #option(USE_CUDA "Use CUDA" ON)
 #enable_language("CUDA")
